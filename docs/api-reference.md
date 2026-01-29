@@ -54,13 +54,13 @@ Objeto `matplotlib.axes.Axes` do grafico gerado.
 Salva o grafico atual em arquivo.
 
 ```python
-df.agora.save(path: str, dpi: int = 300)
+df.agora.save(path: str, dpi: int = None)
 ```
 
 | Parametro | Tipo | Default | Descricao |
 |-----------|------|---------|-----------|
 | `path` | str | - | Caminho do arquivo |
-| `dpi` | int | 300 | Resolucao em DPI |
+| `dpi` | int | None | Resolucao em DPI (default: config.layout.dpi) |
 
 **Importante:** Requer que `plot()` tenha sido chamado antes.
 
@@ -135,37 +135,73 @@ AgoraPlotter(df: pd.DataFrame)
 ### Metodos
 
 - `plot(**kwargs)` - Mesmos parametros de `df.agora.plot()`
-- `save(path: str, dpi: int = 300)` - Salva o grafico
+- `save(path: str, dpi: int = None)` - Salva o grafico (dpi default via config)
 
 ---
 
 ## Configuracao
 
+O sistema de configuracao usa arquivos TOML e permite personalizacao completa.
+Veja [Configuration](configuration.md) para o guia completo.
+
 ### configure()
 
-Configura paths do modulo.
+Configura o modulo programaticamente.
 
 ```python
 from agora_charting import configure
 from pathlib import Path
 
+# Arquivo TOML explicito
+configure(config_path=Path('./minha-config.toml'))
+
+# Path de outputs
+configure(outputs_path=Path('./meus_outputs'))
+
+# Overrides por secao
+configure(branding={'company_name': 'Minha Empresa'})
+configure(colors={'primary': '#FF0000'})
+configure(layout={'figsize': [12.0, 8.0], 'dpi': 150})
+
+# Multiplos overrides
 configure(
-    outputs_path: Path = None,    # Path base para outputs
-    charts_subdir: str = None,    # Subdir para charts (default: 'charts')
-) -> ChartingSettings
+    branding={'company_name': 'Empresa'},
+    colors={'primary': '#FF0000'},
+)
+```
+
+### get_config()
+
+Retorna a configuracao atual (dataclass tipada).
+
+```python
+from agora_charting import get_config
+
+config = get_config()
+print(config.branding.company_name)
+print(config.colors.primary)
+print(config.layout.figsize)
+print(config.fonts.sizes.title)
 ```
 
 ### get_settings()
 
-Retorna a instancia global de configuracoes.
+**Deprecated:** Use `get_config()` ao inves.
 
 ```python
 from agora_charting import get_settings
 
-settings = get_settings()
-print(settings.charts_path)
-print(settings.outputs_path)
-print(settings.project_root)
+settings = get_settings()  # Retorna ChartingConfig
+```
+
+### reset_config()
+
+Reseta configuracoes para os defaults.
+
+```python
+from agora_charting.settings import reset_config
+
+reset_config()
 ```
 
 ### Variaveis Globais
@@ -173,8 +209,33 @@ print(settings.project_root)
 ```python
 from agora_charting import CHARTS_PATH, OUTPUTS_PATH
 
-# CHARTS_PATH: Path onde graficos sao salvos
-# OUTPUTS_PATH: Path base de outputs
+# CHARTS_PATH: Path onde graficos sao salvos (lazy evaluation)
+# OUTPUTS_PATH: Path base de outputs (lazy evaluation)
+```
+
+### ChartingConfig
+
+Dataclass tipada com todas as configuracoes:
+
+```python
+from agora_charting import ChartingConfig, get_config
+
+config: ChartingConfig = get_config()
+
+# Secoes disponiveis
+config.branding      # BrandingConfig
+config.colors        # ColorsConfig
+config.fonts         # FontsConfig
+config.layout        # LayoutConfig
+config.lines         # LinesConfig
+config.bars          # BarsConfig
+config.bands         # BandsConfig
+config.markers       # MarkersConfig
+config.collision     # CollisionConfig
+config.transforms    # TransformsConfig
+config.formatters    # FormattersConfig
+config.labels        # LabelsConfig
+config.paths         # PathsConfig
 ```
 
 ---
@@ -185,7 +246,10 @@ from agora_charting import CHARTS_PATH, OUTPUTS_PATH
 from agora_charting import (
     # Configuracao
     configure,
-    get_settings,
+    get_config,
+    get_settings,      # Deprecated, use get_config()
+    reset_config,
+    ChartingConfig,
     CHARTS_PATH,
     OUTPUTS_PATH,
     # Classes

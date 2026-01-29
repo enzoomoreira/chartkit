@@ -21,3 +21,19 @@ packages = ["src/agora_charting"]
 include = [
     "src/agora_charting",
 ]
+
+# Exemplo de configuracao do agora-charting via pyproject.toml
+# Descomente e customize conforme necessario:
+#
+# [tool.charting]
+# [tool.charting.branding]
+# company_name = "Minha Empresa"
+# footer_format = "Fonte: {source}, {company_name}"
+#
+# [tool.charting.colors]
+# primary = "#003366"
+# secondary = "#0066CC"
+#
+# [tool.charting.layout]
+# figsize = [12.0, 8.0]
+# dpi = 150

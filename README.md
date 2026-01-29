@@ -39,12 +39,14 @@ df.agora.plot(title="Meu Grafico", save_path="grafico.png")
 - **Overlays**: Media movel, linhas ATH/ATL, linhas de referencia, bandas
 - **Transformacoes**: YoY, MoM, acumulado 12m, juros real, normalizacao
 - **Auto-discovery**: Detecta automaticamente paths de output do projeto
+- **Configuracao TOML**: Personalize cores, branding e layout via arquivo TOML
 
 ## Documentacao
 
 | Documento | Descricao |
 |-----------|-----------|
 | [Getting Started](docs/getting-started.md) | Instalacao e primeiros passos |
+| [Configuration](docs/configuration.md) | Sistema de configuracao TOML |
 | [API Reference](docs/api-reference.md) | Referencia completa da API |
 | [Transforms](docs/transforms.md) | Funcoes de transformacao temporal |
 | [Overlays](docs/overlays.md) | Elementos visuais secundarios |

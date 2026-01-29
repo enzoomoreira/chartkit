@@ -1,0 +1,163 @@
+# =============================================================================
+# Configuracao do agora-charting
+# =============================================================================
+#
+# Copie este arquivo para um dos seguintes locais:
+#   1. .charting.toml ou charting.toml na raiz do projeto
+#   2. Secao [tool.charting] no pyproject.toml
+#   3. ~/.config/charting/config.toml (Linux/Mac)
+#   4. %APPDATA%/charting/config.toml (Windows)
+#
+# Ou carregue explicitamente:
+#   from agora_charting import configure
+#   configure(config_path=Path('./meu-config.toml'))
+#
+# Apenas inclua as secoes/valores que deseja sobrescrever.
+# Valores nao especificados usarao os defaults.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Branding - Personalizacao de marca
+# -----------------------------------------------------------------------------
+[branding]
+company_name = "Sua Empresa"
+footer_format = "Fonte: {source}, {company_name}"
+footer_format_no_source = "{company_name}"
+
+# -----------------------------------------------------------------------------
+# Cores - Paleta de cores para graficos
+# -----------------------------------------------------------------------------
+[colors]
+# Cores principais (usadas para multiplas series)
+primary = "#00464D"      # Cor principal
+secondary = "#006B6B"    # Segunda serie
+tertiary = "#008B8B"     # Terceira serie
+quaternary = "#20B2AA"   # Quarta serie
+quinary = "#5F9EA0"      # Quinta serie
+senary = "#2E8B57"       # Sexta serie
+
+# Cores semanticas
+text = "#00464D"         # Cor do texto
+grid = "lightgray"       # Cor da grid
+background = "white"     # Cor de fundo
+positive = "#00464D"     # Valores positivos (ATH)
+negative = "#8B0000"     # Valores negativos (ATL)
+moving_average = "#888888"  # Linha de media movel
+
+# -----------------------------------------------------------------------------
+# Fontes - Configuracao de tipografia
+# -----------------------------------------------------------------------------
+[fonts]
+# Caminho relativo a pasta assets/ ou caminho absoluto
+file = "fonts/BradescoSans-Light.ttf"
+fallback = "sans-serif"
+
+[fonts.sizes]
+default = 11       # Tamanho padrao
+title = 18         # Titulo do grafico
+footer = 9         # Rodape
+axis_label = 11    # Labels dos eixos
+
+# -----------------------------------------------------------------------------
+# Layout - Dimensoes e posicionamento
+# -----------------------------------------------------------------------------
+[layout]
+figsize = [10.0, 6.0]  # Largura x Altura em polegadas
+dpi = 300              # Resolucao para exportacao
+
+[layout.footer]
+x = 0.01        # Posicao X (0-1, coordenadas de figura)
+y = 0.01        # Posicao Y (0-1, coordenadas de figura)
+color = "gray"  # Cor do texto
+
+[layout.title]
+padding = 20     # Espacamento em pixels
+weight = "bold"  # Peso da fonte
+
+# -----------------------------------------------------------------------------
+# Linhas - Configuracao de linhas de grafico
+# -----------------------------------------------------------------------------
+[lines]
+main_width = 2.0        # Espessura da linha principal
+overlay_width = 1.5     # Espessura de overlays (MM, ATH, etc)
+reference_style = "--"  # Estilo de linhas de referencia
+
+[lines.legend]
+alpha = 0.9      # Transparencia do fundo da legenda
+frameon = true   # Mostrar borda da legenda
+
+# -----------------------------------------------------------------------------
+# Barras - Configuracao de graficos de barra
+# -----------------------------------------------------------------------------
+[bars]
+width_default = 0.8   # Largura padrao
+width_monthly = 20    # Largura para dados mensais
+width_annual = 300    # Largura para dados anuais
+
+[bars.frequency_detection]
+monthly_threshold = 25   # Dias entre pontos para considerar mensal
+annual_threshold = 300   # Dias entre pontos para considerar anual
+
+# -----------------------------------------------------------------------------
+# Bandas - Areas sombreadas
+# -----------------------------------------------------------------------------
+[bands]
+alpha = 0.15  # Transparencia das bandas
+
+# -----------------------------------------------------------------------------
+# Marcadores - Labels de destaque
+# -----------------------------------------------------------------------------
+[markers]
+scatter_size = 30     # Tamanho do marcador circular
+label_offset_x = 5    # Offset X do label em pontos
+label_offset_y = 8    # Offset Y do label em pontos
+
+# -----------------------------------------------------------------------------
+# Colisao - Deteccao de sobreposicao de labels
+# -----------------------------------------------------------------------------
+[collision]
+margin_px = 5             # Margem para deteccao em pixels
+guide_threshold_px = 30   # Distancia para adicionar linha guia
+extra_padding_px = 15     # Padding adicional apos reposicionamento
+px_to_points_ratio = 0.75 # Conversao pixels para pontos
+
+# -----------------------------------------------------------------------------
+# Transforms - Parametros de transformacao de dados
+# -----------------------------------------------------------------------------
+[transforms]
+mom_periods = 1              # Periodos para MoM
+yoy_periods = 12             # Periodos para YoY (12 = mensal)
+trading_days_per_year = 252  # Dias uteis no ano
+normalize_base = 100         # Base para normalizacao
+rolling_window = 12          # Janela para rolling
+
+# -----------------------------------------------------------------------------
+# Formatadores - Formatacao de texto
+# -----------------------------------------------------------------------------
+[formatters.currency]
+BRL = "R$ "  # Prefixo Real
+USD = "$ "   # Prefixo Dolar
+
+[formatters.locale]
+decimal = ","    # Separador decimal
+thousands = "."  # Separador de milhares
+
+[formatters.magnitude]
+suffixes = ["", "k", "M", "B", "T"]  # Sufixos para notacao compacta
+
+# -----------------------------------------------------------------------------
+# Labels - Rotulos padrao
+# -----------------------------------------------------------------------------
+[labels]
+ath = "ATH"                       # All-Time High
+atl = "ATL"                       # All-Time Low
+moving_average_format = "MM{window}"  # Formato da legenda de MM
+
+# -----------------------------------------------------------------------------
+# Paths - Caminhos e diretorios
+# -----------------------------------------------------------------------------
+[paths]
+charts_subdir = "charts"           # Subdiretorio para graficos
+default_output_dir = "outputs"     # Diretorio de outputs padrao
+project_root_markers = [".git", "pyproject.toml", "setup.py", "setup.cfg", ".project-root"]
+output_conventions = ["outputs", "data/outputs", "output", "data/output"]

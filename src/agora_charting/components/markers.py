@@ -1,7 +1,13 @@
+"""
+Marcadores e labels para destacar pontos em graficos.
+"""
+
 import numpy as np
 import pandas as pd
 
+from ..settings import get_config
 from ..styling.theme import theme
+
 
 def highlight_last_point(ax, series: pd.Series, color: str = None, **kwargs) -> None:
     """
@@ -29,6 +35,9 @@ def highlight_last_point(ax, series: pd.Series, color: str = None, **kwargs) -> 
     if series.empty:
         return
 
+    config = get_config()
+    markers = config.markers
+
     # Encontra o ultimo valor valido (nao-NaN)
     valid_series = series.dropna()
     if valid_series.empty:
@@ -45,29 +54,30 @@ def highlight_last_point(ax, series: pd.Series, color: str = None, **kwargs) -> 
         color = theme.colors.primary
 
     # Scatter (bolinha)
-    ax.scatter([last_date], [last_val], color=color, s=30, zorder=5)
-    
+    ax.scatter([last_date], [last_val], color=color, s=markers.scatter_size, zorder=5)
+
     # Texto
     # Formata valor (tenta usar o formatter do eixo Y se disponivel, senao default)
     y_fmt = ax.yaxis.get_major_formatter()
-    label_text = y_fmt(last_val, None) 
-    
-    # Se o formatter for ScalarFormatter padrao do mpl, ele pode retornar string vazia ou cientifica feia
-    # Entao fallback simples se parecer ruim
-    if not label_text: 
+    label_text = y_fmt(last_val, None)
+
+    # Se o formatter for ScalarFormatter padrao do mpl, ele pode retornar string vazia
+    if not label_text:
         label_text = f"{last_val:.2f}"
 
-    annot = ax.annotate(label_text,
-               xy=(last_date, last_val),
-               xytext=(5, 0),
-               textcoords='offset points',
-               color=color,
-               fontproperties=theme.font,
-               fontweight='bold',
-               va='center')
+    annot = ax.annotate(
+        label_text,
+        xy=(last_date, last_val),
+        xytext=(markers.label_offset_x, 0),
+        textcoords="offset points",
+        color=color,
+        fontproperties=theme.font,
+        fontweight="bold",
+        va="center",
+    )
 
     # Registra annotation para deteccao de colisao
-    if not hasattr(ax, '_agora_annotations'):
+    if not hasattr(ax, "_agora_annotations"):
         ax._agora_annotations = []
     ax._agora_annotations.append(annot)
 
@@ -87,6 +97,9 @@ def highlight_last_bar(ax, x, series: pd.Series, color: str = None, **kwargs):
     if series.empty:
         return
 
+    config = get_config()
+    markers = config.markers
+
     # Encontra o ultimo valor valido (nao-NaN)
     valid_series = series.dropna()
     if valid_series.empty:
@@ -104,7 +117,7 @@ def highlight_last_bar(ax, x, series: pd.Series, color: str = None, **kwargs):
 
     # Encontra a posicao X correspondente ao ultimo indice
     # Se x for DatetimeIndex, procura pelo indice; senao usa posicao
-    if hasattr(x, 'get_loc'):
+    if hasattr(x, "get_loc"):
         try:
             x_pos = x.get_loc(last_idx)
             x_val = x[x_pos]
@@ -121,20 +134,22 @@ def highlight_last_bar(ax, x, series: pd.Series, color: str = None, **kwargs):
         label_text = f"{last_val:.2f}"
 
     # Offset vertical: acima da barra se positivo, abaixo se negativo
-    offset_y = 8 if last_val >= 0 else -8
-    va = 'bottom' if last_val >= 0 else 'top'
+    offset_y = markers.label_offset_y if last_val >= 0 else -markers.label_offset_y
+    va = "bottom" if last_val >= 0 else "top"
 
-    annot = ax.annotate(label_text,
-               xy=(x_val, last_val),
-               xytext=(0, offset_y),
-               textcoords='offset points',
-               color=color,
-               fontproperties=theme.font,
-               fontweight='bold',
-               ha='center',
-               va=va)
+    annot = ax.annotate(
+        label_text,
+        xy=(x_val, last_val),
+        xytext=(0, offset_y),
+        textcoords="offset points",
+        color=color,
+        fontproperties=theme.font,
+        fontweight="bold",
+        ha="center",
+        va=va,
+    )
 
     # Registra annotation para deteccao de colisao
-    if not hasattr(ax, '_agora_annotations'):
+    if not hasattr(ax, "_agora_annotations"):
         ax._agora_annotations = []
     ax._agora_annotations.append(annot)

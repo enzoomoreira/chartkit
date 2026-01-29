@@ -2,6 +2,9 @@
 
 Elementos visuais secundarios que podem ser adicionados sobre os dados principais.
 
+> **Nota:** Valores default como cores, espessuras e labels podem ser personalizados
+> via arquivo TOML. Veja [Configuration](configuration.md).
+
 ## Resumo
 
 | Overlay | Parametro | Descricao |
@@ -24,9 +27,10 @@ df.agora.plot(title="Dados com MM12", moving_avg=12)
 
 ### Caracteristicas
 
-- Cor: Cinza (#888888) por padrao
+- Cor: Cinza (config: `colors.moving_average`, default: #888888)
 - Estilo: Linha solida
-- Label: "MM{window}" (ex: MM12)
+- Espessura: config `lines.overlay_width` (default: 1.5)
+- Label: config `labels.moving_average_format` (default: "MM{window}")
 - zorder: 2 (acima de linhas de referencia, abaixo dos dados)
 
 ### Exemplo
@@ -58,8 +62,9 @@ Linhas horizontais no maximo (All-Time High) e minimo (All-Time Low) historico.
 df.agora.plot(title="Grafico", show_ath=True)
 ```
 
-- Cor: Verde (theme.colors.positive)
-- Label: "ATH"
+- Cor: Verde (config: `colors.positive`)
+- Label: config `labels.ath` (default: "ATH")
+- Estilo: config `lines.reference_style` (default: "--")
 
 ### ATL (All-Time Low)
 
@@ -67,8 +72,9 @@ df.agora.plot(title="Grafico", show_ath=True)
 df.agora.plot(title="Grafico", show_atl=True)
 ```
 
-- Cor: Vermelho (theme.colors.negative)
-- Label: "ATL"
+- Cor: Vermelho (config: `colors.negative`)
+- Label: config `labels.atl` (default: "ATL")
+- Estilo: config `lines.reference_style` (default: "--")
 
 ### Ambos
 
@@ -117,9 +123,9 @@ overlays={
 |-----------|------|---------|-----------|
 | `value` | float | - | Valor Y da linha (obrigatorio) |
 | `label` | str | None | Rotulo para legenda |
-| `color` | str | cinza | Cor da linha |
-| `linestyle` | str | '--' | Estilo: '-', '--', ':', '-.' |
-| `linewidth` | float | 1.5 | Espessura |
+| `color` | str | config grid | Cor da linha |
+| `linestyle` | str | config reference_style | Estilo: '-', '--', ':', '-.' |
+| `linewidth` | float | config overlay_width | Espessura |
 
 ### Exemplo: Meta de Inflacao
 
@@ -170,8 +176,8 @@ overlays={
 |-----------|------|---------|-----------|
 | `lower` | float | - | Limite inferior (obrigatorio) |
 | `upper` | float | - | Limite superior (obrigatorio) |
-| `color` | str | cinza | Cor da banda |
-| `alpha` | float | 0.15 | Transparencia (0-1) |
+| `color` | str | config grid | Cor da banda |
+| `alpha` | float | config bands.alpha | Transparencia (0-1) |
 | `label` | str | None | Rotulo para legenda |
 
 ### Exemplo: Banda de Tolerancia
@@ -245,3 +251,9 @@ df.agora.plot(
 | ATH/ATL/hlines | 1 | Linhas de referencia |
 | Media movel | 2 | Intermediario |
 | Dados principais | 3+ | Mais a frente |
+
+---
+
+## Veja Tambem
+
+- [Configuration](configuration.md) - Personalizacao de cores, labels e estilos de overlays

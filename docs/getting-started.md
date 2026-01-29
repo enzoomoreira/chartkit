@@ -30,47 +30,127 @@ df.agora.plot(title="Meu Primeiro Grafico")
 
 O import do `agora_charting` registra automaticamente o accessor `.agora` em todos os DataFrames.
 
-## Configuracao de Paths
+## Configuracao
 
-O modulo detecta automaticamente onde salvar os graficos. Voce pode customizar se necessario.
+O modulo usa um sistema de configuracao flexivel baseado em TOML. Por padrao, usa valores da Agora Investimentos, mas voce pode personalizar tudo.
 
-### Auto-Discovery (Padrao)
+### Ordem de Precedencia
 
-O sistema procura por markers de projeto (`pyproject.toml`, `.git`, etc) e usa convencoes de pastas:
+A configuracao e carregada das seguintes fontes (maior para menor prioridade):
 
-1. `outputs/`
-2. `data/outputs/`
-3. `output/`
-4. `data/output/`
+1. `configure()` - Configuracao programatica
+2. `.charting.toml` ou `charting.toml` - Arquivo na raiz do projeto
+3. `pyproject.toml [tool.charting]` - Secao no pyproject.toml
+4. `~/.config/charting/config.toml` - Config global do usuario (Linux/Mac)
+5. `%APPDATA%/charting/config.toml` - Config global do usuario (Windows)
+6. Defaults built-in
 
-Se nenhuma existir, usa `outputs/charts` relativo ao project root.
+### Arquivo TOML
 
-### Configuracao Manual
+Crie um arquivo `.charting.toml` ou `charting.toml` na raiz do projeto:
+
+```toml
+[branding]
+company_name = "Minha Empresa"
+footer_format = "Fonte: {source}, {company_name}"
+
+[colors]
+primary = "#003366"
+secondary = "#0066CC"
+
+[layout]
+figsize = [12.0, 8.0]
+dpi = 150
+```
+
+Veja `charting.example.toml` para todas as opcoes disponiveis.
+
+### Via pyproject.toml
+
+```toml
+[tool.charting]
+[tool.charting.branding]
+company_name = "Minha Empresa"
+
+[tool.charting.colors]
+primary = "#003366"
+```
+
+### Configuracao Programatica
 
 ```python
 from agora_charting import configure
-from pathlib import Path
 
-# Define path customizado
-configure(outputs_path=Path('./meus_outputs'))
+# Customiza branding
+configure(branding={'company_name': 'Minha Empresa'})
 
-# Ou apenas o subdiretorio de charts
-configure(charts_subdir='graficos')
+# Customiza cores
+configure(colors={'primary': '#FF0000', 'secondary': '#00FF00'})
+
+# Customiza layout
+configure(layout={'figsize': [12.0, 8.0], 'dpi': 150})
+
+# Combina multiplas secoes
+configure(
+    branding={'company_name': 'Banco XYZ'},
+    colors={'primary': '#003366'},
+)
 ```
 
-### Variavel de Ambiente
+### Arquivo de Configuracao Explicito
+
+```python
+from pathlib import Path
+from agora_charting import configure
+
+configure(config_path=Path('./minha-config.toml'))
+```
+
+### Variavel de Ambiente para Outputs
 
 ```powershell
 $env:AGORA_CHARTING_OUTPUTS_PATH = "C:/caminho/para/outputs"
 ```
 
-### Verificar Path Atual
+### Verificar Configuracao Atual
 
 ```python
-from agora_charting import CHARTS_PATH, OUTPUTS_PATH
+from agora_charting import get_config, CHARTS_PATH, OUTPUTS_PATH
 
+# Ver configuracao completa
+config = get_config()
+print(f"Company: {config.branding.company_name}")
+print(f"Cor primaria: {config.colors.primary}")
+
+# Ver paths
 print(f"Charts: {CHARTS_PATH}")
 print(f"Outputs: {OUTPUTS_PATH}")
+```
+
+### Reset de Configuracao
+
+```python
+from agora_charting.settings import reset_config
+
+reset_config()  # Volta para defaults
+```
+
+## Auto-Discovery de Paths
+
+O sistema detecta automaticamente onde salvar os graficos:
+
+1. Procura por markers de projeto (`pyproject.toml`, `.git`, etc)
+2. Usa convencoes de pastas: `outputs/`, `data/outputs/`, `output/`, `data/output/`
+3. Se nenhuma existir, usa `outputs/charts` relativo ao project root
+
+### Configuracao Manual de Paths
+
+```python
+from agora_charting import configure
+from pathlib import Path
+
+# Define path customizado para outputs
+configure(outputs_path=Path('./meus_outputs'))
 ```
 
 ## Salvando Graficos
@@ -138,6 +218,8 @@ df.agora.plot(title="Taxa Selic", units='%', source='BCB')
 # Rodape: "Fonte: BCB, Agora Investimentos"
 ```
 
+O texto do rodape e configuravel via `branding.footer_format`.
+
 ## Destacar Ultimo Valor
 
 ```python
@@ -152,3 +234,4 @@ Adiciona um marcador e label no ultimo ponto da serie.
 - [Transforms](transforms.md) - Funcoes de transformacao temporal
 - [Overlays](overlays.md) - Media movel, linhas de referencia
 - [Styling](styling.md) - Customizacao visual
+- [Configuration](configuration.md) - Guia completo de configuracao

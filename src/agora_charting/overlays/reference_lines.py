@@ -5,6 +5,8 @@ Inclui linhas ATH/ATL (All-Time High/Low) e linhas customizadas.
 """
 
 import pandas as pd
+
+from ..settings import get_config
 from ..styling.theme import theme
 
 
@@ -12,9 +14,9 @@ def add_ath_line(
     ax,
     y_data: pd.Series | pd.DataFrame,
     color: str = None,
-    linestyle: str = '--',
-    label: str = 'ATH',
-    linewidth: float = 1.5,
+    linestyle: str = None,
+    label: str = None,
+    linewidth: float = None,
     series: str = None,
 ) -> None:
     """
@@ -23,12 +25,14 @@ def add_ath_line(
     Args:
         ax: Matplotlib Axes
         y_data: Series ou DataFrame com os dados
-        color: Cor da linha (default: theme.colors.positive)
-        linestyle: Estilo da linha (default: '--')
-        label: Rotulo da linha (default: 'ATH')
-        linewidth: Espessura da linha (default: 1.5)
+        color: Cor da linha (default: config.colors.positive)
+        linestyle: Estilo da linha (default: config.lines.reference_style)
+        label: Rotulo da linha (default: config.labels.ath)
+        linewidth: Espessura da linha (default: config.lines.overlay_width)
         series: Nome da coluna se y_data for DataFrame (default: primeira coluna)
     """
+    config = get_config()
+
     # Resolve series se for DataFrame
     if isinstance(y_data, pd.DataFrame):
         col = series if series else y_data.columns[0]
@@ -39,15 +43,18 @@ def add_ath_line(
     if pd.isna(ath_value):
         return  # Sem dados validos
 
-    # Cor default: verde (positivo)
+    # Valores default da config
     line_color = color if color else theme.colors.positive
+    line_style = linestyle if linestyle else config.lines.reference_style
+    line_width = linewidth if linewidth else config.lines.overlay_width
+    line_label = label if label else config.labels.ath
 
     ax.axhline(
         y=ath_value,
         color=line_color,
-        linestyle=linestyle,
-        linewidth=linewidth,
-        label=label,
+        linestyle=line_style,
+        linewidth=line_width,
+        label=line_label,
         zorder=1,  # Abaixo dos dados principais
     )
 
@@ -56,9 +63,9 @@ def add_atl_line(
     ax,
     y_data: pd.Series | pd.DataFrame,
     color: str = None,
-    linestyle: str = '--',
-    label: str = 'ATL',
-    linewidth: float = 1.5,
+    linestyle: str = None,
+    label: str = None,
+    linewidth: float = None,
     series: str = None,
 ) -> None:
     """
@@ -67,12 +74,14 @@ def add_atl_line(
     Args:
         ax: Matplotlib Axes
         y_data: Series ou DataFrame com os dados
-        color: Cor da linha (default: theme.colors.negative)
-        linestyle: Estilo da linha (default: '--')
-        label: Rotulo da linha (default: 'ATL')
-        linewidth: Espessura da linha (default: 1.5)
+        color: Cor da linha (default: config.colors.negative)
+        linestyle: Estilo da linha (default: config.lines.reference_style)
+        label: Rotulo da linha (default: config.labels.atl)
+        linewidth: Espessura da linha (default: config.lines.overlay_width)
         series: Nome da coluna se y_data for DataFrame (default: primeira coluna)
     """
+    config = get_config()
+
     # Resolve series se for DataFrame
     if isinstance(y_data, pd.DataFrame):
         col = series if series else y_data.columns[0]
@@ -83,15 +92,18 @@ def add_atl_line(
     if pd.isna(atl_value):
         return  # Sem dados validos
 
-    # Cor default: vermelho (negativo)
+    # Valores default da config
     line_color = color if color else theme.colors.negative
+    line_style = linestyle if linestyle else config.lines.reference_style
+    line_width = linewidth if linewidth else config.lines.overlay_width
+    line_label = label if label else config.labels.atl
 
     ax.axhline(
         y=atl_value,
         color=line_color,
-        linestyle=linestyle,
-        linewidth=linewidth,
-        label=label,
+        linestyle=line_style,
+        linewidth=line_width,
+        label=line_label,
         zorder=1,
     )
 
@@ -100,9 +112,9 @@ def add_hline(
     ax,
     value: float,
     color: str = None,
-    linestyle: str = '--',
+    linestyle: str = None,
     label: str = None,
-    linewidth: float = 1.5,
+    linewidth: float = None,
 ) -> None:
     """
     Adiciona linha horizontal em valor arbitrario.
@@ -112,22 +124,26 @@ def add_hline(
     Args:
         ax: Matplotlib Axes
         value: Valor Y onde a linha sera desenhada
-        color: Cor da linha (default: theme.colors.grid)
-        linestyle: Estilo da linha (default: '--')
+        color: Cor da linha (default: config.colors.grid)
+        linestyle: Estilo da linha (default: config.lines.reference_style)
         label: Rotulo da linha (opcional)
-        linewidth: Espessura da linha (default: 1.5)
+        linewidth: Espessura da linha (default: config.lines.overlay_width)
 
     Example:
         >>> add_hline(ax, 3.0, label='Meta de Inflacao', color='green')
     """
-    # Cor default: cinza (grid)
+    config = get_config()
+
+    # Valores default da config
     line_color = color if color else theme.colors.grid
+    line_style = linestyle if linestyle else config.lines.reference_style
+    line_width = linewidth if linewidth else config.lines.overlay_width
 
     ax.axhline(
         y=value,
         color=line_color,
-        linestyle=linestyle,
-        linewidth=linewidth,
+        linestyle=line_style,
+        linewidth=line_width,
         label=label,
         zorder=1,
     )

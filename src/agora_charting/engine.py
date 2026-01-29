@@ -1,21 +1,35 @@
+"""
+Motor de plotagem principal do agora-charting.
+
+Orquestra temas, formatadores e componentes para criar graficos
+financeiros padronizados.
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from .config import get_settings
-from .styling import theme, currency_formatter, percent_formatter, human_readable_formatter, points_formatter
+from .settings import get_config, get_charts_path
+from .styling import (
+    theme,
+    currency_formatter,
+    percent_formatter,
+    human_readable_formatter,
+    points_formatter,
+)
 from .components import add_footer, resolve_collisions
 from .plots.line import plot_line
 from .plots.bar import plot_bar
 from .overlays import add_moving_average, add_ath_line, add_atl_line, add_hline, add_band
 
+
 # Mapa de formatadores para eixo Y (Open/Closed: adicionar novos sem modificar _apply_y_formatter)
 _FORMATTERS = {
-    'BRL': lambda: currency_formatter('BRL'),
-    'USD': lambda: currency_formatter('USD'),
-    '%': percent_formatter,
-    'human': human_readable_formatter,
-    'points': points_formatter,
+    "BRL": lambda: currency_formatter("BRL"),
+    "USD": lambda: currency_formatter("USD"),
+    "%": percent_formatter,
+    "human": human_readable_formatter,
+    "points": points_formatter,
 }
 
 
@@ -36,7 +50,7 @@ class AgoraPlotter:
         self.df = df
         self._fig = None
         self._ax = None
-        
+
     # =========================================================================
     # API Publica
     # =========================================================================
@@ -45,18 +59,18 @@ class AgoraPlotter:
         self,
         x: str = None,
         y: str | list[str] = None,
-        kind: str = 'line',
+        kind: str = "line",
         title: str = None,
         units: str = None,
         source: str = None,
         highlight_last: bool = False,
-        y_origin: str = 'zero',
+        y_origin: str = "zero",
         save_path: str = None,
         moving_avg: int = None,
         show_ath: bool = False,
         show_atl: bool = False,
         overlays: dict = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Gera um grafico padronizado.
@@ -82,17 +96,19 @@ class AgoraPlotter:
         Returns:
             matplotlib Axes
         """
+        config = get_config()
+
         # 1. Setup inicial (Style)
         theme.apply()
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=config.layout.figsize)
         self._fig = fig
         self._ax = ax
-        
-        # 2. Resolução de dados
+
+        # 2. Resolucao de dados
         x_data = self.df.index if x is None else self.df[x]
 
         if y is None:
-            y_data = self.df.select_dtypes(include=['number'])
+            y_data = self.df.select_dtypes(include=["number"])
         else:
             y_data = self.df[y]
 
@@ -100,16 +116,18 @@ class AgoraPlotter:
         self._apply_y_formatter(ax, units)
 
         # 4. Plotagem Core
-        if kind == 'line':
+        if kind == "line":
             plot_line(ax, x_data, y_data, highlight_last, **kwargs)
-        elif kind == 'bar':
+        elif kind == "bar":
             plot_bar(ax, x_data, y_data, highlight=highlight_last, y_origin=y_origin, **kwargs)
         else:
             raise ValueError(f"Chart type '{kind}' not supported.")
 
         # 5. Aplicacao de Overlays
         self._apply_overlays(
-            ax, x_data, y_data,
+            ax,
+            x_data,
+            y_data,
             moving_avg=moving_avg,
             show_ath=show_ath,
             show_atl=show_atl,
@@ -126,7 +144,7 @@ class AgoraPlotter:
         # 8. Output
         if save_path:
             self.save(save_path)
-            
+
         return ax
 
     # =========================================================================
@@ -155,6 +173,8 @@ class AgoraPlotter:
             show_atl: Mostrar linha ATL
             overlays: Dicionario com overlays customizados
         """
+        config = get_config()
+
         # Media movel
         if moving_avg:
             add_moving_average(ax, x_data, y_data, window=moving_avg)
@@ -170,27 +190,27 @@ class AgoraPlotter:
         # Overlays customizados via dicionario
         if overlays:
             # Linhas horizontais customizadas
-            if 'hlines' in overlays:
-                for hline_config in overlays['hlines']:
+            if "hlines" in overlays:
+                for hline_config in overlays["hlines"]:
                     add_hline(
                         ax,
-                        value=hline_config['value'],
-                        label=hline_config.get('label'),
-                        color=hline_config.get('color'),
-                        linestyle=hline_config.get('linestyle', '--'),
-                        linewidth=hline_config.get('linewidth', 1.5),
+                        value=hline_config["value"],
+                        label=hline_config.get("label"),
+                        color=hline_config.get("color"),
+                        linestyle=hline_config.get("linestyle"),
+                        linewidth=hline_config.get("linewidth"),
                     )
 
             # Banda sombreada
-            if 'band' in overlays:
-                band_config = overlays['band']
+            if "band" in overlays:
+                band_config = overlays["band"]
                 add_band(
                     ax,
-                    lower=band_config['lower'],
-                    upper=band_config['upper'],
-                    color=band_config.get('color'),
-                    alpha=band_config.get('alpha', 0.15),
-                    label=band_config.get('label'),
+                    lower=band_config["lower"],
+                    upper=band_config["upper"],
+                    color=band_config.get("color"),
+                    alpha=band_config.get("alpha"),
+                    label=band_config.get("label"),
                 )
 
     # =========================================================================
@@ -217,21 +237,30 @@ class AgoraPlotter:
         """
         Aplica titulo centralizado no topo do grafico.
 
-        O titulo e posicionado no centro com padding de 20 pixels,
-        usando a fonte do tema, tamanho 18pt e peso bold.
+        O titulo e posicionado no centro com padding e estilo configurados
+        em settings.
 
         Args:
             ax: Matplotlib Axes onde o titulo sera aplicado.
             title: Texto do titulo ou None para nao exibir titulo.
         """
         if title:
-            ax.set_title(title, loc='center', pad=20, fontproperties=theme.font, size=18, color=theme.colors.text, weight='bold')
+            config = get_config()
+            ax.set_title(
+                title,
+                loc="center",
+                pad=config.layout.title.padding,
+                fontproperties=theme.font,
+                size=config.fonts.sizes.title,
+                color=theme.colors.text,
+                weight=config.layout.title.weight,
+            )
 
     def _apply_decorations(self, fig, source: str | None) -> None:
         """
         Aplica decoracoes visuais finais ao grafico.
 
-        Atualmente adiciona o rodape com fonte dos dados e branding Agora.
+        Atualmente adiciona o rodape com fonte dos dados e branding.
         Extensivel para futuras decoracoes como watermarks ou bordas.
 
         Args:
@@ -245,13 +274,13 @@ class AgoraPlotter:
     # IO e Exportacao
     # =========================================================================
 
-    def save(self, path: str, dpi: int = 300):
+    def save(self, path: str, dpi: int = None):
         """
         Salva o grafico atual em arquivo.
 
         Args:
             path: Caminho do arquivo (ex: 'grafico.png')
-            dpi: Resolucao em DPI (default: 300)
+            dpi: Resolucao em DPI (default: config.layout.dpi)
 
         Raises:
             RuntimeError: Se nenhum grafico foi gerado ainda
@@ -259,11 +288,17 @@ class AgoraPlotter:
         if self._fig is None:
             raise RuntimeError("Nenhum grafico gerado. Chame plot() primeiro.")
 
-        # Resolve path (usa get_settings() para pegar valor atualizado apos configure())
+        config = get_config()
+
+        # Usa DPI da config se nao especificado
+        if dpi is None:
+            dpi = config.layout.dpi
+
+        # Resolve path
         path_obj = Path(path)
         if not path_obj.is_absolute():
-            charts_path = get_settings().charts_path
+            charts_path = get_charts_path()
             charts_path.mkdir(parents=True, exist_ok=True)
             path_obj = charts_path / path_obj
 
-        self._fig.savefig(path_obj, bbox_inches='tight', dpi=dpi)
+        self._fig.savefig(path_obj, bbox_inches="tight", dpi=dpi)

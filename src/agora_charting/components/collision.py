@@ -5,21 +5,17 @@ Este modulo detecta quando labels de highlight (gerados por highlight_last_bar
 ou highlight_last_point) colidem com elementos visuais como barras, e
 reposiciona automaticamente os labels para evitar sobreposicao.
 """
+
 from matplotlib.text import Annotation
 
+from ..settings import get_config
 from ..styling.theme import theme
-
-# Constantes para deteccao e resolucao de colisao
-DEFAULT_MARGIN_PX = 5
-DEFAULT_GUIDE_THRESHOLD_PX = 30
-EXTRA_VERTICAL_PADDING_PX = 15
-PX_TO_POINTS_RATIO = 0.75
 
 
 def resolve_collisions(
     ax,
-    margin_px: int = DEFAULT_MARGIN_PX,
-    guide_threshold_px: int = DEFAULT_GUIDE_THRESHOLD_PX,
+    margin_px: int = None,
+    guide_threshold_px: int = None,
 ) -> None:
     """
     Detecta e resolve colisoes entre annotations e patches (barras).
@@ -31,10 +27,19 @@ def resolve_collisions(
 
     Args:
         ax: Matplotlib Axes com annotations registrados em _agora_annotations
-        margin_px: Margem em pixels para detectar colisao
-        guide_threshold_px: Distancia minima em pixels para adicionar linha guia
+        margin_px: Margem em pixels para detectar colisao. Se None, usa config.
+        guide_threshold_px: Distancia minima em pixels para adicionar linha guia.
+                           Se None, usa config.
     """
-    annotations = getattr(ax, '_agora_annotations', [])
+    config = get_config().collision
+
+    # Usa valores da config se nao especificados
+    if margin_px is None:
+        margin_px = config.margin_px
+    if guide_threshold_px is None:
+        guide_threshold_px = config.guide_threshold_px
+
+    annotations = getattr(ax, "_agora_annotations", [])
     if not annotations:
         return
 
@@ -59,7 +64,7 @@ def _resolve_single_collision(
     patches: list,
     renderer,
     margin_px: int,
-    guide_threshold_px: int
+    guide_threshold_px: int,
 ) -> None:
     """
     Resolve colisao de um annotation individual com patches.
@@ -76,6 +81,9 @@ def _resolve_single_collision(
         margin_px: Margem em pixels para deteccao de colisao
         guide_threshold_px: Distancia minima para adicionar linha guia
     """
+    config = get_config().collision
+    colors = get_config().colors
+
     annot_bbox = annot.get_window_extent(renderer)
 
     # Evita divisao por zero se bbox tiver dimensao nula
@@ -84,8 +92,7 @@ def _resolve_single_collision(
 
     # Expande bbox com margem
     annot_bbox_expanded = annot_bbox.expanded(
-        1 + margin_px / annot_bbox.width,
-        1 + margin_px / annot_bbox.height
+        1 + margin_px / annot_bbox.width, 1 + margin_px / annot_bbox.height
     )
 
     # Encontra patches que colidem com o annotation
@@ -105,14 +112,14 @@ def _resolve_single_collision(
     annot_pos_px = annot_bbox.y0
 
     # Nova posicao: acima do patch mais alto + margem + folga extra
-    new_top_px = max_top_px + margin_px + EXTRA_VERTICAL_PADDING_PX
+    new_top_px = max_top_px + margin_px + config.extra_padding_px
     offset_needed = new_top_px - annot_pos_px
 
     if offset_needed <= 0:
         return  # Ja esta acima, nao precisa ajustar
 
-    # Converte offset de pixels para pontos (aproximado: 1pt ~ 1.33px)
-    offset_points = offset_needed * PX_TO_POINTS_RATIO
+    # Converte offset de pixels para pontos
+    offset_points = offset_needed * config.px_to_points_ratio
 
     # Atualiza posicao do annotation
     current_xytext = annot.xyann
@@ -122,15 +129,14 @@ def _resolve_single_collision(
     # Adiciona linha guia se distancia for grande
     if offset_needed > guide_threshold_px:
         # Cria nova annotation com apenas a linha guia (texto vazio)
-        # Isso garante que o arrow_patch seja criado corretamente
         ax.annotate(
-            '',  # Texto vazio - apenas a linha
+            "",  # Texto vazio - apenas a linha
             xy=annot.xy,  # Ponto de dados original
             xytext=new_xytext,
-            textcoords='offset points',
+            textcoords="offset points",
             arrowprops=dict(
-                arrowstyle='-',
-                color=theme.colors.grid,
+                arrowstyle="-",
+                color=colors.grid,
                 alpha=0.6,
                 lw=1,
             ),

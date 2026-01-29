@@ -2,6 +2,9 @@
 
 Identidade visual e customizacao dos graficos.
 
+> **Nota:** Todos os valores descritos nesta pagina sao os defaults e podem ser
+> personalizados via arquivo TOML ou `configure()`. Veja [Configuration](configuration.md).
+
 ## Paleta de Cores
 
 ### Cores Principais (Gradiente Verde)
@@ -151,8 +154,18 @@ df.agora.plot(title="Grafico")
 
 - Posicao: Canto inferior esquerdo
 - Alinhamento: Borda esquerda do axes
-- Fonte: 9pt, cinza
-- Formatado como: `Fonte: {source}, Agora Investimentos`
+- Fonte: 9pt, cinza (configuravel via `fonts.sizes.footer` e `layout.footer.color`)
+- Formato configuravel via `branding.footer_format` e `branding.footer_format_no_source`
+
+#### Personalizacao
+
+```toml
+# charting.toml
+[branding]
+company_name = "Minha Empresa"
+footer_format = "Dados: {source} | {company_name}"
+footer_format_no_source = "Elaborado por {company_name}"
+```
 
 ### Markers (Destaque)
 
@@ -176,22 +189,22 @@ df.agora.plot(title="Grafico", highlight_last=True)
 
 ## Configuracoes do Tema
 
-O tema aplica as seguintes configuracoes no matplotlib:
+O tema aplica as seguintes configuracoes no matplotlib (valores default):
 
 ```python
-# Fontes
-'font.family': 'BradescoSans-Light'  # ou fallback
-'font.size': 11
-'axes.titlesize': 18
-'axes.labelsize': 11
+# Fontes (configuravel via fonts.sizes)
+'font.family': 'BradescoSans-Light'  # ou fallback (fonts.fallback)
+'font.size': 11                       # fonts.sizes.default
+'axes.titlesize': 18                  # fonts.sizes.title
+'axes.labelsize': 11                  # fonts.sizes.axis_label
 
 # Grid
 'axes.grid': False
 
-# Layout
-'figure.figsize': (10, 6)
-'figure.facecolor': 'white'
-'axes.facecolor': 'white'
+# Layout (configuravel via layout.figsize)
+'figure.figsize': (10, 6)             # layout.figsize
+'figure.facecolor': 'white'           # colors.background
+'axes.facecolor': 'white'             # colors.background
 
 # Spines (bordas)
 'axes.spines.top': False
@@ -203,6 +216,25 @@ O tema aplica as seguintes configuracoes no matplotlib:
 ### Estilo Base
 
 O tema usa `seaborn-v0_8-white` como base.
+
+### Personalizacao via TOML
+
+```toml
+# charting.toml
+[fonts.sizes]
+default = 12
+title = 20
+footer = 10
+axis_label = 12
+
+[layout]
+figsize = [12.0, 8.0]
+dpi = 150
+
+[colors]
+background = "#FAFAFA"
+text = "#333333"
+```
 
 ---
 
@@ -234,3 +266,20 @@ from agora_charting import theme
 theme.font_name  # 'BradescoSans-Light' ou 'sans-serif'
 theme.font       # FontProperties
 ```
+
+### Acessar Configuracao Completa
+
+```python
+from agora_charting import get_config
+
+config = get_config()
+print(config.colors.primary)
+print(config.fonts.sizes.title)
+print(config.layout.figsize)
+```
+
+---
+
+## Veja Tambem
+
+- [Configuration](configuration.md) - Guia completo de configuracao TOML

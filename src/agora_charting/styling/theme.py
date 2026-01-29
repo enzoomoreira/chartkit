@@ -1,112 +1,121 @@
-from dataclasses import dataclass
-from typing import List
+"""
+Tema visual para graficos agora-charting.
+
+Gerencia cores, fontes e estilos do matplotlib de forma centralizada,
+usando configuracoes do modulo settings.
+"""
+
+from typing import Optional
 
 import matplotlib.pyplot as plt
 
 from .fonts import load_font
+from ..settings import get_config
+from ..settings.schema import ColorsConfig
 
-@dataclass
-class ColorPalette:
-    """Paleta de cores para graficos - gradiente institucional verde."""
 
-    # Cores principais (gradiente de verde)
-    primary: str = "#00464D"      # Verde escuro institucional
-    secondary: str = "#006B6B"    # Verde medio
-    tertiary: str = "#008B8B"     # Teal
-    quaternary: str = "#20B2AA"   # Light sea green
-    quinary: str = "#5F9EA0"      # Cadet blue
-    senary: str = "#2E8B57"       # Sea green
-
-    # Cores semanticas
-    text: str = "#00464D"
-    grid: str = "lightgray"
-    background: str = "white"
-    positive: str = "#00464D"
-    negative: str = "#8B0000"     # Vermelho escuro (discreto)
-
-    def cycle(self) -> List[str]:
-        """Retorna lista de cores em gradiente verde para multiplas series."""
-        return [
-            self.primary,
-            self.secondary,
-            self.tertiary,
-            self.quaternary,
-            self.quinary,
-            self.senary,
-        ]
-
-class AgoraTheme:
+class ChartingTheme:
     """
-    Gerencia a identidade visual dos graficos Agora.
+    Gerencia a identidade visual dos graficos.
 
     Esta classe encapsula todas as configuracoes visuais padronizadas:
-    paleta de cores institucional, fonte Inter customizada e parametros
-    do matplotlib para consistencia visual.
+    paleta de cores, fonte customizada e parametros do matplotlib
+    para consistencia visual.
+
+    O tema usa lazy loading para acessar configuracoes, permitindo
+    que mudancas via configure() sejam refletidas automaticamente.
 
     Attributes:
-        colors: Instancia de ColorPalette com cores institucionais.
-        font: FontProperties do matplotlib com a fonte Inter carregada.
+        font: FontProperties do matplotlib com a fonte carregada.
 
     Example:
         >>> from agora_charting.styling.theme import theme
         >>> theme.apply()  # Aplica tema globalmente
-        >>> print(theme.font_name)  # 'Inter'
+        >>> print(theme.colors.primary)
     """
 
     def __init__(self) -> None:
         """
-        Inicializa o tema Agora com configuracoes padrao.
+        Inicializa o tema com configuracoes lazy-loaded.
 
-        Carrega a fonte Inter do diretorio de assets e configura
-        a paleta de cores institucional para visualizacoes.
+        A fonte e carregada imediatamente pois precisa ser registrada
+        no matplotlib.font_manager.
         """
-        self.colors = ColorPalette()
-        self.font = load_font()
-        
+        self._font = None
+
+    @property
+    def font(self):
+        """
+        Retorna FontProperties configurada para o tema.
+
+        Usa lazy loading para permitir que configuracoes sejam
+        alteradas via configure() antes do primeiro uso.
+        """
+        if self._font is None:
+            self._font = load_font()
+        return self._font
+
+    @property
+    def colors(self) -> ColorsConfig:
+        """
+        Retorna a paleta de cores atual.
+
+        Acessa a configuracao dinamicamente, permitindo que mudancas
+        via configure() sejam refletidas.
+        """
+        return get_config().colors
+
     @property
     def font_name(self) -> str:
         """
         Retorna o nome da fonte configurada para o tema.
 
         Returns:
-            Nome da fonte carregada (Inter) ou fallback do sistema
+            Nome da fonte carregada ou fallback do sistema
             caso a fonte nao tenha sido encontrada.
         """
         return self.font.get_name()
 
-    def apply(self):
-        """Aplica o tema globalmente no matplotlib."""
-        plt.style.use('seaborn-v0_8-white')
+    def apply(self) -> "ChartingTheme":
+        """
+        Aplica o tema globalmente no matplotlib.
+
+        Configura rcParams do matplotlib com cores, fontes e layout
+        definidos na configuracao atual.
+
+        Returns:
+            Self para encadeamento.
+        """
+        config = get_config()
+        plt.style.use("seaborn-v0_8-white")
 
         rc_params = {
             # Fontes
-            'font.family': self.font_name,
-            'font.size': 11,
-            'axes.titlesize': 18,  # Titulo maior
-            'axes.labelsize': 11,
-
+            "font.family": self.font_name,
+            "font.size": config.fonts.sizes.default,
+            "axes.titlesize": config.fonts.sizes.title,
+            "axes.labelsize": config.fonts.sizes.axis_label,
             # Cores
-            'text.color': self.colors.text,
-            'axes.labelcolor': self.colors.text,
-            'xtick.color': self.colors.text,
-            'ytick.color': self.colors.text,
-            'axes.edgecolor': self.colors.text,
-
+            "text.color": config.colors.text,
+            "axes.labelcolor": config.colors.text,
+            "xtick.color": config.colors.text,
+            "ytick.color": config.colors.text,
+            "axes.edgecolor": config.colors.text,
             # Grid desabilitado (apenas axis lines)
-            'axes.grid': False,
-
+            "axes.grid": False,
             # Layout
-            'figure.figsize': (10, 6),
-            'figure.facecolor': self.colors.background,
-            'axes.facecolor': self.colors.background,
-            'axes.spines.top': False,
-            'axes.spines.right': False,
-            'axes.spines.left': True,
-            'axes.spines.bottom': True,
+            "figure.figsize": config.layout.figsize,
+            "figure.facecolor": config.colors.background,
+            "axes.facecolor": config.colors.background,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "axes.spines.left": True,
+            "axes.spines.bottom": True,
         }
 
         plt.rcParams.update(rc_params)
         return self
 
-# Instancia global
-theme = AgoraTheme()
+
+# Instancia global singleton
+theme = ChartingTheme()
