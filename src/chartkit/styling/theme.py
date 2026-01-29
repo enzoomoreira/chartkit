@@ -1,5 +1,5 @@
 """
-Tema visual para graficos agora-charting.
+Tema visual para graficos.
 
 Gerencia cores, fontes e estilos do matplotlib de forma centralizada,
 usando configuracoes do modulo settings.
@@ -29,7 +29,7 @@ class ChartingTheme:
         font: FontProperties do matplotlib com a fonte carregada.
 
     Example:
-        >>> from agora_charting.styling.theme import theme
+        >>> from chartkit.styling.theme import theme
         >>> theme.apply()  # Aplica tema globalmente
         >>> print(theme.colors.primary)
     """

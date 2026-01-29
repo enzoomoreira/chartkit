@@ -1,20 +1,20 @@
-# agora-charting
+# chartkit
 
-Biblioteca de charting padronizado para visualizacao de dados financeiros, seguindo a identidade visual da Agora Investimentos.
+Biblioteca de charting padronizado para visualizacao de dados financeiros.
 
 Gera graficos profissionais via Pandas Accessor com uma linha de codigo.
 
 ## Instalacao
 
 ```bash
-uv add agora-charting
+uv add chartkit
 ```
 
 ## Quick Start
 
 ```python
 import pandas as pd
-import agora_charting  # Registra o accessor .agora
+import chartkit  # Registra o accessor .chartkit
 
 # Dados de exemplo
 df = pd.DataFrame({
@@ -22,19 +22,19 @@ df = pd.DataFrame({
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
 # Grafico de linha com formatacao percentual
-df.agora.plot(title="Taxa de Juros", units='%', source='BCB')
+df.chartkit.plot(title="Taxa de Juros", units='%', source='BCB')
 
 # Grafico de barras
-df.agora.plot(kind='bar', title="Variacao Mensal", units='%', highlight_last=True)
+df.chartkit.plot(kind='bar', title="Variacao Mensal", units='%', highlight_last=True)
 
 # Salvar grafico
-df.agora.plot(title="Meu Grafico", save_path="grafico.png")
+df.chartkit.plot(title="Meu Grafico", save_path="grafico.png")
 ```
 
 ## Funcionalidades
 
-- **Pandas Accessor**: Use `df.agora.plot()` diretamente em qualquer DataFrame
-- **Graficos**: Linhas e barras com estilo institucional
+- **Pandas Accessor**: Use `df.chartkit.plot()` diretamente em qualquer DataFrame
+- **Graficos**: Linhas e barras com estilo profissional
 - **Formatadores**: BRL, USD, %, pontos, notacao humana (1k, 1M)
 - **Overlays**: Media movel, linhas ATH/ATL, linhas de referencia, bandas
 - **Transformacoes**: YoY, MoM, acumulado 12m, juros real, normalizacao

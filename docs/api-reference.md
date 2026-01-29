@@ -1,15 +1,15 @@
 # API Reference
 
-Referencia completa da API publica do agora-charting.
+Referencia completa da API publica do chartkit.
 
 ## Pandas Accessor
 
-### df.agora.plot()
+### df.chartkit.plot()
 
 Metodo principal para criacao de graficos.
 
 ```python
-df.agora.plot(
+df.chartkit.plot(
     x: str = None,              # Coluna para eixo X (padrao: index)
     y: str | list[str] = None,  # Coluna(s) para eixo Y (padrao: todas numericas)
     kind: str = 'line',         # Tipo: 'line' ou 'bar'
@@ -49,12 +49,12 @@ df.agora.plot(
 
 Objeto `matplotlib.axes.Axes` do grafico gerado.
 
-### df.agora.save()
+### df.chartkit.save()
 
 Salva o grafico atual em arquivo.
 
 ```python
-df.agora.save(path: str, dpi: int = None)
+df.chartkit.save(path: str, dpi: int = None)
 ```
 
 | Parametro | Tipo | Default | Descricao |
@@ -84,7 +84,7 @@ df.agora.save(path: str, dpi: int = None)
 
 ```python
 import pandas as pd
-import agora_charting
+import chartkit
 
 df = pd.DataFrame({
     'serie_a': [10, 12, 11, 14, 13],
@@ -92,10 +92,10 @@ df = pd.DataFrame({
 }, index=pd.date_range('2024-01', periods=5, freq='ME'))
 
 # Linha simples
-df[['serie_a']].agora.plot(title="Serie A", units='%')
+df[['serie_a']].chartkit.plot(title="Serie A", units='%')
 
 # Multiplas series
-df.agora.plot(title="Comparativo", units='%')
+df.chartkit.plot(title="Comparativo", units='%')
 ```
 
 ### Grafico de Barras
@@ -106,22 +106,22 @@ df = pd.DataFrame({
 }, index=pd.date_range('2024-01', periods=5, freq='ME'))
 
 # Barras com origem no zero
-df.agora.plot(kind='bar', title="Saldo Mensal", units='human')
+df.chartkit.plot(kind='bar', title="Saldo Mensal", units='human')
 
 # Barras com origem automatica (foca nos dados)
-df.agora.plot(kind='bar', title="Saldo Mensal", y_origin='auto')
+df.chartkit.plot(kind='bar', title="Saldo Mensal", y_origin='auto')
 ```
 
 ---
 
-## AgoraPlotter (Uso Avancado)
+## ChartingPlotter (Uso Avancado)
 
-Para controle total, use a classe AgoraPlotter diretamente.
+Para controle total, use a classe ChartingPlotter diretamente.
 
 ```python
-from agora_charting import AgoraPlotter
+from chartkit import ChartingPlotter
 
-plotter = AgoraPlotter(df)
+plotter = ChartingPlotter(df)
 ax = plotter.plot(kind='line', title='Titulo', units='%')
 plotter.save('grafico.png')
 ```
@@ -129,12 +129,12 @@ plotter.save('grafico.png')
 ### Construtor
 
 ```python
-AgoraPlotter(df: pd.DataFrame)
+ChartingPlotter(df: pd.DataFrame)
 ```
 
 ### Metodos
 
-- `plot(**kwargs)` - Mesmos parametros de `df.agora.plot()`
+- `plot(**kwargs)` - Mesmos parametros de `df.chartkit.plot()`
 - `save(path: str, dpi: int = None)` - Salva o grafico (dpi default via config)
 
 ---
@@ -149,7 +149,7 @@ Veja [Configuration](configuration.md) para o guia completo.
 Configura o modulo programaticamente.
 
 ```python
-from agora_charting import configure
+from chartkit import configure
 from pathlib import Path
 
 # Arquivo TOML explicito
@@ -175,7 +175,7 @@ configure(
 Retorna a configuracao atual (dataclass tipada).
 
 ```python
-from agora_charting import get_config
+from chartkit import get_config
 
 config = get_config()
 print(config.branding.company_name)
@@ -184,22 +184,12 @@ print(config.layout.figsize)
 print(config.fonts.sizes.title)
 ```
 
-### get_settings()
-
-**Deprecated:** Use `get_config()` ao inves.
-
-```python
-from agora_charting import get_settings
-
-settings = get_settings()  # Retorna ChartingConfig
-```
-
 ### reset_config()
 
 Reseta configuracoes para os defaults.
 
 ```python
-from agora_charting.settings import reset_config
+from chartkit.settings import reset_config
 
 reset_config()
 ```
@@ -207,7 +197,7 @@ reset_config()
 ### Variaveis Globais
 
 ```python
-from agora_charting import CHARTS_PATH, OUTPUTS_PATH
+from chartkit import CHARTS_PATH, OUTPUTS_PATH
 
 # CHARTS_PATH: Path onde graficos sao salvos (lazy evaluation)
 # OUTPUTS_PATH: Path base de outputs (lazy evaluation)
@@ -218,7 +208,7 @@ from agora_charting import CHARTS_PATH, OUTPUTS_PATH
 Dataclass tipada com todas as configuracoes:
 
 ```python
-from agora_charting import ChartingConfig, get_config
+from chartkit import ChartingConfig, get_config
 
 config: ChartingConfig = get_config()
 
@@ -243,18 +233,17 @@ config.paths         # PathsConfig
 ## Exports do Modulo
 
 ```python
-from agora_charting import (
+from chartkit import (
     # Configuracao
     configure,
     get_config,
-    get_settings,      # Deprecated, use get_config()
     reset_config,
     ChartingConfig,
     CHARTS_PATH,
     OUTPUTS_PATH,
     # Classes
-    AgoraAccessor,
-    AgoraPlotter,
+    ChartingAccessor,
+    ChartingPlotter,
     theme,
     # Transforms
     yoy,

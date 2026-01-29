@@ -1,10 +1,10 @@
 # Configuration
 
-Guia completo do sistema de configuracao TOML do agora-charting.
+Guia completo do sistema de configuracao TOML.
 
 ## Visao Geral
 
-O agora-charting usa um sistema de configuracao flexivel que permite personalizar
+Esta biblioteca usa um sistema de configuracao flexivel que permite personalizar
 todos os aspectos visuais da biblioteca. A configuracao pode vir de:
 
 1. **Arquivos TOML** - Para configuracao persistente
@@ -22,16 +22,16 @@ A configuracao e carregada automaticamente dos seguintes locais (em ordem de pre
 | 3 | `pyproject.toml [tool.charting]` | Secao no pyproject |
 | 4 | `~/.config/charting/config.toml` | Usuario global (Linux/Mac) |
 | 5 | `%APPDATA%/charting/config.toml` | Usuario global (Windows) |
-| 6 | Defaults built-in | Valores da Agora Investimentos |
+| 6 | Defaults built-in | Valores neutros |
 
 ## Uso Basico
 
 ### Sem Configuracao
 
 ```python
-import agora_charting  # Usa defaults
+import chartkit  # Usa defaults
 
-df.agora.plot(title="Grafico")  # Cores Agora, rodape Agora
+df.chartkit.plot(title="Grafico")  # Usa cores e branding dos defaults
 ```
 
 ### Com Arquivo TOML
@@ -47,15 +47,15 @@ primary = "#003366"
 ```
 
 ```python
-import agora_charting  # Carrega .charting.toml automaticamente
+import chartkit  # Carrega .charting.toml automaticamente
 
-df.agora.plot(title="Grafico")  # Usa cores e branding do TOML
+df.chartkit.plot(title="Grafico")  # Usa cores e branding do TOML
 ```
 
 ### Programaticamente
 
 ```python
-from agora_charting import configure
+from chartkit import configure
 
 configure(branding={'company_name': 'Minha Empresa'})
 configure(colors={'primary': '#FF0000'})
@@ -189,7 +189,7 @@ Controla o texto do rodape e identificacao da empresa.
 
 | Campo | Tipo | Default | Descricao |
 |-------|------|---------|-----------|
-| `company_name` | str | "Agora Investimentos" | Nome da empresa |
+| `company_name` | str | "" | Nome da empresa |
 | `footer_format` | str | "Fonte: {source}, {company_name}" | Formato com fonte |
 | `footer_format_no_source` | str | "{company_name}" | Formato sem fonte |
 
@@ -219,7 +219,7 @@ Configuracao de tipografia.
 
 | Campo | Tipo | Default | Descricao |
 |-------|------|---------|-----------|
-| `file` | str | "fonts/BradescoSans-Light.ttf" | Arquivo da fonte |
+| `file` | str | "" (vazio) | Arquivo da fonte (relativo a assets/ ou absoluto) |
 | `fallback` | str | "sans-serif" | Fonte de fallback |
 
 O `file` pode ser:
@@ -295,7 +295,7 @@ Rotulos padrao para overlays.
 ### configure()
 
 ```python
-from agora_charting import configure
+from chartkit import configure
 
 # Arquivo explicito
 configure(config_path=Path('./config.toml'))
@@ -318,7 +318,7 @@ configure(
 ### get_config()
 
 ```python
-from agora_charting import get_config
+from chartkit import get_config
 
 config = get_config()
 print(config.branding.company_name)
@@ -329,7 +329,7 @@ print(config.layout.figsize)
 ### reset_config()
 
 ```python
-from agora_charting.settings import reset_config
+from chartkit.settings import reset_config
 
 reset_config()  # Volta para defaults
 ```
@@ -339,7 +339,7 @@ reset_config()  # Volta para defaults
 Dataclass com todos os campos de configuracao:
 
 ```python
-from agora_charting import ChartingConfig, get_config
+from chartkit import ChartingConfig, get_config
 
 config: ChartingConfig = get_config()
 

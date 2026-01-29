@@ -1,5 +1,5 @@
 """
-Overlays para graficos do Agora-Database.
+Overlays para graficos.
 
 Este modulo contem funcoes para adicionar elementos visuais secundarios
 (overlays) sobre graficos, como medias moveis, linhas de referencia e bandas.

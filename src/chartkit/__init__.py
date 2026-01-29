@@ -14,62 +14,52 @@ Configuracao (opcional - funciona automaticamente na maioria dos casos):
     # company_name = "Minha Empresa"
 
     # Opcao 3: Configuracao programatica
-    from agora_charting import configure
+    from chartkit import configure
     configure(branding={'company_name': 'Minha Empresa'})
 
     # Opcao 4: Path explicito para arquivo TOML
-    from agora_charting import configure
+    from chartkit import configure
     from pathlib import Path
     configure(config_path=Path('./minha-config.toml'))
 
     # Opcao 5: Variavel de ambiente para outputs
-    # $env:AGORA_CHARTING_OUTPUTS_PATH = "C:/caminho/outputs"
+    # $env:CHARTING_OUTPUTS_PATH = "C:/caminho/outputs"
 
 Uso:
-    import agora_charting  # Registra o accessor 'agora'
+    import chartkit  # Registra o accessor 'charting'
 
     # Plotagem
-    df.agora.plot()
-    df.agora.plot(kind='bar', title='Titulo', units='%')
+    df.chartkit.plot()
+    df.chartkit.plot(kind='bar', title='Titulo', units='%')
 
     # Transformacoes
-    from agora_charting import yoy, mom, accum_12m, annualize_daily
+    from chartkit import yoy, mom, accum_12m, annualize_daily
     df_yoy = yoy(df)
     cdi_anual = annualize_daily(cdi_diario)
 """
 
-from .accessor import AgoraAccessor
-from .engine import AgoraPlotter
+from .accessor import ChartingAccessor
+from .engine import ChartingPlotter
+from .settings import (
+    ChartingConfig,
+    configure,
+    get_charts_path,
+    get_config,
+    get_outputs_path,
+    reset_config,
+)
 from .styling.theme import theme
 from .transforms import (
-    yoy,
-    mom,
     accum_12m,
-    diff,
-    normalize,
     annualize_daily,
     compound_rolling,
+    diff,
+    mom,
+    normalize,
     real_rate,
     to_month_end,
+    yoy,
 )
-from .settings import (
-    configure,
-    get_config,
-    reset_config,
-    get_charts_path,
-    get_outputs_path,
-    ChartingConfig,
-)
-
-
-# Aliases para compatibilidade
-def get_settings():
-    """
-    Retorna a configuracao atual.
-
-    Deprecated: Use get_config() ao inves.
-    """
-    return get_config()
 
 
 # Propriedades dinamicas para CHARTS_PATH e OUTPUTS_PATH
@@ -78,7 +68,7 @@ def __getattr__(name: str):
     Permite acesso a CHARTS_PATH e OUTPUTS_PATH como atributos do modulo.
 
     Isso permite a sintaxe:
-        from agora_charting import CHARTS_PATH, OUTPUTS_PATH
+        from chartkit import CHARTS_PATH, OUTPUTS_PATH
 
     E o valor sera calculado dinamicamente usando lazy evaluation.
     """
@@ -93,14 +83,13 @@ __all__ = [
     # Configuracao
     "configure",
     "get_config",
-    "get_settings",  # Deprecated, use get_config()
     "reset_config",
     "ChartingConfig",
     "CHARTS_PATH",
     "OUTPUTS_PATH",
     # Classes principais
-    "AgoraAccessor",
-    "AgoraPlotter",
+    "ChartingAccessor",
+    "ChartingPlotter",
     "theme",
     # Transforms
     "yoy",

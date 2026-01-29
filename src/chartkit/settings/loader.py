@@ -1,5 +1,5 @@
 """
-Carregador de configuracoes TOML para agora-charting.
+Carregador de configuracoes TOML.
 
 Implementa carregamento de configuracoes de multiplas fontes com
 ordem de precedencia definida e merge profundo de dicionarios.
@@ -413,7 +413,7 @@ class ConfigLoader:
 
         Ordem de precedencia:
             1. Configuracao explicita via configure(outputs_path=...)
-            2. Variavel de ambiente AGORA_CHARTING_OUTPUTS_PATH
+            2. Variavel de ambiente CHARTING_OUTPUTS_PATH
             3. Auto-discovery baseado no project root
             4. Fallback: cwd/outputs
         """
@@ -422,7 +422,7 @@ class ConfigLoader:
             return self._outputs_path
 
         # 2. Variavel de ambiente
-        env_path = os.environ.get("AGORA_CHARTING_OUTPUTS_PATH")
+        env_path = os.environ.get("CHARTING_OUTPUTS_PATH")
         if env_path:
             return Path(env_path)
 
@@ -457,7 +457,7 @@ def configure(
     **overrides: Any,
 ) -> ConfigLoader:
     """
-    Configura o modulo agora-charting.
+    Configura o modulo chartkit.
 
     Esta funcao permite configuracao explicita, sobrescrevendo
     auto-discovery de arquivos TOML.

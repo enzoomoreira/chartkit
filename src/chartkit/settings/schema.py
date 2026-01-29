@@ -1,5 +1,5 @@
 """
-Schema de configuracao para agora-charting.
+Schema de configuracao.
 
 Define dataclasses tipadas para todas as configuracoes da biblioteca,
 permitindo validacao em tempo de desenvolvimento e autocompletar em IDEs.
@@ -13,7 +13,7 @@ from typing import Optional
 class BrandingConfig:
     """Configuracoes de branding/marca para rodapes."""
 
-    company_name: str = "Agora Investimentos"
+    company_name: str = ""
     footer_format: str = "Fonte: {source}, {company_name}"
     footer_format_no_source: str = "{company_name}"
 
@@ -66,8 +66,8 @@ class FontSizesConfig:
 class FontsConfig:
     """Configuracoes de fontes."""
 
-    # Caminho relativo a assets/ ou caminho absoluto
-    file: str = "fonts/BradescoSans-Light.ttf"
+    # Caminho relativo a assets/ ou caminho absoluto (vazio = usa fallback)
+    file: str = ""
     fallback: str = "sans-serif"
     sizes: FontSizesConfig = field(default_factory=FontSizesConfig)
 
@@ -245,13 +245,13 @@ class PathsConfig:
 @dataclass
 class ChartingConfig:
     """
-    Configuracao principal da biblioteca agora-charting.
+    Configuracao principal da biblioteca de charting.
 
     Agrega todas as sub-configuracoes em uma unica estrutura tipada.
     Pode ser criada a partir de defaults ou carregada de arquivo TOML.
 
     Example:
-        >>> from agora_charting.settings import get_config
+        >>> from chartkit.settings import get_config
         >>> config = get_config()
         >>> print(config.colors.primary)
         '#00464D'

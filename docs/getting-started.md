@@ -1,6 +1,6 @@
 # Getting Started
 
-Guia de instalacao e primeiros passos com o agora-charting.
+Guia de instalacao e primeiros passos com o chartkit.
 
 ## Pre-requisitos
 
@@ -10,14 +10,14 @@ Guia de instalacao e primeiros passos com o agora-charting.
 ## Instalacao
 
 ```bash
-uv add agora-charting
+uv add chartkit
 ```
 
 ## Primeiro Grafico
 
 ```python
 import pandas as pd
-import agora_charting  # Registra o accessor .agora
+import chartkit  # Registra o accessor .chartkit
 
 # Dados de exemplo
 df = pd.DataFrame({
@@ -25,14 +25,14 @@ df = pd.DataFrame({
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
 # Grafico basico
-df.agora.plot(title="Meu Primeiro Grafico")
+df.chartkit.plot(title="Meu Primeiro Grafico")
 ```
 
-O import do `agora_charting` registra automaticamente o accessor `.agora` em todos os DataFrames.
+O import do `chartkit` registra automaticamente o accessor `.chartkit` em todos os DataFrames.
 
 ## Configuracao
 
-O modulo usa um sistema de configuracao flexivel baseado em TOML. Por padrao, usa valores da Agora Investimentos, mas voce pode personalizar tudo.
+O modulo usa um sistema de configuracao flexivel baseado em TOML. Por padrao, usa valores neutros, mas voce pode personalizar tudo.
 
 ### Ordem de Precedencia
 
@@ -79,7 +79,7 @@ primary = "#003366"
 ### Configuracao Programatica
 
 ```python
-from agora_charting import configure
+from chartkit import configure
 
 # Customiza branding
 configure(branding={'company_name': 'Minha Empresa'})
@@ -101,7 +101,7 @@ configure(
 
 ```python
 from pathlib import Path
-from agora_charting import configure
+from chartkit import configure
 
 configure(config_path=Path('./minha-config.toml'))
 ```
@@ -109,13 +109,13 @@ configure(config_path=Path('./minha-config.toml'))
 ### Variavel de Ambiente para Outputs
 
 ```powershell
-$env:AGORA_CHARTING_OUTPUTS_PATH = "C:/caminho/para/outputs"
+$env:CHARTING_OUTPUTS_PATH = "C:/caminho/para/outputs"
 ```
 
 ### Verificar Configuracao Atual
 
 ```python
-from agora_charting import get_config, CHARTS_PATH, OUTPUTS_PATH
+from chartkit import get_config, CHARTS_PATH, OUTPUTS_PATH
 
 # Ver configuracao completa
 config = get_config()
@@ -130,7 +130,7 @@ print(f"Outputs: {OUTPUTS_PATH}")
 ### Reset de Configuracao
 
 ```python
-from agora_charting.settings import reset_config
+from chartkit.settings import reset_config
 
 reset_config()  # Volta para defaults
 ```
@@ -146,7 +146,7 @@ O sistema detecta automaticamente onde salvar os graficos:
 ### Configuracao Manual de Paths
 
 ```python
-from agora_charting import configure
+from chartkit import configure
 from pathlib import Path
 
 # Define path customizado para outputs
@@ -158,7 +158,7 @@ configure(outputs_path=Path('./meus_outputs'))
 ### Via Parametro
 
 ```python
-df.agora.plot(title="Grafico", save_path="grafico.png")
+df.chartkit.plot(title="Grafico", save_path="grafico.png")
 ```
 
 Se o path for relativo, salva em `CHARTS_PATH/grafico.png`.
@@ -166,14 +166,14 @@ Se o path for relativo, salva em `CHARTS_PATH/grafico.png`.
 ### Via Metodo
 
 ```python
-df.agora.plot(title="Grafico")
-df.agora.save("grafico.png")
+df.chartkit.plot(title="Grafico")
+df.chartkit.save("grafico.png")
 ```
 
 ### Path Absoluto
 
 ```python
-df.agora.plot(title="Grafico", save_path="C:/temp/grafico.png")
+df.chartkit.plot(title="Grafico", save_path="C:/temp/grafico.png")
 ```
 
 ## Tipos de Grafico
@@ -181,13 +181,13 @@ df.agora.plot(title="Grafico", save_path="C:/temp/grafico.png")
 ### Linhas (Padrao)
 
 ```python
-df.agora.plot(title="Linha", units='%')
+df.chartkit.plot(title="Linha", units='%')
 ```
 
 ### Barras
 
 ```python
-df.agora.plot(kind='bar', title="Barras", units='%')
+df.chartkit.plot(kind='bar', title="Barras", units='%')
 ```
 
 ## Formatacao do Eixo Y
@@ -196,26 +196,26 @@ Use o parametro `units` para formatar valores:
 
 ```python
 # Moeda brasileira: R$ 1.234,56
-df.agora.plot(units='BRL')
+df.chartkit.plot(units='BRL')
 
 # Dolar: $ 1,234.56
-df.agora.plot(units='USD')
+df.chartkit.plot(units='USD')
 
 # Percentual: 10,5%
-df.agora.plot(units='%')
+df.chartkit.plot(units='%')
 
 # Inteiros com separador: 1.234.567
-df.agora.plot(units='points')
+df.chartkit.plot(units='points')
 
 # Notacao compacta: 1,2M
-df.agora.plot(units='human')
+df.chartkit.plot(units='human')
 ```
 
 ## Rodape com Fonte
 
 ```python
-df.agora.plot(title="Taxa Selic", units='%', source='BCB')
-# Rodape: "Fonte: BCB, Agora Investimentos"
+df.chartkit.plot(title="Taxa Selic", units='%', source='BCB')
+# Rodape: "Fonte: BCB, {company_name}"  (configure via branding.company_name)
 ```
 
 O texto do rodape e configuravel via `branding.footer_format`.
@@ -223,7 +223,7 @@ O texto do rodape e configuravel via `branding.footer_format`.
 ## Destacar Ultimo Valor
 
 ```python
-df.agora.plot(title="Grafico", highlight_last=True)
+df.chartkit.plot(title="Grafico", highlight_last=True)
 ```
 
 Adiciona um marcador e label no ultimo ponto da serie.

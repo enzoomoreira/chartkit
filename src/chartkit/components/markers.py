@@ -77,9 +77,9 @@ def highlight_last_point(ax, series: pd.Series, color: str = None, **kwargs) -> 
     )
 
     # Registra annotation para deteccao de colisao
-    if not hasattr(ax, "_agora_annotations"):
-        ax._agora_annotations = []
-    ax._agora_annotations.append(annot)
+    if not hasattr(ax, "_charting_annotations"):
+        ax._charting_annotations = []
+    ax._charting_annotations.append(annot)
 
 
 def highlight_last_bar(ax, x, series: pd.Series, color: str = None, **kwargs):
@@ -150,6 +150,6 @@ def highlight_last_bar(ax, x, series: pd.Series, color: str = None, **kwargs):
     )
 
     # Registra annotation para deteccao de colisao
-    if not hasattr(ax, "_agora_annotations"):
-        ax._agora_annotations = []
-    ax._agora_annotations.append(annot)
+    if not hasattr(ax, "_charting_annotations"):
+        ax._charting_annotations = []
+    ax._charting_annotations.append(annot)

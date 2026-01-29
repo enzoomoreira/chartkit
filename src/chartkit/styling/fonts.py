@@ -19,6 +19,7 @@ def load_font() -> fm.FontProperties:
     Busca o arquivo de fonte configurado em settings. O caminho pode ser:
     - Relativo a pasta assets/ (ex: 'fonts/MeuFont.ttf')
     - Absoluto (ex: '/usr/share/fonts/custom.ttf')
+    - Vazio ('') para usar apenas o fallback
 
     Returns:
         FontProperties da fonte se disponivel, caso contrario
@@ -26,6 +27,10 @@ def load_font() -> fm.FontProperties:
     """
     config = get_config()
     font_file = config.fonts.file
+
+    # Se fonte nao configurada, usa fallback diretamente
+    if not font_file:
+        return fm.FontProperties(family=[config.fonts.fallback])
 
     # Verifica se e caminho absoluto ou relativo
     font_path = Path(font_file)
@@ -36,4 +41,4 @@ def load_font() -> fm.FontProperties:
         fm.fontManager.addfont(str(font_path))
         return fm.FontProperties(fname=str(font_path))
 
-    return fm.FontProperties(family=config.fonts.fallback)
+    return fm.FontProperties(family=[config.fonts.fallback])

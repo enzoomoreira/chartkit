@@ -5,15 +5,15 @@ Documentacao da arquitetura interna para contribuidores.
 ## Estrutura de Modulos
 
 ```
-src/agora_charting/
+src/chartkit/
 ├── __init__.py           # Entry point, exports publicos
-├── accessor.py           # Pandas DataFrame accessor (.agora)
-├── engine.py             # AgoraPlotter - orquestrador principal
+├── accessor.py           # Pandas DataFrame accessor (.chartkit)
+├── engine.py             # ChartingPlotter - orquestrador principal
 ├── transforms.py         # Funcoes de transformacao temporal
 ├── settings/             # Sistema de configuracao TOML
 │   ├── __init__.py       # Exports: configure, get_config, ChartingConfig
 │   ├── schema.py         # Dataclasses tipadas para configuracao
-│   ├── defaults.py       # Valores default (Agora Investimentos)
+│   ├── defaults.py       # Valores default neutros
 │   └── loader.py         # Carregamento TOML e merge
 ├── assets/
 │   └── fonts/
@@ -80,12 +80,12 @@ class ChartingConfig:
 
 #### settings/defaults.py
 
-Instancia `DEFAULT_CONFIG` com valores da Agora Investimentos:
+Instancia `DEFAULT_CONFIG` com valores neutros:
 
 ```python
 DEFAULT_CONFIG = ChartingConfig(
     branding=BrandingConfig(
-        company_name="Agora Investimentos",
+        company_name="",
         # ...
     ),
     colors=ColorsConfig(
@@ -158,13 +158,13 @@ def add_footer(fig, source=None):
 DataFrame
     │
     ▼
-df.agora.plot()
+df.chartkit.plot()
     │
     ▼
-AgoraAccessor.plot()
+ChartingAccessor.plot()
     │
     ▼
-AgoraPlotter.plot()
+ChartingPlotter.plot()
     │
     ├─1─► get_config()            # Carrega configuracao
     │
@@ -194,31 +194,31 @@ matplotlib.axes.Axes
 
 ## Classes Principais
 
-### AgoraAccessor
+### ChartingAccessor
 
 **Arquivo:** `accessor.py`
 
-Registra o accessor `.agora` em todos os DataFrames pandas.
+Registra o accessor `.chartkit` em todos os DataFrames pandas.
 
 ```python
-@pd.api.extensions.register_dataframe_accessor("agora")
-class AgoraAccessor:
+@pd.api.extensions.register_dataframe_accessor("charting")
+class ChartingAccessor:
     def __init__(self, pandas_obj): ...
     def plot(self, **kwargs): ...
     def save(self, path): ...
 ```
 
-- Instancia um `AgoraPlotter` lazy (criado no primeiro uso)
+- Instancia um `ChartingPlotter` lazy (criado no primeiro uso)
 - Delega todas as chamadas para o plotter
 
-### AgoraPlotter
+### ChartingPlotter
 
 **Arquivo:** `engine.py`
 
 Orquestrador principal da construcao de graficos.
 
 ```python
-class AgoraPlotter:
+class ChartingPlotter:
     def __init__(self, df: pd.DataFrame): ...
     def plot(self, x, y, kind, title, units, ...) -> Axes: ...
     def save(self, path, dpi=None): ...
@@ -303,7 +303,7 @@ E implementar em `styling/formatters.py`.
 
 1. Criar arquivo em `plots/` (ex: `scatter.py`)
 2. Implementar funcao `plot_scatter(ax, x, y_data, **kwargs)`
-3. Adicionar ao switch em `AgoraPlotter.plot()`:
+3. Adicionar ao switch em `ChartingPlotter.plot()`:
 
 ```python
 if kind == 'scatter':
@@ -315,7 +315,7 @@ if kind == 'scatter':
 1. Criar arquivo em `overlays/` (ex: `trend_line.py`)
 2. Implementar funcao `add_trend_line(ax, x, y_data, **kwargs)`
 3. Exportar em `overlays/__init__.py`
-4. Chamar em `AgoraPlotter._apply_overlays()`
+4. Chamar em `ChartingPlotter._apply_overlays()`
 
 ### Novos Componentes
 
@@ -356,7 +356,7 @@ def minha_funcao():
 
 - `plot_*()`: Nao retorna (modifica ax in-place)
 - `add_*()`: Nao retorna (modifica ax/fig in-place)
-- `AgoraPlotter.plot()`: Retorna `Axes`
+- `ChartingPlotter.plot()`: Retorna `Axes`
 
 ### Tratamento de Series vs DataFrame
 

@@ -1,8 +1,8 @@
 """
-Valores default para configuracao do agora-charting.
+Valores default para configuracao.
 
-Estes sao os valores originais da Agora Investimentos, usados quando
-nenhum arquivo de configuracao customizado e encontrado.
+Valores neutros usados quando nenhum arquivo de configuracao
+customizado e encontrado. Configure via TOML para personalizar.
 """
 
 from .schema import (
@@ -36,11 +36,11 @@ def create_default_config() -> ChartingConfig:
     Cria uma instancia de ChartingConfig com todos os valores default.
 
     Returns:
-        ChartingConfig com valores padrao da Agora Investimentos.
+        ChartingConfig com valores padrao neutros.
     """
     return ChartingConfig(
         branding=BrandingConfig(
-            company_name="Agora Investimentos",
+            company_name="",
             footer_format="Fonte: {source}, {company_name}",
             footer_format_no_source="{company_name}",
         ),
@@ -59,7 +59,7 @@ def create_default_config() -> ChartingConfig:
             moving_average="#888888",
         ),
         fonts=FontsConfig(
-            file="fonts/BradescoSans-Light.ttf",
+            file="",
             fallback="sans-serif",
             sizes=FontSizesConfig(
                 default=11,

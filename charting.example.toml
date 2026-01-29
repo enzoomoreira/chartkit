@@ -1,5 +1,5 @@
 # =============================================================================
-# Configuracao do agora-charting
+# Configuracao da biblioteca de charting
 # =============================================================================
 #
 # Copie este arquivo para um dos seguintes locais:
@@ -9,7 +9,7 @@
 #   4. %APPDATA%/charting/config.toml (Windows)
 #
 # Ou carregue explicitamente:
-#   from agora_charting import configure
+#   from chartkit import configure
 #   configure(config_path=Path('./meu-config.toml'))
 #
 # Apenas inclua as secoes/valores que deseja sobrescrever.
@@ -48,8 +48,8 @@ moving_average = "#888888"  # Linha de media movel
 # Fontes - Configuracao de tipografia
 # -----------------------------------------------------------------------------
 [fonts]
-# Caminho relativo a pasta assets/ ou caminho absoluto
-file = "fonts/BradescoSans-Light.ttf"
+# Caminho relativo a pasta assets/ ou caminho absoluto (vazio = usa fallback)
+file = ""
 fallback = "sans-serif"
 
 [fonts.sizes]

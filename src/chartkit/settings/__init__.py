@@ -1,5 +1,5 @@
 """
-Sistema de configuracao do agora-charting.
+Sistema de configuracao.
 
 Fornece configuracao centralizada via arquivos TOML ou programaticamente.
 
@@ -13,12 +13,12 @@ Locais de busca (ordem de precedencia):
 
 Uso:
     # Sem configuracao (usa defaults)
-    >>> from agora_charting.settings import get_config
+    >>> from chartkit.settings import get_config
     >>> config = get_config()
     >>> print(config.colors.primary)
 
     # Com configuracao programatica
-    >>> from agora_charting.settings import configure
+    >>> from chartkit.settings import configure
     >>> configure(branding={'company_name': 'Minha Empresa'})
 
     # Com arquivo TOML

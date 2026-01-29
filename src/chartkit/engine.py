@@ -1,5 +1,5 @@
 """
-Motor de plotagem principal do agora-charting.
+Motor de plotagem principal.
 
 Orquestra temas, formatadores e componentes para criar graficos
 financeiros padronizados.
@@ -33,7 +33,7 @@ _FORMATTERS = {
 }
 
 
-class AgoraPlotter:
+class ChartingPlotter:
     """
     Factory de visualizacao financeira padronizada.
     Orquestra temas, formatadores e componentes.

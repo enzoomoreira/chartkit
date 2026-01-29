@@ -2,7 +2,7 @@
 Funcoes de transformacao para series temporais.
 
 Uso:
-    from agora_charting import yoy, mom, accum_12m
+    from chartkit import yoy, mom, accum_12m
 
     df_yoy = yoy(df)           # Variacao ano contra ano
     df_mom = mom(df)           # Variacao mes contra mes

@@ -20,13 +20,13 @@ def resolve_collisions(
     """
     Detecta e resolve colisoes entre annotations e patches (barras).
 
-    Itera sobre todos os annotations registrados em ax._agora_annotations
+    Itera sobre todos os annotations registrados em ax._charting_annotations
     e verifica se algum colide com patches (barras) do grafico. Se houver
     colisao, reposiciona o annotation para cima e adiciona uma linha guia
     quando a distancia for grande.
 
     Args:
-        ax: Matplotlib Axes com annotations registrados em _agora_annotations
+        ax: Matplotlib Axes com annotations registrados em _charting_annotations
         margin_px: Margem em pixels para detectar colisao. Se None, usa config.
         guide_threshold_px: Distancia minima em pixels para adicionar linha guia.
                            Se None, usa config.
@@ -39,7 +39,7 @@ def resolve_collisions(
     if guide_threshold_px is None:
         guide_threshold_px = config.guide_threshold_px
 
-    annotations = getattr(ax, "_agora_annotations", [])
+    annotations = getattr(ax, "_charting_annotations", [])
     if not annotations:
         return
 

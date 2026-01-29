@@ -22,7 +22,7 @@ Elementos visuais secundarios que podem ser adicionados sobre os dados principai
 Adiciona linha de media movel sobre os dados.
 
 ```python
-df.agora.plot(title="Dados com MM12", moving_avg=12)
+df.chartkit.plot(title="Dados com MM12", moving_avg=12)
 ```
 
 ### Caracteristicas
@@ -37,13 +37,13 @@ df.agora.plot(title="Dados com MM12", moving_avg=12)
 
 ```python
 import pandas as pd
-import agora_charting
+import chartkit
 
 df = pd.DataFrame({
     'valor': [10, 12, 11, 14, 13, 15, 14, 16, 15, 18, 17, 19]
 }, index=pd.date_range('2024-01', periods=12, freq='ME'))
 
-df.agora.plot(
+df.chartkit.plot(
     title="Serie com Media Movel",
     moving_avg=3,  # MM3
     units='%'
@@ -59,7 +59,7 @@ Linhas horizontais no maximo (All-Time High) e minimo (All-Time Low) historico.
 ### ATH (All-Time High)
 
 ```python
-df.agora.plot(title="Grafico", show_ath=True)
+df.chartkit.plot(title="Grafico", show_ath=True)
 ```
 
 - Cor: Verde (config: `colors.positive`)
@@ -69,7 +69,7 @@ df.agora.plot(title="Grafico", show_ath=True)
 ### ATL (All-Time Low)
 
 ```python
-df.agora.plot(title="Grafico", show_atl=True)
+df.chartkit.plot(title="Grafico", show_atl=True)
 ```
 
 - Cor: Vermelho (config: `colors.negative`)
@@ -79,20 +79,20 @@ df.agora.plot(title="Grafico", show_atl=True)
 ### Ambos
 
 ```python
-df.agora.plot(title="Extremos Historicos", show_ath=True, show_atl=True)
+df.chartkit.plot(title="Extremos Historicos", show_ath=True, show_atl=True)
 ```
 
 ### Exemplo
 
 ```python
 import pandas as pd
-import agora_charting
+import chartkit
 
 df = pd.DataFrame({
     'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0]
 }, index=pd.date_range('2024-01', periods=10, freq='ME'))
 
-df.agora.plot(
+df.chartkit.plot(
     title="IPCA com Extremos",
     units='%',
     show_ath=True,
@@ -131,13 +131,13 @@ overlays={
 
 ```python
 import pandas as pd
-import agora_charting
+import chartkit
 
 df = pd.DataFrame({
     'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-df.agora.plot(
+df.chartkit.plot(
     title="IPCA vs Meta",
     units='%',
     overlays={
@@ -184,13 +184,13 @@ overlays={
 
 ```python
 import pandas as pd
-import agora_charting
+import chartkit
 
 df = pd.DataFrame({
     'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-df.agora.plot(
+df.chartkit.plot(
     title="IPCA com Banda de Meta",
     units='%',
     overlays={
@@ -213,13 +213,13 @@ Todos os tipos podem ser usados juntos.
 
 ```python
 import pandas as pd
-import agora_charting
+import chartkit
 
 df = pd.DataFrame({
     'valor': [10, 12, 11, 14, 13, 15, 14, 16, 15, 18, 17, 19]
 }, index=pd.date_range('2024-01', periods=12, freq='ME'))
 
-df.agora.plot(
+df.chartkit.plot(
     title="Analise Completa",
     units='%',
     # Media movel

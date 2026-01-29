@@ -33,7 +33,7 @@ Identidade visual e customizacao dos graficos.
 Para graficos com multiplas series, as cores sao aplicadas em ordem:
 
 ```python
-from agora_charting import theme
+from chartkit import theme
 
 colors = theme.colors.cycle()
 # ['#00464D', '#006B6B', '#008B8B', '#20B2AA', '#5F9EA0', '#2E8B57']
@@ -48,7 +48,7 @@ O tema usa a fonte **BradescoSans-Light** quando disponivel.
 ### Localizacao
 
 ```
-src/agora_charting/assets/fonts/BradescoSans-Light.ttf
+src/chartkit/assets/fonts/BradescoSans-Light.ttf
 ```
 
 ### Fallback
@@ -58,7 +58,7 @@ Se a fonte nao estiver disponivel, usa `sans-serif`.
 ### Acesso Programatico
 
 ```python
-from agora_charting import theme
+from chartkit import theme
 
 print(theme.font_name)  # Nome da fonte ativa
 print(theme.font)       # FontProperties do matplotlib
@@ -83,7 +83,7 @@ Use o parametro `units` para formatar valores no eixo Y.
 ### BRL - Real Brasileiro
 
 ```python
-df.agora.plot(units='BRL')
+df.chartkit.plot(units='BRL')
 # R$ 1.234,56
 ```
 
@@ -94,7 +94,7 @@ df.agora.plot(units='BRL')
 ### USD - Dolar Americano
 
 ```python
-df.agora.plot(units='USD')
+df.chartkit.plot(units='USD')
 # $ 1,234.56
 ```
 
@@ -105,7 +105,7 @@ df.agora.plot(units='USD')
 ### % - Percentual
 
 ```python
-df.agora.plot(units='%')
+df.chartkit.plot(units='%')
 # 10.000,5%
 ```
 
@@ -116,7 +116,7 @@ df.agora.plot(units='%')
 ### points - Inteiros
 
 ```python
-df.agora.plot(units='points')
+df.chartkit.plot(units='points')
 # 1.234.567
 ```
 
@@ -126,7 +126,7 @@ df.agora.plot(units='points')
 ### human - Notacao Compacta
 
 ```python
-df.agora.plot(units='human')
+df.chartkit.plot(units='human')
 # 1,2M  (1.200.000)
 # 500k  (500.000)
 # 2,5B  (2.500.000.000)
@@ -143,11 +143,11 @@ Sufixos: k (mil), M (milhao), B (bilhao), T (trilhao)
 Adicionado automaticamente quando `source` e especificado.
 
 ```python
-df.agora.plot(title="Grafico", source='BCB')
-# Rodape: "Fonte: BCB, Agora Investimentos"
+df.chartkit.plot(title="Grafico", source='BCB')
+# Rodape: "Fonte: BCB, {company_name}"  (configure via branding.company_name)
 
-df.agora.plot(title="Grafico")
-# Rodape: "Agora Investimentos"
+df.chartkit.plot(title="Grafico")
+# Rodape: "{company_name}"  (ou vazio se nao configurado)
 ```
 
 #### Caracteristicas
@@ -172,7 +172,7 @@ footer_format_no_source = "Elaborado por {company_name}"
 Ativado com `highlight_last=True`.
 
 ```python
-df.agora.plot(title="Grafico", highlight_last=True)
+df.chartkit.plot(title="Grafico", highlight_last=True)
 ```
 
 #### Linha
@@ -243,7 +243,7 @@ text = "#333333"
 ### Aplicar Manualmente
 
 ```python
-from agora_charting import theme
+from chartkit import theme
 
 theme.apply()  # Aplica configuracoes no matplotlib global
 ```
@@ -251,7 +251,7 @@ theme.apply()  # Aplica configuracoes no matplotlib global
 ### Acessar Cores
 
 ```python
-from agora_charting import theme
+from chartkit import theme
 
 theme.colors.primary    # '#00464D'
 theme.colors.negative   # '#8B0000'
@@ -261,7 +261,7 @@ theme.colors.cycle()    # Lista de 6 cores
 ### Acessar Fonte
 
 ```python
-from agora_charting import theme
+from chartkit import theme
 
 theme.font_name  # 'BradescoSans-Light' ou 'sans-serif'
 theme.font       # FontProperties
@@ -270,7 +270,7 @@ theme.font       # FontProperties
 ### Acessar Configuracao Completa
 
 ```python
-from agora_charting import get_config
+from chartkit import get_config
 
 config = get_config()
 print(config.colors.primary)

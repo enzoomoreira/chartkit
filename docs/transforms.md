@@ -19,7 +19,7 @@ Funcoes de transformacao para series temporais financeiras.
 ## Import
 
 ```python
-from agora_charting import (
+from chartkit import (
     yoy, mom, accum_12m, diff, normalize,
     annualize_daily, compound_rolling, real_rate, to_month_end
 )
@@ -46,7 +46,7 @@ def mom(df, periods: int = 1) -> DataFrame | Series
 
 ```python
 import pandas as pd
-from agora_charting import mom
+from chartkit import mom
 
 df = pd.DataFrame({'valor': [100, 102, 101, 105]})
 df_mom = mom(df)  # Variacao mensal em %
@@ -70,7 +70,7 @@ def yoy(df, periods: int = 12) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import yoy
+from chartkit import yoy
 
 # Dados mensais (12 periodos = 1 ano)
 df_yoy = yoy(df)
@@ -94,11 +94,11 @@ def accum_12m(df) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import accum_12m
+from chartkit import accum_12m
 
 # IPCA mensal -> IPCA acumulado 12 meses
 ipca_12m = accum_12m(ipca_mensal)
-ipca_12m.agora.plot(title="IPCA 12m", units='%')
+ipca_12m.chartkit.plot(title="IPCA 12m", units='%')
 ```
 
 ---
@@ -114,7 +114,7 @@ def diff(df, periods: int = 1) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import diff
+from chartkit import diff
 
 # Variacao em pontos percentuais
 df_diff = diff(selic)  # Diferenca para periodo anterior
@@ -139,7 +139,7 @@ def normalize(df, base: int = 100, base_date: str = None) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import normalize
+from chartkit import normalize
 
 # Base 100 na primeira data
 df_norm = normalize(df)
@@ -152,7 +152,7 @@ import pandas as pd
 
 series_a = normalize(df['a'])
 series_b = normalize(df['b'])
-pd.concat([series_a, series_b], axis=1).agora.plot(title="Comparativo Base 100")
+pd.concat([series_a, series_b], axis=1).chartkit.plot(title="Comparativo Base 100")
 ```
 
 ---
@@ -177,11 +177,11 @@ def annualize_daily(df, trading_days: int = 252) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import annualize_daily
+from chartkit import annualize_daily
 
 # CDI diario -> CDI anualizado
 cdi_anual = annualize_daily(cdi_diario)
-cdi_anual.agora.plot(title="CDI Anualizado", units='%')
+cdi_anual.chartkit.plot(title="CDI Anualizado", units='%')
 ```
 
 ---
@@ -204,11 +204,11 @@ def compound_rolling(df, window: int = 12) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import compound_rolling
+from chartkit import compound_rolling
 
 # Selic mensal -> Selic acumulada 12 meses
 selic_12m = compound_rolling(selic_mensal)
-selic_12m.agora.plot(title="Selic 12m", units='%')
+selic_12m.chartkit.plot(title="Selic 12m", units='%')
 ```
 
 ---
@@ -231,7 +231,7 @@ def real_rate(nominal, inflation) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import compound_rolling, real_rate, to_month_end
+from chartkit import compound_rolling, real_rate, to_month_end
 
 # Calcula Selic acumulada 12 meses
 selic_12m = compound_rolling(selic_mensal)
@@ -242,7 +242,7 @@ ipca_12m = to_month_end(ipca_12m)
 
 # Calcula juros real
 juros_real = real_rate(selic_12m, ipca_12m)
-juros_real.agora.plot(title="Juros Real (Selic - IPCA)", units='%')
+juros_real.chartkit.plot(title="Juros Real (Selic - IPCA)", units='%')
 ```
 
 ---
@@ -258,7 +258,7 @@ def to_month_end(df) -> DataFrame | Series
 **Exemplo:**
 
 ```python
-from agora_charting import to_month_end
+from chartkit import to_month_end
 
 # Alinhar series antes de operacoes
 selic = to_month_end(selic)
@@ -276,7 +276,7 @@ spread = selic - ipca
 
 ```python
 import pandas as pd
-from agora_charting import compound_rolling, real_rate, to_month_end
+from chartkit import compound_rolling, real_rate, to_month_end
 
 # Dados sinteticos
 selic_mensal = pd.DataFrame({
@@ -297,14 +297,14 @@ ipca_12m = compound_rolling(ipca_mensal)
 juros_real = real_rate(selic_12m, ipca_12m)
 
 # Plota
-juros_real.agora.plot(title="Juros Real Ex-Post", units='%', source='BCB/IBGE')
+juros_real.chartkit.plot(title="Juros Real Ex-Post", units='%', source='BCB/IBGE')
 ```
 
 ### Comparacao Base 100
 
 ```python
 import pandas as pd
-from agora_charting import normalize
+from chartkit import normalize
 
 # Duas series com escalas diferentes
 df = pd.DataFrame({
@@ -316,5 +316,5 @@ df = pd.DataFrame({
 df_norm = normalize(df)
 
 # Compara evolucao
-df_norm.agora.plot(title="Ibovespa vs S&P500 (Base 100)")
+df_norm.chartkit.plot(title="Ibovespa vs S&P500 (Base 100)")
 ```

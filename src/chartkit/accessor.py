@@ -1,42 +1,44 @@
 import pandas as pd
-from .engine import AgoraPlotter
+from .engine import ChartingPlotter
 
-@pd.api.extensions.register_dataframe_accessor("agora")
-class AgoraAccessor:
+
+@pd.api.extensions.register_dataframe_accessor("chartkit")
+class ChartingAccessor:
     """
     Pandas Accessor para funcionalidade de charting.
-    Uso: df.agora.plot()
+    Uso: df.chartkit.plot()
 
     Nota: O plotter e armazenado como atributo do DataFrame para persistir
     entre multiplos acessos ao accessor (pandas cria nova instancia a cada acesso).
     """
+
     # Nome do atributo usado para cachear o plotter no DataFrame
-    _PLOTTER_ATTR = '_agora_plotter'
+    _PLOTTER_ATTR = "_chartkit_plotter"
 
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
     @property
-    def plotter(self) -> AgoraPlotter:
+    def plotter(self) -> ChartingPlotter:
         """Retorna plotter cacheado ou cria um novo."""
         # Cacheia o plotter no DataFrame para persistir entre acessos ao accessor
         if not hasattr(self._obj, self._PLOTTER_ATTR):
-            object.__setattr__(self._obj, self._PLOTTER_ATTR, AgoraPlotter(self._obj))
+            object.__setattr__(self._obj, self._PLOTTER_ATTR, ChartingPlotter(self._obj))
         return getattr(self._obj, self._PLOTTER_ATTR)
 
     def plot(
         self,
-        kind: str = 'line',
+        kind: str = "line",
         title: str = None,
         save_path: str = None,
         moving_avg: int = None,
         show_ath: bool = False,
         show_atl: bool = False,
         overlays: dict = None,
-        **kwargs
+        **kwargs,
     ):
         """
-        Cria um grafico estilo Agora-Database.
+        Cria um grafico padronizado.
 
         Args:
             kind: 'line' ou 'bar'
