@@ -17,9 +17,10 @@ from .styling import (
     human_readable_formatter,
     points_formatter,
 )
-from .components import add_footer, resolve_collisions
-from .plots.line import plot_line
-from .plots.bar import plot_bar
+from .decorations import add_footer
+from ._internal import resolve_collisions
+from .charts.line import plot_line
+from .charts.bar import plot_bar
 from .overlays import add_moving_average, add_ath_line, add_atl_line, add_hline, add_band
 
 

@@ -9,34 +9,35 @@ src/chartkit/
 ├── __init__.py           # Entry point, exports publicos
 ├── accessor.py           # Pandas DataFrame accessor (.chartkit)
 ├── engine.py             # ChartingPlotter - orquestrador principal
-├── transforms.py         # Funcoes de transformacao temporal
 ├── settings/             # Sistema de configuracao TOML
 │   ├── __init__.py       # Exports: configure, get_config, ChartingConfig
 │   ├── schema.py         # Dataclasses tipadas para configuracao
 │   ├── defaults.py       # Valores default neutros
 │   └── loader.py         # Carregamento TOML e merge
-├── assets/
-│   └── fonts/
-│       └── BradescoSans-Light.ttf
 ├── styling/
 │   ├── __init__.py       # Facade
 │   ├── theme.py          # ChartingTheme (usa settings)
 │   ├── formatters.py     # Formatadores de eixo Y (usa settings)
 │   └── fonts.py          # Carregamento de fontes (usa settings)
-├── plots/
-│   ├── __init__.py       # Facade
+├── charts/               # Tipos de graficos (anteriormente plots/)
+│   ├── __init__.py       # Facade: plot_line, plot_bar
 │   ├── line.py           # Grafico de linhas
 │   └── bar.py            # Grafico de barras
-├── components/
+├── overlays/             # Elementos visuais secundarios
 │   ├── __init__.py       # Facade
-│   ├── footer.py         # Rodape (usa settings.branding)
-│   ├── markers.py        # Highlight de pontos/barras
-│   └── collision.py      # Resolucao de colisoes
-└── overlays/
-    ├── __init__.py       # Facade
-    ├── moving_average.py # Media movel
-    ├── reference_lines.py # ATH, ATL, hlines
-    └── bands.py          # Bandas sombreadas
+│   ├── moving_average.py # Media movel
+│   ├── reference_lines.py # ATH, ATL, hlines
+│   ├── bands.py          # Bandas sombreadas
+│   └── markers.py        # Highlight de pontos/barras (movido de components/)
+├── decorations/          # Decoracoes visuais
+│   ├── __init__.py       # Facade: add_footer
+│   └── footer.py         # Rodape (usa settings.branding)
+├── transforms/           # Transformacoes temporais (anteriormente transforms.py)
+│   ├── __init__.py       # Facade: yoy, mom, accum_12m, etc.
+│   └── temporal.py       # Implementacoes das transformacoes
+└── _internal/            # Utilitarios privados (nao expor)
+    ├── __init__.py       # Facade: resolve_collisions
+    └── collision.py      # Resolucao de colisoes de labels
 ```
 
 ---
@@ -154,40 +155,23 @@ def add_footer(fig, source=None):
 
 ## Fluxo de Plotagem
 
-```
-DataFrame
-    │
-    ▼
-df.chartkit.plot()
-    │
-    ▼
-ChartingAccessor.plot()
-    │
-    ▼
-ChartingPlotter.plot()
-    │
-    ├─1─► get_config()            # Carrega configuracao
-    │
-    ├─2─► theme.apply()           # Aplica estilo matplotlib
-    │
-    ├─3─► Resolve X/Y data        # Index vs coluna, dtypes
-    │
-    ├─4─► _apply_y_formatter()    # Configura formatador do eixo Y
-    │
-    ├─5─► plot_line() / plot_bar() # Renderiza dados principais
-    │
-    ├─6─► _apply_overlays()       # MM, ATH/ATL, hlines, bands
-    │
-    ├─7─► resolve_collisions()    # Evita sobreposicao de labels
-    │
-    ├─8─► _apply_title()          # Titulo centralizado
-    │
-    ├─9─► _apply_decorations()    # Footer
-    │
-    └─10─► save() (opcional)      # Exporta imagem
-    │
-    ▼
-matplotlib.axes.Axes
+```mermaid
+flowchart TD
+    A[DataFrame] --> B["df.chartkit.plot()"]
+    B --> C["ChartingAccessor.plot()"]
+    C --> D["ChartingPlotter.plot()"]
+
+    D --> D1["1. get_config()"]
+    D1 --> D2["2. theme.apply()"]
+    D2 --> D3["3. Resolve X/Y data"]
+    D3 --> D4["4. _apply_y_formatter()"]
+    D4 --> D5["5. plot_line() / plot_bar()"]
+    D5 --> D6["6. _apply_overlays()"]
+    D6 --> D7["7. resolve_collisions()"]
+    D7 --> D8["8. _apply_title()"]
+    D8 --> D9["9. _apply_decorations()"]
+    D9 --> D10["10. save() (opcional)"]
+    D10 --> E["matplotlib.axes.Axes"]
 ```
 
 ---
@@ -301,7 +285,7 @@ E implementar em `styling/formatters.py`.
 
 ### Novos Tipos de Grafico
 
-1. Criar arquivo em `plots/` (ex: `scatter.py`)
+1. Criar arquivo em `charts/` (ex: `scatter.py`)
 2. Implementar funcao `plot_scatter(ax, x, y_data, **kwargs)`
 3. Adicionar ao switch em `ChartingPlotter.plot()`:
 
@@ -317,11 +301,11 @@ if kind == 'scatter':
 3. Exportar em `overlays/__init__.py`
 4. Chamar em `ChartingPlotter._apply_overlays()`
 
-### Novos Componentes
+### Novas Decoracoes
 
-1. Criar arquivo em `components/`
+1. Criar arquivo em `decorations/` (ex: `watermark.py`)
 2. Implementar funcao `add_*(ax_or_fig, ...)`
-3. Exportar em `components/__init__.py`
+3. Exportar em `decorations/__init__.py`
 
 ---
 

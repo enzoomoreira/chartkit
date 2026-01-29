@@ -59,7 +59,7 @@ from .transforms import (
     real_rate,
     to_month_end,
     yoy,
-)
+)  # Re-exported from transforms/
 
 
 # Propriedades dinamicas para CHARTS_PATH e OUTPUTS_PATH

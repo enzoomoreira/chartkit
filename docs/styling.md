@@ -43,24 +43,25 @@ colors = theme.colors.cycle()
 
 ## Fonte
 
-O tema usa a fonte **BradescoSans-Light** quando disponivel.
+O tema suporta fontes customizadas via configuracao TOML.
 
-### Localizacao
+### Configuracao
 
+```toml
+[fonts]
+file = "fonts/MinhaFonte.ttf"  # Relativo a assets/ ou caminho absoluto
+fallback = "sans-serif"        # Fonte de fallback
 ```
-src/chartkit/assets/fonts/BradescoSans-Light.ttf
-```
 
-### Fallback
-
-Se a fonte nao estiver disponivel, usa `sans-serif`.
+Se nenhuma fonte customizada for configurada (`file = ""`), o sistema usa
+diretamente a fonte de fallback (`sans-serif` por padrao).
 
 ### Acesso Programatico
 
 ```python
 from chartkit import theme
 
-print(theme.font_name)  # Nome da fonte ativa
+print(theme.font_name)  # Nome da fonte configurada ou fallback
 print(theme.font)       # FontProperties do matplotlib
 ```
 
@@ -193,7 +194,7 @@ O tema aplica as seguintes configuracoes no matplotlib (valores default):
 
 ```python
 # Fontes (configuravel via fonts.sizes)
-'font.family': 'BradescoSans-Light'  # ou fallback (fonts.fallback)
+'font.family': fonts.fallback  # Fonte configurada ou 'sans-serif'
 'font.size': 11                       # fonts.sizes.default
 'axes.titlesize': 18                  # fonts.sizes.title
 'axes.labelsize': 11                  # fonts.sizes.axis_label
@@ -263,7 +264,7 @@ theme.colors.cycle()    # Lista de 6 cores
 ```python
 from chartkit import theme
 
-theme.font_name  # 'BradescoSans-Light' ou 'sans-serif'
+theme.font_name  # Nome da fonte configurada ou 'sans-serif'
 theme.font       # FontProperties
 ```
 

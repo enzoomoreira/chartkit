@@ -5,7 +5,7 @@ Grafico de linhas para series temporais.
 import pandas as pd
 from matplotlib.axes import Axes
 
-from ..components.markers import highlight_last_point
+from ..overlays.markers import highlight_last_point
 from ..settings import get_config
 from ..styling.theme import theme
 

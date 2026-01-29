@@ -5,7 +5,7 @@ Grafico de barras para series temporais.
 import pandas as pd
 from matplotlib.axes import Axes
 
-from ..components.markers import highlight_last_bar
+from ..overlays.markers import highlight_last_bar
 from ..settings import get_config
 from ..styling.theme import theme
 
