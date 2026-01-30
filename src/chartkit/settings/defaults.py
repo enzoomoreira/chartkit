@@ -5,6 +5,8 @@ Valores neutros usados quando nenhum arquivo de configuracao
 customizado e encontrado. Configure via TOML para personalizar.
 """
 
+__all__ = ["DEFAULT_CONFIG", "create_default_config"]
+
 from .schema import (
     BandsConfig,
     BarsConfig,

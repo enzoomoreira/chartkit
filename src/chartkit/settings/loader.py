@@ -14,15 +14,29 @@ Ordem de precedencia (maior para menor):
 """
 
 from pathlib import Path
+from threading import RLock
 from typing import Any, Optional
+
+from cachetools import TTLCache, cachedmethod
+from loguru import logger
 
 from .ast_discovery import ASTPathDiscovery, DiscoveredPaths
 from .converters import dataclass_to_dict, dict_to_dataclass
 from .defaults import DEFAULT_CONFIG
-from .discovery import find_config_files, find_project_root
+from .discovery import find_config_files, find_project_root, reset_project_root_cache
 from .paths import PathResolver
 from .schema import ChartingConfig
 from .toml import deep_merge, load_pyproject_section, load_toml
+
+__all__ = [
+    "ConfigLoader",
+    "configure",
+    "get_config",
+    "reset_config",
+    "get_outputs_path",
+    "get_charts_path",
+    "get_assets_path",
+]
 
 
 class ConfigLoader:
@@ -48,9 +62,77 @@ class ConfigLoader:
         self._outputs_path: Optional[Path] = None
         self._assets_path: Optional[Path] = None
         self._ast_discovery: Optional[ASTPathDiscovery] = None
+
         # Cache interno para project_root (lazy init)
         self._project_root: Optional[Path] = None
         self._project_root_resolved: bool = False
+
+        # Caches com TTL de 1 hora para paths resolvidos
+        self._path_cache: TTLCache = TTLCache(maxsize=3, ttl=3600)
+        self._cache_lock = RLock()
+
+        # Versao do cache para invalidacao
+        self._cache_version = 0
+
+    def _cache_key(self, name: str) -> tuple:
+        """
+        Gera chave de cache baseada no estado atual.
+
+        Inclui versao do cache para invalidacao automatica quando
+        configuracoes mudam.
+        """
+        return (name, self._cache_version)
+
+    @cachedmethod(
+        cache=lambda self: self._path_cache,
+        key=lambda self: self._cache_key("outputs"),
+        lock=lambda self: self._cache_lock,
+    )
+    def _resolve_outputs_path(self) -> Path:
+        """Resolve outputs_path (cacheado internamente)."""
+        logger.debug("Resolvendo outputs_path (cache miss)")
+        config = self.get_config()
+        resolver = PathResolver(
+            name="OUTPUTS_PATH",
+            explicit_path=self._outputs_path,
+            toml_getters=[lambda: config.paths.outputs_dir],
+            discovery_getter=lambda: self._get_ast_discovery().outputs_path,
+            fallback_subdir="outputs",
+            project_root=self.project_root,
+        )
+        return resolver.resolve()
+
+    @cachedmethod(
+        cache=lambda self: self._path_cache,
+        key=lambda self: self._cache_key("assets"),
+        lock=lambda self: self._cache_lock,
+    )
+    def _resolve_assets_path(self) -> Path:
+        """Resolve assets_path (cacheado internamente)."""
+        logger.debug("Resolvendo assets_path (cache miss)")
+        config = self.get_config()
+        resolver = PathResolver(
+            name="ASSETS_PATH",
+            explicit_path=self._assets_path,
+            toml_getters=[
+                lambda: config.fonts.assets_path,
+                lambda: config.paths.assets_dir,
+            ],
+            discovery_getter=lambda: self._get_ast_discovery().assets_path,
+            fallback_subdir="assets",
+            project_root=self.project_root,
+        )
+        return resolver.resolve()
+
+    def _clear_caches(self) -> None:
+        """Limpa todos os caches internos."""
+        self._path_cache.clear()
+        self._config = None
+        self._ast_discovery = None
+        self._project_root = None
+        self._project_root_resolved = False
+        self._cache_version += 1
+        logger.debug("Caches do ConfigLoader limpos (versao={})", self._cache_version)
 
     def configure(
         self,
@@ -77,6 +159,13 @@ class ConfigLoader:
             >>> configure(branding={'company_name': 'Banco XYZ'})
             >>> configure(config_path=Path('./minha-config.toml'))
         """
+        logger.debug(
+            "configure() chamado: config_path={}, outputs_path={}, assets_path={}",
+            config_path,
+            outputs_path,
+            assets_path,
+        )
+
         if config_path is not None:
             self._config_path = Path(config_path)
 
@@ -88,9 +177,10 @@ class ConfigLoader:
 
         if overrides:
             self._overrides = deep_merge(self._overrides, overrides)
+            logger.debug("Overrides aplicados: {}", list(overrides.keys()))
 
-        # Invalida cache para forcar recarga
-        self._config = None
+        # Invalida caches para forcar recarga
+        self._clear_caches()
 
         return self
 
@@ -101,15 +191,19 @@ class ConfigLoader:
         Returns:
             Self para encadeamento.
         """
-        self._config = None
+        logger.debug("reset() chamado - limpando todas as configuracoes")
+
         self._config_path = None
         self._overrides = {}
         self._outputs_path = None
         self._assets_path = None
-        self._ast_discovery = None
-        # Limpa cache de project_root
-        self._project_root = None
-        self._project_root_resolved = False
+
+        # Limpa caches internos
+        self._clear_caches()
+
+        # Limpa cache global de project root
+        reset_project_root_cache()
+
         return self
 
     def get_config(self) -> ChartingConfig:
@@ -130,6 +224,8 @@ class ConfigLoader:
         if self._config is not None:
             return self._config
 
+        logger.debug("Carregando configuracoes (cache miss)")
+
         # Comeca com defaults
         config_dict = dataclass_to_dict(DEFAULT_CONFIG)
 
@@ -139,6 +235,7 @@ class ConfigLoader:
         # Arquivo explicito tem maior prioridade que auto-descobertos
         if self._config_path and self._config_path.exists():
             config_files.insert(0, self._config_path)
+            logger.debug("Arquivo de config explicito: {}", self._config_path)
 
         # Merge em ordem reversa (menor prioridade primeiro)
         for config_file in reversed(config_files):
@@ -149,10 +246,12 @@ class ConfigLoader:
 
             if file_config:
                 config_dict = deep_merge(config_dict, file_config)
+                logger.debug("Config merged de: {}", config_file)
 
         # Overrides programaticos tem maior prioridade
         if self._overrides:
             config_dict = deep_merge(config_dict, self._overrides)
+            logger.debug("Overrides programaticos aplicados")
 
         # Converte para dataclass
         self._config = dict_to_dataclass(ChartingConfig, config_dict)
@@ -171,6 +270,7 @@ class ConfigLoader:
             return DiscoveredPaths()
 
         if self._ast_discovery is None:
+            logger.debug("Inicializando ASTPathDiscovery para: {}", root)
             self._ast_discovery = ASTPathDiscovery(root)
 
         return self._ast_discovery.discover()
@@ -184,18 +284,11 @@ class ConfigLoader:
             1. Configuracao explicita via configure(outputs_path=...)
             2. Configuracao no TOML ([paths].outputs_dir)
             3. Auto-discovery do OUTPUTS_PATH do projeto host via AST
-            4. Fallback: project_root / 'outputs' (com warning)
+            4. Fallback silencioso: project_root / 'outputs'
+
+        Ative logging DEBUG para ver qual fonte foi usada.
         """
-        config = self.get_config()
-        resolver = PathResolver(
-            name="OUTPUTS_PATH",
-            explicit_path=self._outputs_path,
-            toml_getters=[lambda: config.paths.outputs_dir],
-            discovery_getter=lambda: self._get_ast_discovery().outputs_path,
-            fallback_subdir="outputs",
-            project_root=self.project_root,
-        )
-        return resolver.resolve()
+        return self._resolve_outputs_path()
 
     @property
     def assets_path(self) -> Path:
@@ -206,21 +299,11 @@ class ConfigLoader:
             1. Configuracao explicita via configure(assets_path=...)
             2. Configuracao no TOML ([fonts].assets_path ou [paths].assets_dir)
             3. Auto-discovery do ASSETS_PATH do projeto host via AST
-            4. Fallback: project_root / 'assets' (com warning)
+            4. Fallback silencioso: project_root / 'assets'
+
+        Ative logging DEBUG para ver qual fonte foi usada.
         """
-        config = self.get_config()
-        resolver = PathResolver(
-            name="ASSETS_PATH",
-            explicit_path=self._assets_path,
-            toml_getters=[
-                lambda: config.fonts.assets_path,
-                lambda: config.paths.assets_dir,
-            ],
-            discovery_getter=lambda: self._get_ast_discovery().assets_path,
-            fallback_subdir="assets",
-            project_root=self.project_root,
-        )
-        return resolver.resolve()
+        return self._resolve_assets_path()
 
     @property
     def charts_path(self) -> Path:

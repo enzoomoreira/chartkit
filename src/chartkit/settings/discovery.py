@@ -5,21 +5,37 @@ Fornece funcoes para localizar a raiz do projeto e encontrar
 arquivos de configuracao em ordem de precedencia.
 """
 
-import logging
 import os
 import sys
 from pathlib import Path
+from threading import RLock
 from typing import Optional
+
+from cachetools import LRUCache, cached
+from loguru import logger
 
 from .defaults import DEFAULT_CONFIG
 
-logger = logging.getLogger(__name__)
+__all__ = [
+    "find_project_root",
+    "find_config_files",
+    "get_user_config_dir",
+    "reset_project_root_cache",
+]
 
-# Cache module-level para evitar I/O redundante em find_project_root
-# Mapeia start_path -> project_root encontrado (ou None)
-_project_root_cache: dict[Path, Optional[Path]] = {}
+# Cache thread-safe com limite de 32 entries
+_project_root_lock = RLock()
+_project_root_cache: LRUCache = LRUCache(maxsize=32)
 
 
+def _cache_key(start_path: Optional[Path] = None) -> Path:
+    """Gera chave de cache normalizada."""
+    if start_path is None:
+        return Path.cwd().resolve()
+    return start_path.resolve()
+
+
+@cached(cache=_project_root_cache, key=_cache_key, lock=_project_root_lock)
 def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
     """
     Busca recursiva pelo project root usando markers comuns.
@@ -27,8 +43,8 @@ def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
     Sobe a arvore de diretorios a partir de start_path (ou cwd) procurando
     por markers que indicam a raiz de um projeto Python.
 
-    Utiliza cache module-level para evitar I/O redundante em chamadas
-    repetidas com o mesmo start_path.
+    Cache e automaticamente gerenciado pelo decorator @cached.
+    Use reset_project_root_cache() para limpar manualmente.
 
     Args:
         start_path: Diretorio inicial da busca. Se None, usa cwd.
@@ -36,33 +52,21 @@ def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
     Returns:
         Path do project root se encontrado, None caso contrario.
     """
-    markers = DEFAULT_CONFIG.paths.project_root_markers
-
     if start_path is None:
         start_path = Path.cwd()
 
     current = start_path.resolve()
+    markers = DEFAULT_CONFIG.paths.project_root_markers
 
-    # Verifica cache antes de fazer I/O
-    if current in _project_root_cache:
-        logger.debug("find_project_root: cache hit para %s", current)
-        return _project_root_cache[current]
+    logger.debug("find_project_root: iniciando busca a partir de {}", current)
 
-    logger.debug("find_project_root: cache miss para %s, iniciando busca", current)
-
-    # Sobe a arvore de diretorios ate a raiz do filesystem
-    search_start = current
     while current != current.parent:
         for marker in markers:
             if (current / marker).exists():
-                # Armazena no cache e retorna
-                _project_root_cache[search_start] = current
-                logger.debug("find_project_root: encontrado %s", current)
+                logger.debug("find_project_root: encontrado {}", current)
                 return current
         current = current.parent
 
-    # Nao encontrado - armazena None no cache
-    _project_root_cache[search_start] = None
     logger.debug("find_project_root: nenhum project root encontrado")
     return None
 
@@ -73,7 +77,8 @@ def reset_project_root_cache() -> None:
 
     Util para testes ou quando o diretorio de trabalho muda.
     """
-    _project_root_cache.clear()
+    with _project_root_lock:
+        _project_root_cache.clear()
     logger.debug("find_project_root: cache limpo")
 
 

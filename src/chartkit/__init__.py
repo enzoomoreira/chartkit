@@ -38,6 +38,29 @@ Uso:
     cdi_anual = annualize_daily(cdi_diario)
 """
 
+from loguru import logger
+
+# Desabilita logging por padrao (best practice para bibliotecas)
+logger.disable("chartkit")
+
+
+def configure_logging(level: str = "DEBUG", sink=None) -> None:
+    """
+    Ativa logging da biblioteca chartkit.
+
+    Args:
+        level: Nivel minimo (DEBUG, INFO, WARNING, ERROR).
+        sink: Destino opcional (arquivo, stream). Se None, usa stderr.
+
+    Example:
+        >>> from chartkit import configure_logging
+        >>> configure_logging(level="DEBUG")
+    """
+    logger.enable("chartkit")
+    if sink:
+        logger.add(sink, level=level)
+
+
 from .accessor import ChartingAccessor
 from .engine import ChartingPlotter
 from .settings import (
@@ -85,6 +108,7 @@ def __getattr__(name: str):
 __all__ = [
     # Configuracao
     "configure",
+    "configure_logging",
     "get_config",
     "reset_config",
     "ChartingConfig",

@@ -5,12 +5,13 @@ Fornece funcoes para carregar arquivos TOML e fazer merge
 profundo de dicionarios de configuracao.
 """
 
-import logging
 import sys
 from copy import deepcopy
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from loguru import logger
+
+__all__ = ["deep_merge", "load_toml", "load_pyproject_section"]
 
 # Compatibilidade com Python < 3.11
 if sys.version_info >= (3, 11):
@@ -76,11 +77,11 @@ def load_toml(path: Path) -> dict:
             return tomllib.load(f)
     except tomllib.TOMLDecodeError as e:
         # Erro de sintaxe no TOML - usuario precisa corrigir
-        logger.warning("Erro de sintaxe TOML em %s: %s", path, e)
+        logger.warning("Erro de sintaxe TOML em {}: {}", path, e)
         return {}
     except (OSError, IOError) as e:
         # Erro de I/O (permissao, arquivo corrompido, etc)
-        logger.warning("Erro ao ler arquivo TOML %s: %s", path, e)
+        logger.warning("Erro ao ler arquivo TOML {}: {}", path, e)
         return {}
 
 

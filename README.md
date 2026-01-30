@@ -52,6 +52,7 @@ df.chartkit.plot(title="Meu Grafico", save_path="grafico.png")
 | [Overlays](docs/overlays.md) | Elementos visuais secundarios |
 | [Styling](docs/styling.md) | Tema, cores e formatadores |
 | [Architecture](docs/architecture.md) | Arquitetura interna |
+| [Internals](docs/internals.md) | Thread-safety, caching e logging |
 
 ## Requisitos
 

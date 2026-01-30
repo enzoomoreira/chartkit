@@ -2,15 +2,12 @@
 Carregamento de fontes customizadas para graficos.
 """
 
-import logging
 from pathlib import Path
 
 import matplotlib.font_manager as fm
+from loguru import logger
 
-from ..settings import get_config
-from ..settings.loader import get_assets_path
-
-logger = logging.getLogger(__name__)
+from ..settings import get_assets_path, get_config
 
 
 def load_font() -> fm.FontProperties:
@@ -45,19 +42,20 @@ def load_font() -> fm.FontProperties:
     if not font_path.is_absolute():
         assets_path = get_assets_path()
         font_path = assets_path / font_file
-        logger.debug(f"Resolvendo fonte relativa: {font_file} -> {font_path}")
+        logger.debug("Resolvendo fonte relativa: {} -> {}", font_file, font_path)
 
     if font_path.exists():
         try:
             fm.fontManager.addfont(str(font_path))
-            logger.info(f"Fonte carregada: {font_path}")
+            logger.info("Fonte carregada: {}", font_path)
             return fm.FontProperties(fname=str(font_path))
         except Exception as e:
-            logger.warning(f"Erro ao carregar fonte {font_path}: {e}")
+            logger.warning("Erro ao carregar fonte {}: {}", font_path, e)
             return fm.FontProperties(family=[config.fonts.fallback])
 
     logger.warning(
-        f"Fonte nao encontrada: {font_path}. "
-        f"Usando fallback: {config.fonts.fallback}"
+        "Fonte nao encontrada: {}. Usando fallback: {}",
+        font_path,
+        config.fonts.fallback,
     )
     return fm.FontProperties(family=[config.fonts.fallback])

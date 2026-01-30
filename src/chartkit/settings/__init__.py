@@ -1,5 +1,5 @@
 """
-Sistema de configuracao.
+Modulo de configuracoes do chartkit.
 
 Fornece configuracao centralizada via arquivos TOML ou programaticamente.
 
@@ -10,6 +10,20 @@ Locais de busca (ordem de precedencia):
     4. ~/.config/charting/config.toml - Usuario global (Linux/Mac)
     5. %APPDATA%/charting/config.toml - Usuario global (Windows)
     6. Defaults built-in
+
+Grafo de Dependencias Internas:
+    __init__.py
+        <- loader.py
+            <- ast_discovery.py
+            <- converters.py
+            <- defaults.py <- schema.py
+            <- discovery.py <- defaults.py
+            <- paths.py <- discovery.py
+            <- toml.py
+        <- schema.py
+
+Nota: Evitar imports circulares. loader.py e o hub central.
+Novos modulos devem importar de schema.py ou defaults.py, nunca de loader.py.
 
 Uso:
     # Sem configuracao (usa defaults)

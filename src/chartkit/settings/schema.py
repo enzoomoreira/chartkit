@@ -8,6 +8,31 @@ permitindo validacao em tempo de desenvolvimento e autocompletar em IDEs.
 from dataclasses import dataclass, field
 from typing import Optional
 
+__all__ = [
+    "BrandingConfig",
+    "ColorsConfig",
+    "FontSizesConfig",
+    "FontsConfig",
+    "FooterConfig",
+    "TitleConfig",
+    "LayoutConfig",
+    "LegendConfig",
+    "LinesConfig",
+    "FrequencyDetectionConfig",
+    "BarsConfig",
+    "BandsConfig",
+    "MarkersConfig",
+    "CollisionConfig",
+    "TransformsConfig",
+    "CurrencyConfig",
+    "LocaleConfig",
+    "MagnitudeConfig",
+    "FormattersConfig",
+    "LabelsConfig",
+    "PathsConfig",
+    "ChartingConfig",
+]
+
 
 @dataclass
 class BrandingConfig:

@@ -6,12 +6,13 @@ evitando side effects e permitindo descoberta segura de paths.
 """
 
 import ast
-import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+from loguru import logger
+
+__all__ = ["ASTPathDiscovery", "DiscoveredPaths"]
 
 
 @dataclass
@@ -97,13 +98,15 @@ class ASTPathDiscovery:
                     if "OUTPUTS_PATH" in var_map:
                         self._cache.outputs_path = var_map["OUTPUTS_PATH"]
                         logger.debug(
-                            f"OUTPUTS_PATH descoberto via AST: {self._cache.outputs_path}"
+                            "OUTPUTS_PATH descoberto via AST: {}",
+                            self._cache.outputs_path,
                         )
 
                     if "ASSETS_PATH" in var_map:
                         self._cache.assets_path = var_map["ASSETS_PATH"]
                         logger.debug(
-                            f"ASSETS_PATH descoberto via AST: {self._cache.assets_path}"
+                            "ASSETS_PATH descoberto via AST: {}",
+                            self._cache.assets_path,
                         )
 
                     # Se encontrou ambos, para de procurar
@@ -111,7 +114,7 @@ class ASTPathDiscovery:
                         return
 
                 except Exception as e:
-                    logger.debug(f"Erro ao analisar {config_file}: {e}")
+                    logger.debug("Erro ao analisar {}: {}", config_file, e)
                     continue
 
     def _build_path_var_map(self, source: str) -> dict[str, Path]:
@@ -157,7 +160,7 @@ class ASTPathDiscovery:
                                 var_map[var_name] = resolved
 
         except Exception as e:
-            logger.debug(f"Erro ao construir mapa de variaveis: {e}")
+            logger.debug("Erro ao construir mapa de variaveis: {}", e)
 
         return var_map
 
@@ -242,6 +245,6 @@ class ASTPathDiscovery:
                     return self._root
 
         except Exception as e:
-            logger.debug(f"Erro ao resolver expressao: {e}")
+            logger.debug("Erro ao resolver expressao: {}", e)
 
         return None

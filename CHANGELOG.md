@@ -1,5 +1,48 @@
 # Project Changelog
 
+## [2026-01-30 01:46]
+### Fixed
+- **Thread-safety em `reset_project_root_cache()`**: Adicionado lock antes de `cache.clear()`
+  - Corrige race condition potencial com operacoes concorrentes de cache
+  - Segue recomendacao da documentacao do cachetools
+
+### Removed
+- **Codigo morto em `converters.py`**: Removida funcao `_is_tuple_of_floats()` nao utilizada
+- **Logs excessivos em `converters.py`**: Removidos `logger.debug()` dentro do loop de conversao
+  - Logs de conversao ja existem em nivel mais alto no `loader.py`
+  - Reduz ruido seguindo best practice de logging conservador em bibliotecas
+
+## [2026-01-30 01:38]
+### Added
+- **Loguru logging**: Substituido `logging` stdlib por `loguru` em todos os modulos
+  - Nova funcao `configure_logging()` na API publica para ativar logs
+  - Logging desabilitado por padrao (best practice para bibliotecas)
+  - Logs usam lazy evaluation (`{}`) em vez de f-strings para evitar problemas de encoding
+- **Caching com cachetools**: Sistema de cache robusto e thread-safe
+  - `find_project_root()` usa `LRUCache(maxsize=32)` com decorator `@cached`
+  - `ConfigLoader` usa `TTLCache(maxsize=3, ttl=3600)` para paths resolvidos
+  - Thread-safety via `RLock` em todas as operacoes de cache
+- **`__all__` em todos os modulos**: Exports publicos explicitamente definidos
+  - `loader.py`, `discovery.py`, `paths.py`, `converters.py`, `toml.py`
+  - `ast_discovery.py`, `schema.py`, `defaults.py`
+- **Documentacao de dependencias**: Grafo de dependencias internas no `settings/__init__.py`
+
+### Changed
+- **Type hints em `converters.py`**: Usa `get_origin()`/`get_args()` para deteccao de generics
+  - Funciona corretamente com `tuple[float, float]` e `list[str]` (Python 3.9+)
+  - Removida comparacao direta que nao funcionava com tipos genericos
+- **Imports em `fonts.py`**: Consolidados para usar `from ..settings import get_config, get_assets_path`
+- **Docstrings atualizadas**: Documentacao alinhada com comportamento de fallback silencioso
+
+### Removed
+- Dependencia de `logging` stdlib (substituido por `loguru`)
+- Cache manual em `discovery.py` (substituido por `cachetools`)
+- Cache manual em `loader.py` (substituido por `@cachedmethod`)
+
+### Dependencies
+- Adicionado `loguru>=0.7.3`
+- Adicionado `cachetools>=6.2.6`
+
 ## [2026-01-30 01:09]
 ### Changed
 - **Performance**: Adicionado cache module-level em `find_project_root()` para evitar I/O redundante

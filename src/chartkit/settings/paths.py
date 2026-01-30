@@ -5,13 +5,14 @@ Fornece a classe PathResolver que implementa a cadeia de precedencia
 para resolver paths de outputs e assets de forma DRY.
 """
 
-import logging
 from pathlib import Path
 from typing import Callable, Optional
 
+from loguru import logger
+
 from .discovery import find_project_root
 
-logger = logging.getLogger(__name__)
+__all__ = ["PathResolver"]
 
 
 class PathResolver:
@@ -22,7 +23,7 @@ class PathResolver:
         1. Configuracao explicita via API (configure)
         2. Configuracao no TOML
         3. Auto-discovery via AST
-        4. Fallback com warning
+        4. Fallback silencioso (sem warning, logado em DEBUG)
 
     Esta classe elimina a duplicacao de logica entre outputs_path e assets_path,
     encapsulando o padrao comum de resolucao.
@@ -72,11 +73,11 @@ class PathResolver:
         Resolve o path usando a cadeia de precedencia.
 
         Returns:
-            Path resolvido.
+            Path resolvido. Sempre retorna um Path valido.
 
-        Raises:
-            UserWarning: Se nenhuma fonte de configuracao foi encontrada
-                        e o fallback foi usado.
+        Note:
+            Nao levanta excecoes. Se nenhuma fonte encontrada,
+            retorna fallback silenciosamente (logado em DEBUG).
         """
         # 1. Configuracao explicita via API
         if self._explicit is not None:
@@ -90,7 +91,7 @@ class PathResolver:
                     return self._resolve_relative(Path(toml_value))
             except (KeyError, AttributeError, TypeError) as e:
                 # Getter pode falhar se config nao tiver a chave esperada
-                logger.debug("%s: getter TOML falhou: %s", self._name, e)
+                logger.debug("{}: getter TOML falhou: {}", self._name, e)
                 continue
 
         # 3. Auto-discovery
@@ -100,10 +101,12 @@ class PathResolver:
                 return discovered
         except (OSError, ValueError) as e:
             # Discovery pode falhar em casos de I/O ou paths invalidos
-            logger.debug("%s: auto-discovery falhou: %s", self._name, e)
+            logger.debug("{}: auto-discovery falhou: {}", self._name, e)
 
         # 4. Fallback silencioso (pasta sera criada quando necessario)
-        return (self._project_root or Path.cwd()) / self._fallback_subdir
+        fallback_path = (self._project_root or Path.cwd()) / self._fallback_subdir
+        logger.debug("{}: usando fallback silencioso: {}", self._name, fallback_path)
+        return fallback_path
 
     def _resolve_relative(self, path: Path) -> Path:
         """
