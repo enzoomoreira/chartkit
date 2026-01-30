@@ -87,8 +87,9 @@ moving_average = "#888888"
 
 # Fontes
 [fonts]
-file = "fonts/MeuFont.ttf"  # Relativo a assets/ ou absoluto
+file = "fonts/MeuFont.ttf"  # Relativo a assets_path ou absoluto
 fallback = "sans-serif"
+assets_path = ""  # Vazio = auto-discovery
 
 [fonts.sizes]
 default = 11
@@ -176,9 +177,9 @@ moving_average_format = "MM{window}"
 # Paths
 [paths]
 charts_subdir = "charts"
-default_output_dir = "outputs"
+outputs_dir = ""  # Vazio = auto-discovery de OUTPUTS_PATH
+assets_dir = ""   # Vazio = auto-discovery de ASSETS_PATH
 project_root_markers = [".git", "pyproject.toml", "setup.py", "setup.cfg", ".project-root"]
-output_conventions = ["outputs", "data/outputs", "output", "data/output"]
 ```
 
 ## Secoes de Configuracao
@@ -219,12 +220,18 @@ Configuracao de tipografia.
 
 | Campo | Tipo | Default | Descricao |
 |-------|------|---------|-----------|
-| `file` | str | "" (vazio) | Arquivo da fonte (relativo a assets/ ou absoluto) |
+| `file` | str | "" (vazio) | Arquivo da fonte (relativo a assets_path ou absoluto) |
 | `fallback` | str | "sans-serif" | Fonte de fallback |
+| `assets_path` | str | "" (auto) | Caminho base para assets |
 
 O `file` pode ser:
-- Relativo a `assets/` (ex: `"fonts/MeuFont.ttf"`)
+- Relativo ao `assets_path` (ex: `"fonts/MeuFont.ttf"`)
 - Caminho absoluto (ex: `"/usr/share/fonts/custom.ttf"`)
+
+O `assets_path` segue a ordem de precedencia:
+1. Valor explicito no TOML
+2. Auto-discovery via AST do projeto host (procura por `ASSETS_PATH` em config.py)
+3. Fallback: `project_root/assets` (com warning)
 
 ### Layout
 
@@ -290,6 +297,52 @@ Rotulos padrao para overlays.
 | `atl` | str | "ATL" | Label do All-Time Low |
 | `moving_average_format` | str | "MM{window}" | Formato da legenda MM |
 
+### Paths
+
+Configuracao de caminhos e diretorios.
+
+| Campo | Tipo | Default | Descricao |
+|-------|------|---------|-----------|
+| `charts_subdir` | str | "charts" | Subdiretorio para graficos dentro de outputs |
+| `outputs_dir` | str | "" (auto) | Diretorio de outputs (vazio = auto-discovery) |
+| `assets_dir` | str | "" (auto) | Diretorio de assets (vazio = auto-discovery) |
+| `project_root_markers` | list[str] | [".git", ...] | Markers para detectar raiz do projeto |
+
+#### Auto-Discovery de Paths
+
+Quando `outputs_dir` ou `assets_dir` nao sao especificados, o chartkit tenta detectar
+automaticamente os paths do projeto que o utiliza como dependencia.
+
+**Estrategia de Auto-Discovery:**
+
+1. Procura por arquivos `config.py` em locais comuns:
+   - `src/*/core/config.py`
+   - `src/*/config.py`
+   - `*/core/config.py`
+   - `*/config.py`
+   - `config.py`
+
+2. Usa AST (Abstract Syntax Tree) para extrair as variaveis `OUTPUTS_PATH` e `ASSETS_PATH`
+   sem importar o modulo (evita side effects e dependencias pesadas).
+
+3. Suporta padroes comuns:
+   - `OUTPUTS_PATH = PROJECT_ROOT / 'data' / 'outputs'`
+   - `ASSETS_PATH = Path('assets')`
+
+4. Se nao encontrar, usa fallback com warning:
+   - `outputs_dir`: `project_root/outputs`
+   - `assets_dir`: `project_root/assets`
+
+**Exemplo de configuracao explicita:**
+
+```toml
+[paths]
+outputs_dir = "data/outputs"  # Relativo ao project root
+assets_dir = "assets"         # Relativo ao project root
+# ou caminhos absolutos:
+# outputs_dir = "C:/caminho/absoluto/outputs"
+```
+
 ## API Python
 
 ### configure()
@@ -300,8 +353,9 @@ from chartkit import configure
 # Arquivo explicito
 configure(config_path=Path('./config.toml'))
 
-# Path de outputs
-configure(outputs_path=Path('./outputs'))
+# Paths explicitos
+configure(outputs_path=Path('./data/outputs'))
+configure(assets_path=Path('./assets'))
 
 # Overrides por secao
 configure(branding={'company_name': 'Empresa'})
@@ -312,7 +366,18 @@ configure(layout={'figsize': [12.0, 8.0]})
 configure(
     branding={'company_name': 'Empresa'},
     colors={'primary': '#FF0000'},
+    outputs_path=Path('./outputs'),
 )
+```
+
+### get_assets_path() / get_outputs_path()
+
+```python
+from chartkit.settings import get_assets_path, get_outputs_path
+
+# Retorna Path resolvido (seguindo ordem de precedencia)
+assets = get_assets_path()  # Path para assets
+outputs = get_outputs_path()  # Path para outputs
 ```
 
 ### get_config()

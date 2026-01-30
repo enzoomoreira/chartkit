@@ -48,9 +48,12 @@ moving_average = "#888888"  # Linha de media movel
 # Fontes - Configuracao de tipografia
 # -----------------------------------------------------------------------------
 [fonts]
-# Caminho relativo a pasta assets/ ou caminho absoluto (vazio = usa fallback)
+# Caminho relativo ao assets_path ou caminho absoluto (vazio = usa fallback)
 file = ""
 fallback = "sans-serif"
+# Caminho base para assets (vazio = auto-discovery do projeto host via AST)
+# Pode ser relativo ao project root ou absoluto
+assets_path = ""
 
 [fonts.sizes]
 default = 11       # Tamanho padrao
@@ -157,7 +160,17 @@ moving_average_format = "MM{window}"  # Formato da legenda de MM
 # Paths - Caminhos e diretorios
 # -----------------------------------------------------------------------------
 [paths]
-charts_subdir = "charts"           # Subdiretorio para graficos
-default_output_dir = "outputs"     # Diretorio de outputs padrao
+charts_subdir = "charts"           # Subdiretorio para graficos dentro de outputs
+
+# Diretorio de outputs (vazio = auto-discovery do OUTPUTS_PATH do projeto host via AST)
+# Pode ser relativo ao project root ou absoluto
+# Exemplo: "data/outputs" ou "C:/absolute/path/to/outputs"
+outputs_dir = ""
+
+# Diretorio de assets (vazio = auto-discovery do ASSETS_PATH do projeto host via AST)
+# Alternativa a [fonts].assets_path para configuracao centralizada
+# Pode ser relativo ao project root ou absoluto
+assets_dir = ""
+
+# Markers para detectar a raiz do projeto
 project_root_markers = [".git", "pyproject.toml", "setup.py", "setup.cfg", ".project-root"]
-output_conventions = ["outputs", "data/outputs", "output", "data/output"]

@@ -27,6 +27,7 @@ Uso:
 
 from .loader import (
     configure,
+    get_assets_path,
     get_charts_path,
     get_config,
     get_outputs_path,
@@ -42,6 +43,7 @@ __all__ = [
     # Paths
     "get_outputs_path",
     "get_charts_path",
+    "get_assets_path",
     # Schema
     "ChartingConfig",
 ]

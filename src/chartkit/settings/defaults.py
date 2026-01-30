@@ -61,6 +61,7 @@ def create_default_config() -> ChartingConfig:
         fonts=FontsConfig(
             file="",
             fallback="sans-serif",
+            assets_path="",
             sizes=FontSizesConfig(
                 default=11,
                 title=18,
@@ -140,19 +141,14 @@ def create_default_config() -> ChartingConfig:
         ),
         paths=PathsConfig(
             charts_subdir="charts",
-            default_output_dir="outputs",
+            outputs_dir="",
+            assets_dir="",
             project_root_markers=[
                 ".git",
                 "pyproject.toml",
                 "setup.py",
                 "setup.cfg",
                 ".project-root",
-            ],
-            output_conventions=[
-                "outputs",
-                "data/outputs",
-                "output",
-                "data/output",
             ],
         ),
     )

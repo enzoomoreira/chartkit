@@ -43,6 +43,7 @@ from .engine import ChartingPlotter
 from .settings import (
     ChartingConfig,
     configure,
+    get_assets_path,
     get_charts_path,
     get_config,
     get_outputs_path,
@@ -62,13 +63,13 @@ from .transforms import (
 )  # Re-exported from transforms/
 
 
-# Propriedades dinamicas para CHARTS_PATH e OUTPUTS_PATH
+# Propriedades dinamicas para CHARTS_PATH, OUTPUTS_PATH e ASSETS_PATH
 def __getattr__(name: str):
     """
-    Permite acesso a CHARTS_PATH e OUTPUTS_PATH como atributos do modulo.
+    Permite acesso a CHARTS_PATH, OUTPUTS_PATH e ASSETS_PATH como atributos do modulo.
 
     Isso permite a sintaxe:
-        from chartkit import CHARTS_PATH, OUTPUTS_PATH
+        from chartkit import CHARTS_PATH, OUTPUTS_PATH, ASSETS_PATH
 
     E o valor sera calculado dinamicamente usando lazy evaluation.
     """
@@ -76,6 +77,8 @@ def __getattr__(name: str):
         return get_charts_path()
     if name == "OUTPUTS_PATH":
         return get_outputs_path()
+    if name == "ASSETS_PATH":
+        return get_assets_path()
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -85,8 +88,10 @@ __all__ = [
     "get_config",
     "reset_config",
     "ChartingConfig",
+    # Paths
     "CHARTS_PATH",
     "OUTPUTS_PATH",
+    "ASSETS_PATH",
     # Classes principais
     "ChartingAccessor",
     "ChartingPlotter",

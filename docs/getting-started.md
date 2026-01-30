@@ -115,7 +115,7 @@ $env:CHARTING_OUTPUTS_PATH = "C:/caminho/para/outputs"
 ### Verificar Configuracao Atual
 
 ```python
-from chartkit import get_config, CHARTS_PATH, OUTPUTS_PATH
+from chartkit import get_config, CHARTS_PATH, OUTPUTS_PATH, ASSETS_PATH
 
 # Ver configuracao completa
 config = get_config()
@@ -125,6 +125,7 @@ print(f"Cor primaria: {config.colors.primary}")
 # Ver paths
 print(f"Charts: {CHARTS_PATH}")
 print(f"Outputs: {OUTPUTS_PATH}")
+print(f"Assets: {ASSETS_PATH}")
 ```
 
 ### Reset de Configuracao
@@ -137,11 +138,22 @@ reset_config()  # Volta para defaults
 
 ## Auto-Discovery de Paths
 
-O sistema detecta automaticamente onde salvar os graficos:
+O sistema detecta automaticamente onde salvar os graficos e onde encontrar assets:
 
-1. Procura por markers de projeto (`pyproject.toml`, `.git`, etc)
-2. Usa convencoes de pastas: `outputs/`, `data/outputs/`, `output/`, `data/output/`
-3. Se nenhuma existir, usa `outputs/charts` relativo ao project root
+**Cadeia de precedencia:**
+
+1. Configuracao explicita via `configure(outputs_path=..., assets_path=...)`
+2. Configuracao no TOML: `[paths].outputs_dir`, `[paths].assets_dir`
+3. Auto-discovery via AST parsing do projeto host (procura por `OUTPUTS_PATH`, `ASSETS_PATH` em `config.py`)
+4. Fallback: `project_root/outputs` e `project_root/assets`
+
+**Auto-discovery via AST:**
+
+O sistema analisa arquivos `config.py` do projeto host usando AST (Abstract Syntax Tree) para extrair paths sem importar modulos (evita side effects e dependencias pesadas).
+
+Padroes suportados:
+- `OUTPUTS_PATH = PROJECT_ROOT / 'data' / 'outputs'`
+- `ASSETS_PATH = Path('assets')`
 
 ### Configuracao Manual de Paths
 
@@ -149,8 +161,24 @@ O sistema detecta automaticamente onde salvar os graficos:
 from chartkit import configure
 from pathlib import Path
 
-# Define path customizado para outputs
+# Define paths customizados
 configure(outputs_path=Path('./meus_outputs'))
+configure(assets_path=Path('./meus_assets'))
+
+# Ou via TOML:
+# [paths]
+# outputs_dir = "data/outputs"
+# assets_dir = "assets"
+```
+
+### Verificar Paths Resolvidos
+
+```python
+from chartkit import CHARTS_PATH, OUTPUTS_PATH, ASSETS_PATH
+
+print(f"Charts: {CHARTS_PATH}")   # Onde graficos sao salvos
+print(f"Outputs: {OUTPUTS_PATH}")  # Path base de outputs
+print(f"Assets: {ASSETS_PATH}")    # Path base de assets (fontes, etc)
 ```
 
 ## Salvando Graficos

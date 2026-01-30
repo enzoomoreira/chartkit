@@ -13,7 +13,12 @@ src/chartkit/
 │   ├── __init__.py       # Exports: configure, get_config, ChartingConfig
 │   ├── schema.py         # Dataclasses tipadas para configuracao
 │   ├── defaults.py       # Valores default neutros
-│   └── loader.py         # Carregamento TOML e merge
+│   ├── loader.py         # ConfigLoader e funcoes publicas
+│   ├── toml.py           # Utilitarios de parsing TOML e deep merge
+│   ├── converters.py     # Conversao dataclass <-> dict
+│   ├── discovery.py      # Descoberta de project root e arquivos de config
+│   ├── paths.py          # PathResolver - resolucao unificada de paths
+│   └── ast_discovery.py  # Auto-discovery de paths via AST parsing
 ├── styling/
 │   ├── __init__.py       # Facade
 │   ├── theme.py          # ChartingTheme (usa settings)
@@ -103,14 +108,87 @@ Carrega e faz merge de configuracoes de multiplas fontes:
 
 ```python
 class ConfigLoader:
-    def configure(self, config_path=None, **overrides): ...
+    def configure(self, config_path=None, outputs_path=None, assets_path=None, **overrides): ...
     def get_config(self) -> ChartingConfig: ...
     def reset(self): ...
+
+    # Properties com cache interno
+    @property
+    def project_root(self) -> Optional[Path]: ...  # Lazy init, resolve uma vez por sessao
+    @property
+    def outputs_path(self) -> Path: ...
+    @property
+    def assets_path(self) -> Path: ...
+    @property
+    def charts_path(self) -> Path: ...
 
 # Funcoes publicas
 def configure(**kwargs) -> ConfigLoader: ...
 def get_config() -> ChartingConfig: ...
 def reset_config() -> ConfigLoader: ...
+def get_outputs_path() -> Path: ...
+def get_assets_path() -> Path: ...
+def get_charts_path() -> Path: ...
+```
+
+#### settings/discovery.py
+
+Descoberta de project root e arquivos de configuracao:
+
+```python
+# Cache module-level para evitar I/O redundante
+_project_root_cache: dict[Path, Optional[Path]] = {}
+
+def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
+    """Busca recursiva pelo project root usando markers (com cache)."""
+    ...
+
+def reset_project_root_cache() -> None:
+    """Limpa o cache de project root. Util para testes."""
+    ...
+
+def find_config_files(project_root: Optional[Path] = None) -> list[Path]:
+    """Encontra arquivos de configuracao em ordem de precedencia."""
+    ...
+```
+
+#### settings/paths.py
+
+Resolucao unificada de paths com cadeia de precedencia:
+
+```python
+class PathResolver:
+    """
+    Resolve paths usando cadeia de precedencia:
+        1. Configuracao explicita via API (configure)
+        2. Configuracao no TOML
+        3. Auto-discovery via AST
+        4. Fallback (project_root/subdir)
+    """
+
+    def __init__(
+        self,
+        name: str,
+        explicit_path: Optional[Path],
+        toml_getters: list[Callable[[], Optional[str]]],
+        discovery_getter: Callable[[], Optional[Path]],
+        fallback_subdir: str,
+        project_root: Optional[Path] = None,  # DI para evitar chamadas repetidas
+    ): ...
+
+    def resolve(self) -> Path: ...
+```
+
+#### settings/ast_discovery.py
+
+Auto-discovery de paths via AST parsing (sem importar modulos):
+
+```python
+class ASTPathDiscovery:
+    """Descobre OUTPUTS_PATH e ASSETS_PATH de projetos host via AST."""
+
+    def __init__(self, project_root: Path): ...
+    def discover(self) -> DiscoveredPaths: ...
 ```
 
 ### Ordem de Precedencia
@@ -149,6 +227,56 @@ def add_footer(fig, source=None):
             company_name=branding.company_name,
         )
     # ...
+```
+
+### Sistema de Cache
+
+O modulo `settings` implementa multiplos niveis de cache para evitar I/O redundante:
+
+#### Cache de Project Root (module-level)
+
+A funcao `find_project_root()` usa cache module-level para evitar traversal repetido do filesystem:
+
+```python
+# Primeira chamada: busca no filesystem (~1-5ms)
+root = find_project_root()  # Cache miss
+
+# Chamadas subsequentes: retorno instantaneo (~0.01ms)
+root = find_project_root()  # Cache hit (45-85x mais rapido)
+```
+
+Para testes que precisam limpar o cache:
+
+```python
+from chartkit.settings.discovery import reset_project_root_cache
+
+reset_project_root_cache()  # Limpa cache para proxima busca
+```
+
+#### Cache de Project Root no ConfigLoader (lazy init)
+
+A property `ConfigLoader.project_root` resolve o project root uma unica vez por sessao:
+
+```python
+class ConfigLoader:
+    @property
+    def project_root(self) -> Optional[Path]:
+        if not self._project_root_resolved:
+            self._project_root = find_project_root()
+            self._project_root_resolved = True
+        return self._project_root
+```
+
+#### Dependency Injection no PathResolver
+
+O `PathResolver` aceita `project_root` injetado para evitar chamadas repetidas:
+
+```python
+resolver = PathResolver(
+    name="OUTPUTS_PATH",
+    # ...
+    project_root=self.project_root,  # Injeta valor cacheado
+)
 ```
 
 ---

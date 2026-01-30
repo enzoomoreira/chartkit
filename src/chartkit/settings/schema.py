@@ -66,9 +66,11 @@ class FontSizesConfig:
 class FontsConfig:
     """Configuracoes de fontes."""
 
-    # Caminho relativo a assets/ ou caminho absoluto (vazio = usa fallback)
+    # Caminho relativo a assets_path ou caminho absoluto (vazio = usa fallback)
     file: str = ""
     fallback: str = "sans-serif"
+    # Caminho base para assets (vazio = auto-discovery do projeto host)
+    assets_path: str = ""
     sizes: FontSizesConfig = field(default_factory=FontSizesConfig)
 
 
@@ -222,7 +224,10 @@ class PathsConfig:
     """Configuracoes de caminhos e diretorios."""
 
     charts_subdir: str = "charts"
-    default_output_dir: str = "outputs"
+    # Caminho explicito para outputs (vazio = auto-discovery do projeto host)
+    outputs_dir: str = ""
+    # Caminho explicito para assets (vazio = auto-discovery do projeto host)
+    assets_dir: str = ""
     project_root_markers: list[str] = field(
         default_factory=lambda: [
             ".git",
@@ -230,14 +235,6 @@ class PathsConfig:
             "setup.py",
             "setup.cfg",
             ".project-root",
-        ]
-    )
-    output_conventions: list[str] = field(
-        default_factory=lambda: [
-            "outputs",
-            "data/outputs",
-            "output",
-            "data/output",
         ]
     )
 

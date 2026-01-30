@@ -13,280 +13,16 @@ Ordem de precedencia (maior para menor):
     6. Defaults built-in
 """
 
-import os
-import sys
-from copy import deepcopy
-from dataclasses import fields, is_dataclass
 from pathlib import Path
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional
 
-from .defaults import DEFAULT_CONFIG, create_default_config
-from .schema import (
-    BandsConfig,
-    BarsConfig,
-    BrandingConfig,
-    ChartingConfig,
-    CollisionConfig,
-    ColorsConfig,
-    CurrencyConfig,
-    FontsConfig,
-    FontSizesConfig,
-    FooterConfig,
-    FormattersConfig,
-    FrequencyDetectionConfig,
-    LabelsConfig,
-    LayoutConfig,
-    LegendConfig,
-    LinesConfig,
-    LocaleConfig,
-    MagnitudeConfig,
-    MarkersConfig,
-    PathsConfig,
-    TitleConfig,
-    TransformsConfig,
-)
-
-
-# Compatibilidade com Python < 3.11
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    try:
-        import tomli as tomllib
-    except ImportError:
-        tomllib = None  # type: ignore
-
-
-T = TypeVar("T")
-
-
-def deep_merge(base: dict, override: dict) -> dict:
-    """
-    Faz merge profundo de dois dicionarios.
-
-    Valores em override sobrescrevem valores em base. Para dicionarios
-    aninhados, o merge e feito recursivamente.
-
-    Args:
-        base: Dicionario base com valores default.
-        override: Dicionario com valores para sobrescrever.
-
-    Returns:
-        Novo dicionario com merge dos dois.
-
-    Example:
-        >>> base = {'colors': {'primary': '#000'}, 'layout': {'dpi': 100}}
-        >>> override = {'colors': {'primary': '#FFF'}}
-        >>> deep_merge(base, override)
-        {'colors': {'primary': '#FFF'}, 'layout': {'dpi': 100}}
-    """
-    result = deepcopy(base)
-
-    for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = deep_merge(result[key], value)
-        else:
-            result[key] = deepcopy(value)
-
-    return result
-
-
-def load_toml(path: Path) -> dict:
-    """
-    Carrega arquivo TOML e retorna como dicionario.
-
-    Args:
-        path: Caminho para o arquivo TOML.
-
-    Returns:
-        Dicionario com conteudo do arquivo, ou {} se nao existir
-        ou tomllib nao estiver disponivel.
-    """
-    if tomllib is None:
-        return {}
-
-    if not path.exists():
-        return {}
-
-    try:
-        with open(path, "rb") as f:
-            return tomllib.load(f)
-    except Exception:
-        return {}
-
-
-def load_pyproject_section(path: Path) -> dict:
-    """
-    Carrega secao [tool.charting] de um pyproject.toml.
-
-    Args:
-        path: Caminho para o pyproject.toml.
-
-    Returns:
-        Dicionario com conteudo de [tool.charting], ou {} se nao existir.
-    """
-    data = load_toml(path)
-    return data.get("tool", {}).get("charting", {})
-
-
-def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
-    """
-    Busca recursiva pelo project root usando markers comuns.
-
-    Sobe a arvore de diretorios a partir de start_path (ou cwd) procurando
-    por markers que indicam a raiz de um projeto Python.
-
-    Args:
-        start_path: Diretorio inicial da busca. Se None, usa cwd.
-
-    Returns:
-        Path do project root se encontrado, None caso contrario.
-    """
-    # Usa markers do DEFAULT_CONFIG
-    markers = DEFAULT_CONFIG.paths.project_root_markers
-
-    if start_path is None:
-        start_path = Path.cwd()
-
-    current = start_path.resolve()
-
-    # Sobe a arvore de diretorios ate a raiz do filesystem
-    while current != current.parent:
-        for marker in markers:
-            if (current / marker).exists():
-                return current
-        current = current.parent
-
-    return None
-
-
-def find_outputs_dir(root: Path) -> Path:
-    """
-    Encontra diretorio de outputs seguindo convencoes comuns.
-
-    Args:
-        root: Path do project root.
-
-    Returns:
-        Path para o diretorio de outputs (existente ou default).
-    """
-    # Usa convencoes do DEFAULT_CONFIG
-    conventions = DEFAULT_CONFIG.paths.output_conventions
-    default_dir = DEFAULT_CONFIG.paths.default_output_dir
-
-    for convention in conventions:
-        candidate = root / convention
-        if candidate.exists() and candidate.is_dir():
-            return candidate
-
-    return root / default_dir
-
-
-def find_config_files() -> list[Path]:
-    """
-    Encontra arquivos de configuracao em ordem de precedencia.
-
-    Procura em:
-        1. Diretorio atual e project root (.charting.toml, charting.toml)
-        2. pyproject.toml no project root
-        3. Diretorio de configuracao do usuario
-
-    Returns:
-        Lista de paths de arquivos existentes, em ordem de precedencia
-        (primeiro = maior prioridade).
-    """
-    config_files = []
-
-    # 1. Projeto local
-    project_root = find_project_root()
-    search_dirs = [Path.cwd()]
-    if project_root and project_root != Path.cwd():
-        search_dirs.append(project_root)
-
-    for dir_path in search_dirs:
-        for name in [".charting.toml", "charting.toml"]:
-            candidate = dir_path / name
-            if candidate.exists():
-                config_files.append(candidate)
-
-    # 2. pyproject.toml (verificado separadamente pois precisa da secao [tool.charting])
-    if project_root:
-        pyproject = project_root / "pyproject.toml"
-        if pyproject.exists():
-            config_files.append(pyproject)
-
-    # 3. Diretorio de configuracao do usuario
-    if sys.platform == "win32":
-        # Windows: %APPDATA%/charting/config.toml
-        appdata = os.environ.get("APPDATA")
-        if appdata:
-            user_config = Path(appdata) / "charting" / "config.toml"
-            if user_config.exists():
-                config_files.append(user_config)
-    else:
-        # Linux/Mac: ~/.config/charting/config.toml
-        home = Path.home()
-        user_config = home / ".config" / "charting" / "config.toml"
-        if user_config.exists():
-            config_files.append(user_config)
-
-    return config_files
-
-
-def _dict_to_dataclass(cls: type[T], data: dict) -> T:
-    """
-    Converte dicionario para dataclass recursivamente.
-
-    Args:
-        cls: Classe dataclass de destino.
-        data: Dicionario com dados.
-
-    Returns:
-        Instancia da dataclass preenchida com dados do dicionario.
-    """
-    if not is_dataclass(cls):
-        return data  # type: ignore
-
-    field_values = {}
-    for f in fields(cls):
-        if f.name in data:
-            value = data[f.name]
-            # Se o campo e uma dataclass, converte recursivamente
-            if is_dataclass(f.type) and isinstance(value, dict):
-                field_values[f.name] = _dict_to_dataclass(f.type, value)
-            elif f.type == tuple[float, float] and isinstance(value, (list, tuple)):
-                # Converte lista para tupla (para figsize)
-                field_values[f.name] = tuple(value)
-            else:
-                field_values[f.name] = value
-
-    return cls(**field_values)
-
-
-def _dataclass_to_dict(obj: Any) -> dict:
-    """
-    Converte dataclass para dicionario recursivamente.
-
-    Args:
-        obj: Instancia de dataclass.
-
-    Returns:
-        Dicionario com dados da dataclass.
-    """
-    if not is_dataclass(obj):
-        return obj
-
-    result = {}
-    for f in fields(obj):
-        value = getattr(obj, f.name)
-        if is_dataclass(value):
-            result[f.name] = _dataclass_to_dict(value)
-        elif isinstance(value, tuple):
-            result[f.name] = list(value)
-        else:
-            result[f.name] = value
-
-    return result
+from .ast_discovery import ASTPathDiscovery, DiscoveredPaths
+from .converters import dataclass_to_dict, dict_to_dataclass
+from .defaults import DEFAULT_CONFIG
+from .discovery import find_config_files, find_project_root
+from .paths import PathResolver
+from .schema import ChartingConfig
+from .toml import deep_merge, load_pyproject_section, load_toml
 
 
 class ConfigLoader:
@@ -300,6 +36,8 @@ class ConfigLoader:
         _config: Configuracao atual cacheada.
         _config_path: Caminho explicito para arquivo de configuracao.
         _overrides: Overrides programaticos via configure().
+        _outputs_path: Caminho explicito para outputs.
+        _assets_path: Caminho explicito para assets.
     """
 
     def __init__(self) -> None:
@@ -308,11 +46,17 @@ class ConfigLoader:
         self._config_path: Optional[Path] = None
         self._overrides: dict = {}
         self._outputs_path: Optional[Path] = None
+        self._assets_path: Optional[Path] = None
+        self._ast_discovery: Optional[ASTPathDiscovery] = None
+        # Cache interno para project_root (lazy init)
+        self._project_root: Optional[Path] = None
+        self._project_root_resolved: bool = False
 
     def configure(
         self,
         config_path: Optional[Path] = None,
         outputs_path: Optional[Path] = None,
+        assets_path: Optional[Path] = None,
         **overrides: Any,
     ) -> "ConfigLoader":
         """
@@ -321,6 +65,7 @@ class ConfigLoader:
         Args:
             config_path: Caminho explicito para arquivo TOML de configuracao.
             outputs_path: Caminho explicito para diretorio de outputs.
+            assets_path: Caminho explicito para diretorio de assets.
             **overrides: Overrides para secoes especificas da configuracao.
                         Aceita dicionarios aninhados que serao merged.
                         Ex: branding={'company_name': 'Minha Empresa'}
@@ -337,6 +82,9 @@ class ConfigLoader:
 
         if outputs_path is not None:
             self._outputs_path = Path(outputs_path)
+
+        if assets_path is not None:
+            self._assets_path = Path(assets_path)
 
         if overrides:
             self._overrides = deep_merge(self._overrides, overrides)
@@ -357,6 +105,11 @@ class ConfigLoader:
         self._config_path = None
         self._overrides = {}
         self._outputs_path = None
+        self._assets_path = None
+        self._ast_discovery = None
+        # Limpa cache de project_root
+        self._project_root = None
+        self._project_root_resolved = False
         return self
 
     def get_config(self) -> ChartingConfig:
@@ -378,7 +131,7 @@ class ConfigLoader:
             return self._config
 
         # Comeca com defaults
-        config_dict = _dataclass_to_dict(DEFAULT_CONFIG)
+        config_dict = dataclass_to_dict(DEFAULT_CONFIG)
 
         # Carrega arquivos de configuracao (em ordem de precedencia reversa)
         config_files = find_config_files()
@@ -402,9 +155,25 @@ class ConfigLoader:
             config_dict = deep_merge(config_dict, self._overrides)
 
         # Converte para dataclass
-        self._config = _dict_to_dataclass(ChartingConfig, config_dict)
+        self._config = dict_to_dataclass(ChartingConfig, config_dict)
 
         return self._config
+
+    def _get_ast_discovery(self) -> DiscoveredPaths:
+        """
+        Retorna paths descobertos via AST (lazy init).
+
+        Returns:
+            DiscoveredPaths com outputs_path e assets_path descobertos.
+        """
+        root = find_project_root()
+        if not root:
+            return DiscoveredPaths()
+
+        if self._ast_discovery is None:
+            self._ast_discovery = ASTPathDiscovery(root)
+
+        return self._ast_discovery.discover()
 
     @property
     def outputs_path(self) -> Path:
@@ -413,27 +182,45 @@ class ConfigLoader:
 
         Ordem de precedencia:
             1. Configuracao explicita via configure(outputs_path=...)
-            2. Variavel de ambiente CHARTING_OUTPUTS_PATH
-            3. Auto-discovery baseado no project root
-            4. Fallback: cwd/outputs
+            2. Configuracao no TOML ([paths].outputs_dir)
+            3. Auto-discovery do OUTPUTS_PATH do projeto host via AST
+            4. Fallback: project_root / 'outputs' (com warning)
         """
-        # 1. Configuracao explicita
-        if self._outputs_path is not None:
-            return self._outputs_path
-
-        # 2. Variavel de ambiente
-        env_path = os.environ.get("CHARTING_OUTPUTS_PATH")
-        if env_path:
-            return Path(env_path)
-
-        # 3. Auto-discovery
-        root = find_project_root()
-        if root:
-            return find_outputs_dir(root)
-
-        # 4. Fallback
         config = self.get_config()
-        return Path.cwd() / config.paths.default_output_dir
+        resolver = PathResolver(
+            name="OUTPUTS_PATH",
+            explicit_path=self._outputs_path,
+            toml_getters=[lambda: config.paths.outputs_dir],
+            discovery_getter=lambda: self._get_ast_discovery().outputs_path,
+            fallback_subdir="outputs",
+            project_root=self.project_root,
+        )
+        return resolver.resolve()
+
+    @property
+    def assets_path(self) -> Path:
+        """
+        Retorna o path base para assets.
+
+        Ordem de precedencia:
+            1. Configuracao explicita via configure(assets_path=...)
+            2. Configuracao no TOML ([fonts].assets_path ou [paths].assets_dir)
+            3. Auto-discovery do ASSETS_PATH do projeto host via AST
+            4. Fallback: project_root / 'assets' (com warning)
+        """
+        config = self.get_config()
+        resolver = PathResolver(
+            name="ASSETS_PATH",
+            explicit_path=self._assets_path,
+            toml_getters=[
+                lambda: config.fonts.assets_path,
+                lambda: config.paths.assets_dir,
+            ],
+            discovery_getter=lambda: self._get_ast_discovery().assets_path,
+            fallback_subdir="assets",
+            project_root=self.project_root,
+        )
+        return resolver.resolve()
 
     @property
     def charts_path(self) -> Path:
@@ -443,17 +230,29 @@ class ConfigLoader:
 
     @property
     def project_root(self) -> Optional[Path]:
-        """Retorna o project root detectado."""
-        return find_project_root()
+        """
+        Retorna o project root detectado (com cache interno).
+
+        O project root e resolvido uma unica vez e cacheado para evitar
+        chamadas repetidas a find_project_root() durante a sessao.
+        """
+        if not self._project_root_resolved:
+            self._project_root = find_project_root()
+            self._project_root_resolved = True
+        return self._project_root
 
 
 # Instancia singleton global
 _loader = ConfigLoader()
 
 
+# --- Public API ---
+
+
 def configure(
     config_path: Optional[Path] = None,
     outputs_path: Optional[Path] = None,
+    assets_path: Optional[Path] = None,
     **overrides: Any,
 ) -> ConfigLoader:
     """
@@ -465,6 +264,7 @@ def configure(
     Args:
         config_path: Caminho explicito para arquivo TOML de configuracao.
         outputs_path: Caminho explicito para diretorio de outputs.
+        assets_path: Caminho explicito para diretorio de assets (fontes, etc).
         **overrides: Overrides para secoes especificas da configuracao.
                     Aceita dicionarios aninhados que serao merged.
 
@@ -488,6 +288,7 @@ def configure(
     return _loader.configure(
         config_path=config_path,
         outputs_path=outputs_path,
+        assets_path=assets_path,
         **overrides,
     )
 
@@ -518,6 +319,11 @@ def get_outputs_path() -> Path:
 def get_charts_path() -> Path:
     """Retorna o caminho completo para salvar graficos."""
     return _loader.charts_path
+
+
+def get_assets_path() -> Path:
+    """Retorna o path base para assets (fontes, imagens, etc)."""
+    return _loader.assets_path
 
 
 def reset_config() -> ConfigLoader:

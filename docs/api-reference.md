@@ -194,13 +194,43 @@ from chartkit.settings import reset_config
 reset_config()
 ```
 
+### get_assets_path() / get_outputs_path()
+
+Retorna paths resolvidos seguindo a cadeia de precedencia.
+
+```python
+from chartkit.settings import get_assets_path, get_outputs_path
+
+# Retorna Path absoluto resolvido
+assets = get_assets_path()  # Path para assets (fontes, imagens, etc)
+outputs = get_outputs_path()  # Path para outputs
+
+# Cadeia de precedencia:
+# 1. configure(assets_path=...) / configure(outputs_path=...)
+# 2. TOML: [paths].assets_dir / [paths].outputs_dir
+# 3. Auto-discovery via AST (ASSETS_PATH / OUTPUTS_PATH do projeto host)
+# 4. Fallback: project_root/assets ou project_root/outputs
+```
+
+### reset_project_root_cache()
+
+Limpa o cache de project root. Util para testes.
+
+```python
+from chartkit.settings.discovery import reset_project_root_cache
+
+# Em testes que mudam o diretorio de trabalho
+reset_project_root_cache()
+```
+
 ### Variaveis Globais
 
 ```python
-from chartkit import CHARTS_PATH, OUTPUTS_PATH
+from chartkit import CHARTS_PATH, OUTPUTS_PATH, ASSETS_PATH
 
 # CHARTS_PATH: Path onde graficos sao salvos (lazy evaluation)
 # OUTPUTS_PATH: Path base de outputs (lazy evaluation)
+# ASSETS_PATH: Path base de assets como fontes (lazy evaluation)
 ```
 
 ### ChartingConfig
@@ -239,8 +269,10 @@ from chartkit import (
     get_config,
     reset_config,
     ChartingConfig,
+    # Paths (lazy evaluation via __getattr__)
     CHARTS_PATH,
     OUTPUTS_PATH,
+    ASSETS_PATH,
     # Classes
     ChartingAccessor,
     ChartingPlotter,
