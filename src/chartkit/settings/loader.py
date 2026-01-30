@@ -25,6 +25,7 @@ from .converters import dataclass_to_dict, dict_to_dataclass
 from .defaults import DEFAULT_CONFIG
 from .discovery import find_config_files, find_project_root, reset_project_root_cache
 from .paths import PathResolver
+from .runtime_discovery import RuntimePathDiscovery
 from .schema import ChartingConfig
 from .toml import deep_merge, load_pyproject_section, load_toml
 
@@ -62,6 +63,7 @@ class ConfigLoader:
         self._outputs_path: Optional[Path] = None
         self._assets_path: Optional[Path] = None
         self._ast_discovery: Optional[ASTPathDiscovery] = None
+        self._runtime_discovery: RuntimePathDiscovery = RuntimePathDiscovery()
 
         # Cache interno para project_root (lazy init)
         self._project_root: Optional[Path] = None
@@ -96,7 +98,8 @@ class ConfigLoader:
             name="OUTPUTS_PATH",
             explicit_path=self._outputs_path,
             toml_getters=[lambda: config.paths.outputs_dir],
-            discovery_getter=lambda: self._get_ast_discovery().outputs_path,
+            runtime_getter=self._runtime_discovery.discover_outputs_path,
+            ast_getter=lambda: self._get_ast_discovery().outputs_path,
             fallback_subdir="outputs",
             project_root=self.project_root,
         )
@@ -118,7 +121,8 @@ class ConfigLoader:
                 lambda: config.fonts.assets_path,
                 lambda: config.paths.assets_dir,
             ],
-            discovery_getter=lambda: self._get_ast_discovery().assets_path,
+            runtime_getter=self._runtime_discovery.discover_assets_path,
+            ast_getter=lambda: self._get_ast_discovery().assets_path,
             fallback_subdir="assets",
             project_root=self.project_root,
         )
@@ -129,6 +133,7 @@ class ConfigLoader:
         self._path_cache.clear()
         self._config = None
         self._ast_discovery = None
+        self._runtime_discovery.clear_cache()
         self._project_root = None
         self._project_root_resolved = False
         self._cache_version += 1
@@ -283,8 +288,9 @@ class ConfigLoader:
         Ordem de precedencia:
             1. Configuracao explicita via configure(outputs_path=...)
             2. Configuracao no TOML ([paths].outputs_dir)
-            3. Auto-discovery do OUTPUTS_PATH do projeto host via AST
-            4. Fallback silencioso: project_root / 'outputs'
+            3. Runtime discovery via sys.modules (busca OUTPUTS_PATH em modulos importados)
+            4. Auto-discovery do OUTPUTS_PATH do projeto host via AST
+            5. Fallback silencioso: project_root / 'outputs'
 
         Ative logging DEBUG para ver qual fonte foi usada.
         """
@@ -298,8 +304,9 @@ class ConfigLoader:
         Ordem de precedencia:
             1. Configuracao explicita via configure(assets_path=...)
             2. Configuracao no TOML ([fonts].assets_path ou [paths].assets_dir)
-            3. Auto-discovery do ASSETS_PATH do projeto host via AST
-            4. Fallback silencioso: project_root / 'assets'
+            3. Runtime discovery via sys.modules (busca ASSETS_PATH em modulos importados)
+            4. Auto-discovery do ASSETS_PATH do projeto host via AST
+            5. Fallback silencioso: project_root / 'assets'
 
         Ative logging DEBUG para ver qual fonte foi usada.
         """

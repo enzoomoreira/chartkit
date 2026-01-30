@@ -258,20 +258,40 @@ O chartkit possui um sistema inteligente de auto-discovery para detectar automat
 
 1. **Configuracao explicita via API**: `configure(outputs_path=..., assets_path=...)`
 2. **Configuracao no TOML**: `[paths].outputs_dir`, `[paths].assets_dir`
-3. **Auto-discovery via AST**: Analisa arquivos `config.py` do projeto host
-4. **Fallback**: `project_root/outputs` e `project_root/assets`
+3. **Runtime discovery via sys.modules**: Busca em modulos ja importados
+4. **Auto-discovery via AST**: Analisa arquivos `config.py` do projeto host
+5. **Fallback**: `project_root/outputs` e `project_root/assets`
 
-### Como Funciona o Auto-Discovery via AST
+### Runtime Discovery (Prioridade 3)
 
-O sistema procura por arquivos `config.py` em locais comuns do projeto:
+O runtime discovery busca `OUTPUTS_PATH` e `ASSETS_PATH` em modulos que ja foram importados pelo processo Python. Isso permite que bibliotecas host exponham seus paths automaticamente ao serem importadas.
 
+**Como funciona:**
+
+```python
+# Em sua biblioteca host (ex: adb/__init__.py)
+from adb.config import OUTPUTS_PATH, ASSETS_PATH  # Expoe no namespace
+
+# Em qualquer script
+import adb          # OUTPUTS_PATH ja esta em sys.modules['adb']
+import chartkit     # chartkit.OUTPUTS_PATH pega de adb automaticamente
 ```
-src/*/core/config.py
-src/*/config.py
-*/core/config.py
-*/config.py
-config.py
-```
+
+Esta abordagem e mais rapida que AST discovery pois nao requer I/O - os modulos ja estao carregados em memoria.
+
+**Modulos ignorados:**
+- Stdlib do Python (os, sys, pathlib, etc.)
+- Pacotes de terceiros comuns (numpy, pandas, matplotlib, etc.)
+- O proprio chartkit
+
+### Auto-Discovery via AST (Prioridade 4)
+
+Se runtime discovery nao encontrar os paths, o sistema usa parsing AST para buscar arquivos `config.py` recursivamente no projeto.
+
+**Busca recursiva:**
+- Busca `config.py` em todo o projeto usando `rglob()`
+- Ordena por profundidade (arquivos mais proximos da raiz primeiro)
+- Ignora diretorios comuns: `.venv`, `node_modules`, `__pycache__`, `build`, etc.
 
 Usando AST (Abstract Syntax Tree), extrai as variaveis `OUTPUTS_PATH` e `ASSETS_PATH` sem importar o modulo. Isso evita side effects e dependencias pesadas.
 

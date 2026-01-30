@@ -1,5 +1,27 @@
 # Project Changelog
 
+## [2026-01-30 14:29]
+### Added
+- **Runtime path discovery** (`runtime_discovery.py`): Nova estrategia de descoberta de paths via `sys.modules`
+  - Busca `OUTPUTS_PATH` e `ASSETS_PATH` em modulos ja importados pelo processo
+  - Permite que bibliotecas host exponham paths automaticamente ao serem importadas
+  - Classe `RuntimePathDiscovery` com cache interno e filtragem de stdlib/terceiros
+  - Prioridade maior que AST discovery (mais rapido, nao requer I/O)
+
+### Changed
+- **Cadeia de precedencia de paths atualizada**: Nova ordem com 5 niveis
+  1. Configuracao explicita via `configure()`
+  2. Configuracao no TOML
+  3. Runtime discovery via `sys.modules` (novo)
+  4. Auto-discovery via AST
+  5. Fallback silencioso
+- **`PathResolver` refatorado**: Agora aceita `runtime_getter` alem de `ast_getter`
+  - Separacao clara entre runtime discovery (rapido) e AST discovery (I/O)
+- **`ASTPathDiscovery` melhorado**: Busca recursiva de `config.py` com ordenacao por profundidade
+  - Substituidos padroes glob estaticos por `rglob("config.py")` + filtragem
+  - Ignora diretorios comuns: `.venv`, `node_modules`, `__pycache__`, `chartkit`, etc
+  - Arquivos mais proximos da raiz sao processados primeiro
+
 ## [2026-01-30 05:20]
 ### Added
 - **Novo modulo `metrics/`**: Sistema declarativo de metricas para graficos

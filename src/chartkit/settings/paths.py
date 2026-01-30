@@ -22,8 +22,9 @@ class PathResolver:
     Ordem de precedencia:
         1. Configuracao explicita via API (configure)
         2. Configuracao no TOML
-        3. Auto-discovery via AST
-        4. Fallback silencioso (sem warning, logado em DEBUG)
+        3. Runtime discovery via sys.modules
+        4. Auto-discovery via AST
+        5. Fallback silencioso (sem warning, logado em DEBUG)
 
     Esta classe elimina a duplicacao de logica entre outputs_path e assets_path,
     encapsulando o padrao comum de resolucao.
@@ -33,7 +34,8 @@ class PathResolver:
         ...     name="OUTPUTS_PATH",
         ...     explicit_path=None,
         ...     toml_getters=[lambda: config.paths.outputs_dir],
-        ...     discovery_getter=lambda: discovery.outputs_path,
+        ...     runtime_getter=lambda: runtime.discover_outputs_path(),
+        ...     ast_getter=lambda: discovery.outputs_path,
         ...     fallback_subdir="outputs",
         ... )
         >>> path = resolver.resolve()
@@ -44,7 +46,8 @@ class PathResolver:
         name: str,
         explicit_path: Optional[Path],
         toml_getters: list[Callable[[], Optional[str]]],
-        discovery_getter: Callable[[], Optional[Path]],
+        runtime_getter: Callable[[], Optional[Path]],
+        ast_getter: Callable[[], Optional[Path]],
         fallback_subdir: str,
         project_root: Optional[Path] = None,
     ):
@@ -56,17 +59,21 @@ class PathResolver:
             explicit_path: Path configurado explicitamente via API.
             toml_getters: Lista de funcoes que retornam path do TOML.
                          Sao chamadas em ordem ate encontrar um valor nao-vazio.
-            discovery_getter: Funcao que retorna path via auto-discovery.
+            runtime_getter: Funcao que retorna path via runtime discovery (sys.modules).
+            ast_getter: Funcao que retorna path via AST auto-discovery.
             fallback_subdir: Subdiretorio para fallback (ex: "outputs", "assets").
             project_root: Project root injetado. Se None, sera descoberto uma unica vez.
         """
         self._name = name
         self._explicit = explicit_path
         self._toml_getters = toml_getters
-        self._discovery_getter = discovery_getter
+        self._runtime_getter = runtime_getter
+        self._ast_getter = ast_getter
         self._fallback_subdir = fallback_subdir
         # Resolve project_root uma unica vez no construtor (DI ou discovery)
-        self._project_root = project_root if project_root is not None else find_project_root()
+        self._project_root = (
+            project_root if project_root is not None else find_project_root()
+        )
 
     def resolve(self) -> Path:
         """
@@ -94,16 +101,26 @@ class PathResolver:
                 logger.debug("{}: getter TOML falhou: {}", self._name, e)
                 continue
 
-        # 3. Auto-discovery
+        # 3. Runtime discovery via sys.modules
         try:
-            discovered = self._discovery_getter()
-            if discovered:
-                return discovered
-        except (OSError, ValueError) as e:
-            # Discovery pode falhar em casos de I/O ou paths invalidos
-            logger.debug("{}: auto-discovery falhou: {}", self._name, e)
+            runtime_path = self._runtime_getter()
+            if runtime_path:
+                logger.debug("{}: encontrado via runtime discovery", self._name)
+                return runtime_path
+        except Exception as e:
+            # Runtime discovery nao deve quebrar o fluxo
+            logger.debug("{}: runtime discovery falhou: {}", self._name, e)
 
-        # 4. Fallback silencioso (pasta sera criada quando necessario)
+        # 4. Auto-discovery via AST
+        try:
+            ast_path = self._ast_getter()
+            if ast_path:
+                return ast_path
+        except (OSError, ValueError) as e:
+            # AST discovery pode falhar em casos de I/O ou paths invalidos
+            logger.debug("{}: AST discovery falhou: {}", self._name, e)
+
+        # 5. Fallback silencioso (pasta sera criada quando necessario)
         fallback_path = (self._project_root or Path.cwd()) / self._fallback_subdir
         logger.debug("{}: usando fallback silencioso: {}", self._name, fallback_path)
         return fallback_path

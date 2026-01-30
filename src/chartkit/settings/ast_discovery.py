@@ -8,7 +8,7 @@ evitando side effects e permitindo descoberta segura de paths.
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Iterator, Optional
 
 from loguru import logger
 
@@ -44,14 +44,34 @@ class ASTPathDiscovery:
         >>> print(paths.outputs_path)
     """
 
-    # Padroes de arquivos config.py a procurar
-    CONFIG_PATTERNS = [
-        "src/*/core/config.py",
-        "src/*/config.py",
-        "*/core/config.py",
-        "*/config.py",
-        "config.py",
-    ]
+    # Diretorios a ignorar na busca recursiva
+    SKIP_DIRS: frozenset[str] = frozenset(
+        {
+            ".venv",
+            "venv",
+            ".env",
+            "env",
+            ".git",
+            ".hg",
+            ".svn",
+            "__pycache__",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".tox",
+            ".nox",
+            "node_modules",
+            "bower_components",
+            "dist",
+            "build",
+            "eggs",
+            "*.egg-info",
+            ".eggs",
+            "site-packages",
+            # Ignorar o proprio chartkit
+            "chartkit",
+        }
+    )
 
     def __init__(self, project_root: Path):
         """
@@ -79,43 +99,72 @@ class ASTPathDiscovery:
         self._scan_config_files()
         return self._cache
 
+    def _find_config_files(self) -> Iterator[Path]:
+        """
+        Busca arquivos config.py recursivamente no projeto.
+
+        Ignora diretorios comuns como .venv, node_modules, __pycache__, etc.
+        Ordena por profundidade (arquivos mais proximos da raiz primeiro).
+
+        Yields:
+            Paths de arquivos config.py encontrados.
+        """
+        config_files: list[tuple[int, Path]] = []
+
+        for path in self._root.rglob("config.py"):
+            # Verifica se algum diretorio pai esta na lista de ignorados
+            parts = path.relative_to(self._root).parts
+            if any(part in self.SKIP_DIRS for part in parts[:-1]):
+                continue
+
+            # Calcula profundidade (numero de diretorios)
+            depth = len(parts) - 1
+            config_files.append((depth, path))
+
+        # Ordena por profundidade (mais rasos primeiro)
+        config_files.sort(key=lambda x: x[0])
+
+        for _, path in config_files:
+            yield path
+
     def _scan_config_files(self) -> None:
         """
         Escaneia arquivos config.py procurando por OUTPUTS_PATH e ASSETS_PATH.
 
-        Procura em padroes comuns de localizacao e extrai as variaveis
+        Busca recursivamente no projeto e extrai as variaveis
         via parsing AST, resolvendo variaveis intermediarias.
         """
-        for pattern in self.CONFIG_PATTERNS:
-            for config_file in self._root.glob(pattern):
-                try:
-                    source = config_file.read_text(encoding="utf-8")
+        for config_file in self._find_config_files():
+            try:
+                source = config_file.read_text(encoding="utf-8")
 
-                    # Constroi mapa de variaveis para resolver referencias
-                    var_map = self._build_path_var_map(source)
+                # Constroi mapa de variaveis para resolver referencias
+                var_map = self._build_path_var_map(source)
 
-                    # Busca OUTPUTS_PATH e ASSETS_PATH no mapa
-                    if "OUTPUTS_PATH" in var_map:
-                        self._cache.outputs_path = var_map["OUTPUTS_PATH"]
-                        logger.debug(
-                            "OUTPUTS_PATH descoberto via AST: {}",
-                            self._cache.outputs_path,
-                        )
+                # Busca OUTPUTS_PATH e ASSETS_PATH no mapa
+                if "OUTPUTS_PATH" in var_map:
+                    self._cache.outputs_path = var_map["OUTPUTS_PATH"]
+                    logger.debug(
+                        "OUTPUTS_PATH descoberto via AST em {}: {}",
+                        config_file,
+                        self._cache.outputs_path,
+                    )
 
-                    if "ASSETS_PATH" in var_map:
-                        self._cache.assets_path = var_map["ASSETS_PATH"]
-                        logger.debug(
-                            "ASSETS_PATH descoberto via AST: {}",
-                            self._cache.assets_path,
-                        )
+                if "ASSETS_PATH" in var_map:
+                    self._cache.assets_path = var_map["ASSETS_PATH"]
+                    logger.debug(
+                        "ASSETS_PATH descoberto via AST em {}: {}",
+                        config_file,
+                        self._cache.assets_path,
+                    )
 
-                    # Se encontrou ambos, para de procurar
-                    if self._cache.outputs_path and self._cache.assets_path:
-                        return
+                # Se encontrou ambos, para de procurar
+                if self._cache.outputs_path and self._cache.assets_path:
+                    return
 
-                except Exception as e:
-                    logger.debug("Erro ao analisar {}: {}", config_file, e)
-                    continue
+            except Exception as e:
+                logger.debug("Erro ao analisar {}: {}", config_file, e)
+                continue
 
     def _build_path_var_map(self, source: str) -> dict[str, Path]:
         """

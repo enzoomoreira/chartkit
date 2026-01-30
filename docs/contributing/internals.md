@@ -263,12 +263,69 @@ def dict_to_dataclass(cls, data):
 
 ---
 
-## Auto-Discovery de Paths via AST
+## Sistema de Discovery de Paths
 
 O chartkit pode descobrir automaticamente OUTPUTS_PATH e ASSETS_PATH
-de projetos host sem importar modulos (evitando side effects).
+de projetos host usando duas estrategias complementares: runtime discovery
+e AST discovery.
 
-### Classe ASTPathDiscovery
+### Cadeia de Precedencia para Paths
+
+O `PathResolver` resolve paths na seguinte ordem:
+
+1. **Configuracao explicita** via `configure(outputs_path=...)`
+2. **TOML** (`[paths].outputs_dir` ou `[fonts].assets_path`)
+3. **Runtime discovery** via `sys.modules`
+4. **Auto-discovery AST**
+5. **Fallback** (`project_root / subdir`)
+
+```python
+# Em loader.py
+resolver = PathResolver(
+    name="OUTPUTS_PATH",
+    explicit_path=self._outputs_path,            # 1. Explicito
+    toml_getters=[lambda: config.paths.outputs_dir],  # 2. TOML
+    runtime_getter=self._runtime_discovery.discover_outputs_path,  # 3. Runtime
+    ast_getter=lambda: self._get_ast_discovery().outputs_path,     # 4. AST
+    fallback_subdir="outputs",                   # 5. Fallback
+    project_root=self.project_root,
+)
+return resolver.resolve()
+```
+
+### Runtime Discovery (Prioridade 3)
+
+Busca `OUTPUTS_PATH` e `ASSETS_PATH` em modulos ja importados via `sys.modules`.
+Esta estrategia e mais rapida pois nao requer I/O.
+
+```python
+from chartkit.settings.runtime_discovery import RuntimePathDiscovery
+
+discovery = RuntimePathDiscovery()
+outputs = discovery.discover_outputs_path()  # Path ou None
+assets = discovery.discover_assets_path()    # Path ou None
+```
+
+**Modulos ignorados:**
+- Stdlib do Python (prefixos: `os`, `sys`, `pathlib`, `typing`, etc.)
+- Pacotes de terceiros comuns (`numpy`, `pandas`, `matplotlib`, `pydantic`, etc.)
+- O proprio `chartkit`
+
+**Uso esperado:**
+
+```python
+# Em adb/__init__.py (biblioteca host)
+from adb.config import OUTPUTS_PATH  # Expoe no namespace
+
+# Em qualquer script
+import adb          # OUTPUTS_PATH ja esta em sys.modules['adb']
+import chartkit     # chartkit descobre automaticamente
+```
+
+### AST Discovery (Prioridade 4)
+
+Se runtime discovery nao encontrar os paths, usa parsing AST para
+buscar arquivos `config.py` recursivamente no projeto.
 
 ```python
 from chartkit.settings.ast_discovery import ASTPathDiscovery, DiscoveredPaths
@@ -280,19 +337,25 @@ print(paths.outputs_path)  # Path ou None
 print(paths.assets_path)   # Path ou None
 ```
 
-### Padroes de Arquivos Procurados
+### Busca Recursiva de config.py
+
+O ASTPathDiscovery usa `rglob("config.py")` com filtragem inteligente:
 
 ```python
-CONFIG_PATTERNS = [
-    "src/*/core/config.py",
-    "src/*/config.py",
-    "*/core/config.py",
-    "*/config.py",
-    "config.py",
-]
+# Diretorios ignorados na busca
+SKIP_DIRS = frozenset({
+    ".venv", "venv", ".env", "env",
+    ".git", "__pycache__", ".mypy_cache",
+    "node_modules", "dist", "build",
+    "site-packages", "chartkit",  # ignora o proprio chartkit
+})
 ```
 
-### Padroes de Codigo Suportados
+**Ordenacao por profundidade:**
+- Arquivos mais proximos da raiz sao processados primeiro
+- Isso prioriza `config.py` sobre `src/pkg/config.py`
+
+### Padroes de Codigo Suportados pelo AST
 
 O parser AST reconhece varios padroes comuns:
 
@@ -327,28 +390,6 @@ _ROOT_VARS = {
     "ROOT_DIR",
     "ROOT_PATH",
 }
-```
-
-### Cadeia de Precedencia para Paths
-
-O `PathResolver` resolve paths na seguinte ordem:
-
-1. **Configuracao explicita** via `configure(outputs_path=...)`
-2. **TOML** (`[paths].outputs_dir` ou `[fonts].assets_path`)
-3. **Auto-discovery AST**
-4. **Fallback** (`project_root / subdir`)
-
-```python
-# Em loader.py
-resolver = PathResolver(
-    name="OUTPUTS_PATH",
-    explicit_path=self._outputs_path,            # 1. Explicito
-    toml_getters=[lambda: config.paths.outputs_dir],  # 2. TOML
-    discovery_getter=lambda: self._get_ast_discovery().outputs_path,  # 3. AST
-    fallback_subdir="outputs",                   # 4. Fallback
-    project_root=self.project_root,
-)
-return resolver.resolve()
 ```
 
 ---
