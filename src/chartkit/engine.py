@@ -12,6 +12,7 @@ from pathlib import Path
 from .settings import get_config, get_charts_path
 from .styling import (
     theme,
+    compact_currency_formatter,
     currency_formatter,
     percent_formatter,
     human_readable_formatter,
@@ -28,6 +29,8 @@ from .overlays import add_moving_average, add_ath_line, add_atl_line, add_hline,
 _FORMATTERS = {
     "BRL": lambda: currency_formatter("BRL"),
     "USD": lambda: currency_formatter("USD"),
+    "BRL_compact": lambda: compact_currency_formatter("BRL"),
+    "USD_compact": lambda: compact_currency_formatter("USD"),
     "%": percent_formatter,
     "human": human_readable_formatter,
     "points": points_formatter,

@@ -42,8 +42,9 @@ def add_moving_average(
         col = series if series else y_data.columns[0]
         y_data = y_data[col]
 
-    # Calcula media movel
-    ma = y_data.rolling(window=window, min_periods=1).mean()
+    # Calcula media movel com min_periods configuravel
+    min_periods = config.lines.moving_avg_min_periods
+    ma = y_data.rolling(window=window, min_periods=min_periods).mean()
 
     # Cor default: config.colors.moving_average
     line_color = color if color else config.colors.moving_average
@@ -61,5 +62,5 @@ def add_moving_average(
         linestyle=linestyle,
         linewidth=line_width,
         label=line_label,
-        zorder=2,  # Acima das linhas de referencia, abaixo dos dados principais
+        zorder=config.layout.zorder.moving_average,
     )

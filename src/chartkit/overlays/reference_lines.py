@@ -55,7 +55,7 @@ def add_ath_line(
         linestyle=line_style,
         linewidth=line_width,
         label=line_label,
-        zorder=1,  # Abaixo dos dados principais
+        zorder=config.layout.zorder.reference_lines,
     )
 
 
@@ -104,7 +104,7 @@ def add_atl_line(
         linestyle=line_style,
         linewidth=line_width,
         label=line_label,
-        zorder=1,
+        zorder=config.layout.zorder.reference_lines,
     )
 
 
@@ -145,5 +145,5 @@ def add_hline(
         linestyle=line_style,
         linewidth=line_width,
         label=label,
-        zorder=1,
+        zorder=config.layout.zorder.reference_lines,
     )

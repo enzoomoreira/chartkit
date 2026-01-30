@@ -15,6 +15,7 @@ __all__ = [
     "FontsConfig",
     "FooterConfig",
     "TitleConfig",
+    "ZOrderConfig",
     "LayoutConfig",
     "LegendConfig",
     "LinesConfig",
@@ -117,6 +118,22 @@ class TitleConfig:
 
 
 @dataclass
+class ZOrderConfig:
+    """
+    Ordem de camadas visuais (z-order) para elementos do grafico.
+
+    Valores maiores aparecem na frente. A ordem padrao e:
+    bands (0) < reference_lines (1) < moving_average (2) < data (3) < markers (5)
+    """
+
+    bands: int = 0
+    reference_lines: int = 1
+    moving_average: int = 2
+    data: int = 3
+    markers: int = 5
+
+
+@dataclass
 class LayoutConfig:
     """Configuracoes de layout do grafico."""
 
@@ -124,6 +141,7 @@ class LayoutConfig:
     dpi: int = 300
     footer: FooterConfig = field(default_factory=FooterConfig)
     title: TitleConfig = field(default_factory=TitleConfig)
+    zorder: ZOrderConfig = field(default_factory=ZOrderConfig)
 
 
 @dataclass
@@ -141,6 +159,7 @@ class LinesConfig:
     main_width: float = 2.0
     overlay_width: float = 1.5
     reference_style: str = "--"
+    moving_avg_min_periods: int = 1  # Minimo de periodos para media movel
     legend: LegendConfig = field(default_factory=LegendConfig)
 
 
@@ -159,6 +178,7 @@ class BarsConfig:
     width_default: float = 0.8
     width_monthly: int = 20
     width_annual: int = 300
+    auto_margin: float = 0.1  # Margem (%) para y_origin='auto'
     frequency_detection: FrequencyDetectionConfig = field(
         default_factory=FrequencyDetectionConfig
     )
@@ -215,6 +235,7 @@ class LocaleConfig:
 
     decimal: str = ","
     thousands: str = "."
+    babel_locale: str = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.)
 
 
 @dataclass

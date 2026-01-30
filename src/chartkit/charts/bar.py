@@ -66,11 +66,11 @@ def plot_bar(
 
     # Ajusta origem do eixo Y
     if y_origin == "auto":
-        # Ajusta eixo Y para focar nos dados com margem
+        # Ajusta eixo Y para focar nos dados com margem configuravel
         vals_clean = vals.dropna()
         if not vals_clean.empty:
             ymin, ymax = vals_clean.min(), vals_clean.max()
-            margin = (ymax - ymin) * 0.1  # 10% de margem
+            margin = (ymax - ymin) * bars.auto_margin
             ax.set_ylim(ymin - margin, ymax + margin)
     else:
         # Default: inclui zero no eixo Y

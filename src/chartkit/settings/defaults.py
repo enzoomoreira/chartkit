@@ -131,6 +131,7 @@ def create_default_config() -> ChartingConfig:
             locale=LocaleConfig(
                 decimal=",",
                 thousands=".",
+                babel_locale="pt_BR",
             ),
             magnitude=MagnitudeConfig(
                 suffixes=["", "k", "M", "B", "T"],

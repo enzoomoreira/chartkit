@@ -111,11 +111,19 @@ color = "gray"
 padding = 20
 weight = "bold"
 
+[layout.zorder]
+bands = 0
+reference_lines = 1
+moving_average = 2
+data = 3
+markers = 5
+
 # Linhas
 [lines]
 main_width = 2.0
 overlay_width = 1.5
 reference_style = "--"
+moving_avg_min_periods = 1
 
 [lines.legend]
 alpha = 0.9
@@ -126,6 +134,7 @@ frameon = true
 width_default = 0.8
 width_monthly = 20
 width_annual = 300
+auto_margin = 0.1
 
 [bars.frequency_detection]
 monthly_threshold = 25
@@ -164,6 +173,7 @@ USD = "$ "
 [formatters.locale]
 decimal = ","
 thousands = "."
+babel_locale = "pt_BR"
 
 [formatters.magnitude]
 suffixes = ["", "k", "M", "B", "T"]
@@ -245,6 +255,11 @@ Dimensoes e posicionamento do grafico.
 | `footer.color` | str | "gray" | Cor do rodape |
 | `title.padding` | int | 20 | Espacamento do titulo |
 | `title.weight` | str | "bold" | Peso da fonte do titulo |
+| `zorder.bands` | int | 0 | Camada visual das bandas |
+| `zorder.reference_lines` | int | 1 | Camada visual das linhas de referencia |
+| `zorder.moving_average` | int | 2 | Camada visual da media movel |
+| `zorder.data` | int | 3 | Camada visual dos dados principais |
+| `zorder.markers` | int | 5 | Camada visual dos marcadores |
 
 ### Lines
 
@@ -255,6 +270,7 @@ Configuracao de graficos de linha.
 | `main_width` | float | 2.0 | Espessura da linha principal |
 | `overlay_width` | float | 1.5 | Espessura de overlays |
 | `reference_style` | str | "--" | Estilo de linhas de referencia |
+| `moving_avg_min_periods` | int | 1 | Minimo de periodos para media movel |
 | `legend.alpha` | float | 0.9 | Transparencia da legenda |
 | `legend.frameon` | bool | true | Borda da legenda |
 
@@ -267,6 +283,7 @@ Configuracao de graficos de barra.
 | `width_default` | float | 0.8 | Largura padrao |
 | `width_monthly` | int | 20 | Largura para dados mensais |
 | `width_annual` | int | 300 | Largura para dados anuais |
+| `auto_margin` | float | 0.1 | Margem (%) para y_origin='auto' |
 | `frequency_detection.monthly_threshold` | int | 25 | Dias para detectar mensal |
 | `frequency_detection.annual_threshold` | int | 300 | Dias para detectar anual |
 
@@ -282,10 +299,24 @@ USD = "$ "
 [formatters.locale]
 decimal = ","
 thousands = "."
+babel_locale = "pt_BR"
 
 [formatters.magnitude]
 suffixes = ["", "k", "M", "B", "T"]
 ```
+
+| Campo | Tipo | Default | Descricao |
+|-------|------|---------|-----------|
+| `locale.decimal` | str | "," | Separador decimal (para formatadores manuais) |
+| `locale.thousands` | str | "." | Separador de milhar (para formatadores manuais) |
+| `locale.babel_locale` | str | "pt_BR" | Locale para Babel (moedas ISO 4217) |
+| `magnitude.suffixes` | list[str] | ["", "k", "M", "B", "T"] | Sufixos para notacao compacta |
+
+O `babel_locale` controla a formatacao de moedas via Babel, suportando qualquer
+codigo ISO 4217 (BRL, USD, EUR, GBP, JPY, etc.). Exemplos de locales:
+- `pt_BR` - Portugues Brasil (R$ 1.234,56)
+- `en_US` - Ingles EUA ($1,234.56)
+- `de_DE` - Alemao (1.234,56 EUR)
 
 ### Labels
 
@@ -460,6 +491,7 @@ footer = 12
 [formatters.locale]
 decimal = "."
 thousands = ","
+babel_locale = "en_US"
 
 [labels]
 ath = "All-Time High"

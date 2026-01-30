@@ -44,5 +44,5 @@ def add_band(
         color=band_color,
         alpha=band_alpha,
         label=label,
-        zorder=0,  # Abaixo de tudo
+        zorder=config.layout.zorder.bands,
     )

@@ -5,6 +5,8 @@ Fornece formatadores para valores monetarios, percentuais e
 notacao compacta (1k, 1M, etc.).
 """
 
+from babel.numbers import format_compact_currency as babel_format_compact_currency
+from babel.numbers import format_currency as babel_format_currency
 from matplotlib.ticker import FuncFormatter
 
 from ..settings import get_config
@@ -12,38 +14,68 @@ from ..settings import get_config
 
 def currency_formatter(currency: str = "BRL"):
     """
-    Formatador para valores monetarios.
+    Formatador para valores monetarios usando Babel.
 
-    Usa prefixos e locale configurados em settings.
+    Suporta qualquer codigo de moeda ISO 4217 (BRL, USD, EUR, GBP, JPY, etc.)
+    com formatacao automatica baseada no locale configurado.
 
     Args:
-        currency: Codigo da moeda ('BRL', 'USD')
+        currency: Codigo ISO 4217 da moeda. Default: 'BRL'.
 
     Returns:
         FuncFormatter para uso com matplotlib.
 
     Example:
         >>> ax.yaxis.set_major_formatter(currency_formatter('BRL'))
-        # R$ 1.234,56
+        # R$ 1.234,56 (locale pt_BR)
     """
     config = get_config()
-    locale = config.formatters.locale
-    prefixes = config.formatters.currency
+    locale = config.formatters.locale.babel_locale
 
     def _format(x, pos):
-        # Obtem prefixo da moeda
-        prefix = getattr(prefixes, currency, "")
+        return babel_format_currency(
+            x,
+            currency,
+            locale=locale,
+            currency_digits=True,
+            group_separator=True,
+        )
 
-        if currency == "BRL":
-            # Formato brasileiro: R$ 1.234,56
-            formatted = f"{x:,.2f}"
-            formatted = formatted.replace(",", "X").replace(".", locale.decimal).replace("X", locale.thousands)
-            return f"{prefix}{formatted}"
-        elif currency == "USD":
-            # Formato americano: $ 1,234.56
-            return f"{prefix}{x:,.2f}"
+    return FuncFormatter(_format)
 
-        return f"{x:,.2f}"
+
+def compact_currency_formatter(currency: str = "BRL", fraction_digits: int = 1):
+    """
+    Formatador para valores monetarios em notacao compacta.
+
+    Usa notacao abreviada para grandes valores (K, M, B, etc.).
+    Ideal para graficos com valores na casa dos milhoes ou bilhoes.
+
+    Args:
+        currency: Codigo ISO 4217 da moeda. Default: 'BRL'.
+        fraction_digits: Casas decimais na notacao compacta. Default: 1.
+
+    Returns:
+        FuncFormatter para uso com matplotlib.
+
+    Example:
+        >>> ax.yaxis.set_major_formatter(compact_currency_formatter('BRL'))
+        # R$ 1,2 mi (para 1.234.567)
+    """
+    config = get_config()
+    locale = config.formatters.locale.babel_locale
+
+    def _format(x, pos):
+        # Valores pequenos usam formato normal
+        if abs(x) < 1000:
+            return babel_format_currency(x, currency, locale=locale)
+
+        return babel_format_compact_currency(
+            x,
+            currency,
+            locale=locale,
+            fraction_digits=fraction_digits,
+        )
 
     return FuncFormatter(_format)
 

@@ -71,12 +71,17 @@ print(theme.font)       # FontProperties do matplotlib
 
 Use o parametro `units` para formatar valores no eixo Y.
 
+Os formatadores de moeda usam a biblioteca [Babel](https://babel.pocoo.org/) para
+internacionalizacao, suportando qualquer codigo de moeda ISO 4217.
+
 ### Disponíveis
 
 | Valor | Funcao | Exemplo |
 |-------|--------|---------|
 | `'BRL'` | currency_formatter('BRL') | R$ 1.234,56 |
 | `'USD'` | currency_formatter('USD') | $ 1,234.56 |
+| `'BRL_compact'` | compact_currency_formatter('BRL') | R$ 1,2 mi |
+| `'USD_compact'` | compact_currency_formatter('USD') | $1.2M |
 | `'%'` | percent_formatter() | 10,5% |
 | `'points'` | points_formatter() | 1.234.567 |
 | `'human'` | human_readable_formatter() | 1,2M |
@@ -88,9 +93,7 @@ df.chartkit.plot(units='BRL')
 # R$ 1.234,56
 ```
 
-- Prefixo: R$
-- Separador de milhar: ponto
-- Separador decimal: virgula
+Formatado via Babel com locale `pt_BR`. Suporta qualquer moeda ISO 4217.
 
 ### USD - Dolar Americano
 
@@ -99,9 +102,22 @@ df.chartkit.plot(units='USD')
 # $ 1,234.56
 ```
 
-- Prefixo: $
-- Separador de milhar: virgula
-- Separador decimal: ponto
+Formatado via Babel com locale configurado (default: `pt_BR`).
+
+### BRL_compact / USD_compact - Notacao Compacta
+
+```python
+df.chartkit.plot(units='BRL_compact')
+# R$ 1,2 mi  (para 1.234.567)
+# R$ 500 mil (para 500.000)
+# R$ 2,5 bi  (para 2.500.000.000)
+
+df.chartkit.plot(units='USD_compact')
+# $1.2M  (para 1.234.567)
+```
+
+Ideal para graficos com valores grandes (milhoes, bilhoes). Valores abaixo de 1.000
+usam formatacao normal.
 
 ### % - Percentual
 

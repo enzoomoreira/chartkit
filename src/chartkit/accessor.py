@@ -28,8 +28,14 @@ class ChartingAccessor:
 
     def plot(
         self,
+        x: str = None,
+        y: str | list[str] = None,
         kind: str = "line",
         title: str = None,
+        units: str = None,
+        source: str = None,
+        highlight_last: bool = False,
+        y_origin: str = "zero",
         save_path: str = None,
         moving_avg: int = None,
         show_ath: bool = False,
@@ -41,20 +47,35 @@ class ChartingAccessor:
         Cria um grafico padronizado.
 
         Args:
-            kind: 'line' ou 'bar'
-            title: Titulo do grafico (opcional)
-            save_path: Se fornecido, salva o grafico neste caminho
-            moving_avg: Janela da media movel (ex: 12 para MM12)
-            show_ath: Se True, mostra linha no All-Time High
-            show_atl: Se True, mostra linha no All-Time Low
+            x: Coluna para eixo X. Se None, usa o index do DataFrame.
+            y: Coluna(s) para eixo Y. Se None, usa todas as colunas numericas.
+            kind: Tipo de grafico ('line' ou 'bar').
+            title: Titulo do grafico (opcional).
+            units: Formatacao do eixo Y (ex: '%', 'BRL', 'USD', 'human').
+            source: Fonte dos dados para exibir no rodape.
+            highlight_last: Se True, destaca o ultimo valor da serie.
+            y_origin: Origem do eixo Y para barras ('zero' ou 'auto').
+            save_path: Se fornecido, salva o grafico neste caminho.
+            moving_avg: Janela da media movel (ex: 12 para MM12).
+            show_ath: Se True, mostra linha no All-Time High.
+            show_atl: Se True, mostra linha no All-Time Low.
             overlays: Dicionario com overlays customizados:
                 - 'hlines': Lista de dicts com {value, label, color, linestyle}
                 - 'band': Dict com {lower, upper, color, alpha, label}
-            **kwargs: Argumentos extras passados para matplotlib
+            **kwargs: Argumentos extras passados para matplotlib.
+
+        Returns:
+            matplotlib.axes.Axes: Objeto Axes do grafico gerado.
         """
         return self.plotter.plot(
+            x=x,
+            y=y,
             kind=kind,
             title=title,
+            units=units,
+            source=source,
+            highlight_last=highlight_last,
+            y_origin=y_origin,
             save_path=save_path,
             moving_avg=moving_avg,
             show_ath=show_ath,
@@ -63,13 +84,13 @@ class ChartingAccessor:
             **kwargs
         )
         
-    def save(self, path: str, dpi: int = 300):
+    def save(self, path: str, dpi: int = None):
         """
         Salva o grafico atual (se existir).
 
         Args:
             path: Caminho do arquivo (ex: 'grafico.png')
-            dpi: Resolucao em DPI (default: 300)
+            dpi: Resolucao em DPI (default: config.layout.dpi)
 
         Raises:
             RuntimeError: Se nenhum grafico foi gerado ainda

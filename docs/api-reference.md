@@ -60,7 +60,7 @@ df.chartkit.save(path: str, dpi: int = None)
 | Parametro | Tipo | Default | Descricao |
 |-----------|------|---------|-----------|
 | `path` | str | - | Caminho do arquivo |
-| `dpi` | int | None | Resolucao em DPI (default: config.layout.dpi) |
+| `dpi` | int | config.layout.dpi | Resolucao em DPI |
 
 **Importante:** Requer que `plot()` tenha sido chamado antes.
 
@@ -72,9 +72,14 @@ df.chartkit.save(path: str, dpi: int = None)
 |-------|---------|---------|
 | `'BRL'` | Real brasileiro | R$ 1.234,56 |
 | `'USD'` | Dolar americano | $ 1,234.56 |
+| `'BRL_compact'` | Real compacto | R$ 1,2 mi |
+| `'USD_compact'` | Dolar compacto | $1.2M |
 | `'%'` | Percentual | 10,5% |
 | `'points'` | Inteiros BR | 1.234.567 |
 | `'human'` | Notacao compacta | 1,2M |
+
+Os formatadores de moeda usam [Babel](https://babel.pocoo.org/) e suportam qualquer
+codigo ISO 4217. O locale e configuravel via `formatters.locale.babel_locale`.
 
 ---
 

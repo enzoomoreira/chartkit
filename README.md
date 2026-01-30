@@ -35,7 +35,7 @@ df.chartkit.plot(title="Meu Grafico", save_path="grafico.png")
 
 - **Pandas Accessor**: Use `df.chartkit.plot()` diretamente em qualquer DataFrame
 - **Graficos**: Linhas e barras com estilo profissional
-- **Formatadores**: BRL, USD, %, pontos, notacao humana (1k, 1M)
+- **Formatadores**: BRL, USD, BRL_compact, USD_compact, %, pontos, notacao humana (1k, 1M)
 - **Overlays**: Media movel, linhas ATH/ATL, linhas de referencia, bandas
 - **Transformacoes**: YoY, MoM, acumulado 12m, juros real, normalizacao
 - **Auto-discovery**: Detecta automaticamente paths de output do projeto

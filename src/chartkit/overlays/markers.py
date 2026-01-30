@@ -54,7 +54,7 @@ def highlight_last_point(ax, series: pd.Series, color: str = None, **kwargs) -> 
         color = theme.colors.primary
 
     # Scatter (bolinha)
-    ax.scatter([last_date], [last_val], color=color, s=markers.scatter_size, zorder=5)
+    ax.scatter([last_date], [last_val], color=color, s=markers.scatter_size, zorder=config.layout.zorder.markers)
 
     # Texto
     # Formata valor (tenta usar o formatter do eixo Y se disponivel, senao default)

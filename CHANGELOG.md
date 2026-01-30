@@ -1,5 +1,23 @@
 # Project Changelog
 
+## [2026-01-30 02:10]
+### Added
+- **Formatador de moeda compacto**: Nova funcao `compact_currency_formatter()` para notacao abreviada
+  - Exibe valores grandes como "R$ 1,2 mi" em vez de "R$ 1.234.567,00"
+  - Ideal para graficos com valores na casa dos milhoes ou bilhoes
+  - Novos units `BRL_compact` e `USD_compact` disponiveis no `ChartingPlotter.plot()`
+- **Campo `babel_locale` em LocaleConfig**: Configura locale para formatacao Babel (default: `pt_BR`)
+  - Permite trocar para `en_US`, `es_ES`, etc. via TOML
+
+### Changed
+- **Formatador de moeda reescrito com Babel**: `currency_formatter()` agora usa `babel.numbers`
+  - Suporta qualquer codigo de moeda ISO 4217 (BRL, USD, EUR, GBP, JPY, etc.)
+  - Formatacao automatica baseada no locale configurado
+  - Substitui implementacao manual que so suportava BRL e USD
+
+### Dependencies
+- Adicionado `babel>=2.17.0` para formatacao i18n de moedas
+
 ## [2026-01-30 01:46]
 ### Fixed
 - **Thread-safety em `reset_project_root_cache()`**: Adicionado lock antes de `cache.clear()`
