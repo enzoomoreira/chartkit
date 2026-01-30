@@ -26,13 +26,19 @@ Configuracao (opcional - funciona automaticamente na maioria dos casos):
     # $env:CHARTING_OUTPUTS_PATH = "C:/caminho/outputs"
 
 Uso:
-    import chartkit  # Registra o accessor 'charting'
+    import chartkit  # Registra o accessor 'chartkit'
 
-    # Plotagem
+    # Plotagem simples
     df.chartkit.plot()
     df.chartkit.plot(kind='bar', title='Titulo', units='%')
 
-    # Transformacoes
+    # Plotagem com metricas
+    df.chartkit.plot(metrics=['ath', 'atl', 'ma:12'])
+
+    # Transforms encadeados
+    df.chartkit.annualize_daily().plot(metrics=['ath']).save('chart.png')
+
+    # Transformacoes standalone
     from chartkit import yoy, mom, accum_12m, annualize_daily
     df_yoy = yoy(df)
     cdi_anual = annualize_daily(cdi_diario)
@@ -63,6 +69,9 @@ def configure_logging(level: str = "DEBUG", sink=None) -> None:
 
 from .accessor import ChartingAccessor
 from .engine import ChartingPlotter
+from .metrics import MetricRegistry
+from .result import PlotResult
+from .transforms import TransformAccessor
 from .settings import (
     ChartingConfig,
     configure,
@@ -80,7 +89,6 @@ from .transforms import (
     diff,
     mom,
     normalize,
-    real_rate,
     to_month_end,
     yoy,
 )  # Re-exported from transforms/
@@ -119,6 +127,9 @@ __all__ = [
     # Classes principais
     "ChartingAccessor",
     "ChartingPlotter",
+    "PlotResult",
+    "TransformAccessor",
+    "MetricRegistry",
     "theme",
     # Transforms
     "yoy",
@@ -128,6 +139,5 @@ __all__ = [
     "normalize",
     "annualize_daily",
     "compound_rolling",
-    "real_rate",
     "to_month_end",
 ]

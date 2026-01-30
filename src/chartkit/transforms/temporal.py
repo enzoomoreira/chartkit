@@ -177,36 +177,6 @@ def compound_rolling(
     return compounded * 100
 
 
-def real_rate(
-    nominal: pd.DataFrame | pd.Series,
-    inflation: pd.DataFrame | pd.Series
-) -> pd.DataFrame | pd.Series:
-    """
-    Calcula taxa de juros real usando a Equacao de Fisher.
-
-    Formula exata: ((1 + nominal) / (1 + inflacao) - 1) * 100
-
-    Args:
-        nominal: Taxa nominal em % (ex: Selic 12m)
-        inflation: Taxa de inflacao em % (ex: IPCA 12m)
-
-    Returns:
-        DataFrame/Series com taxa real em %
-
-    Example:
-        >>> selic_12m = compound_rolling(sgs.read('selic_acumm_mensal'))
-        >>> ipca_12m = sidra.read('ipca_12m')
-        >>> juros_real = real_rate(selic_12m, ipca_12m)
-    """
-    # Converte % para decimal
-    nominal_dec = nominal / 100
-    inflation_dec = inflation / 100
-
-    # Equacao de Fisher exata
-    real = (1 + nominal_dec) / (1 + inflation_dec) - 1
-    return real * 100
-
-
 def to_month_end(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
     """
     Normaliza indice temporal para fim do mes.

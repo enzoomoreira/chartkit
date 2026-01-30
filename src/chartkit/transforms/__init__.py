@@ -4,11 +4,15 @@ Transformacoes de dados temporais.
 Funcoes para transformar series temporais em diferentes representacoes,
 como variacoes percentuais, acumulados e normalizacoes.
 
-Uso:
+Uso standalone:
     from chartkit import yoy, mom, accum_12m
     df_yoy = yoy(df)  # Variacao ano-contra-ano
+
+Uso encadeado (via accessor):
+    df.chartkit.yoy().mom().plot()
 """
 
+from .accessor import TransformAccessor
 from .temporal import (
     accum_12m,
     annualize_daily,
@@ -16,12 +20,12 @@ from .temporal import (
     diff,
     mom,
     normalize,
-    real_rate,
     to_month_end,
     yoy,
 )
 
 __all__ = [
+    "TransformAccessor",
     "yoy",
     "mom",
     "accum_12m",
@@ -29,6 +33,5 @@ __all__ = [
     "normalize",
     "annualize_daily",
     "compound_rolling",
-    "real_rate",
     "to_month_end",
 ]

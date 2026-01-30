@@ -27,8 +27,11 @@ df.chartkit.plot(title="Taxa de Juros", units='%', source='BCB')
 # Grafico de barras
 df.chartkit.plot(kind='bar', title="Variacao Mensal", units='%', highlight_last=True)
 
-# Salvar grafico
-df.chartkit.plot(title="Meu Grafico", save_path="grafico.png")
+# Grafico com metricas (ATH, media movel, etc)
+df.chartkit.plot(title="Analise", metrics=['ath', 'atl', 'ma:12'])
+
+# Encadeamento completo
+df.chartkit.yoy().plot(title="Variacao YoY").save("grafico.png").show()
 ```
 
 ## Funcionalidades
@@ -36,23 +39,38 @@ df.chartkit.plot(title="Meu Grafico", save_path="grafico.png")
 - **Pandas Accessor**: Use `df.chartkit.plot()` diretamente em qualquer DataFrame
 - **Graficos**: Linhas e barras com estilo profissional
 - **Formatadores**: BRL, USD, BRL_compact, USD_compact, %, pontos, notacao humana (1k, 1M)
-- **Overlays**: Media movel, linhas ATH/ATL, linhas de referencia, bandas
-- **Transformacoes**: YoY, MoM, acumulado 12m, juros real, normalizacao
+- **Metricas Declarativas**: Sistema flexivel via `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5']`
+- **Transforms Encadeados**: `df.chartkit.yoy().mom().plot()` com method chaining
 - **Auto-discovery**: Detecta automaticamente paths de output do projeto
 - **Configuracao TOML**: Personalize cores, branding e layout via arquivo TOML
 
 ## Documentacao
 
+### Primeiros Passos
+
+- [Getting Started](docs/getting-started.md) - Primeiro grafico em 2 minutos
+- [Cookbook](docs/cookbook.md) - Receitas praticas para dados financeiros
+
+### Guias
+
+| Guia | Descricao |
+|------|-----------|
+| [Plotting](docs/guide/plotting.md) | Tipos de grafico, formatacao e PlotResult |
+| [Metrics](docs/guide/metrics.md) | Sistema declarativo de metricas |
+| [Transforms](docs/guide/transforms.md) | Transformacoes temporais e encadeamento |
+| [Configuration](docs/guide/configuration.md) | TOML, paths e auto-discovery |
+
+### Referencia
+
+- [API Reference](docs/reference/api.md) - Assinaturas, tipos e parametros
+
+### Para Contribuidores
+
 | Documento | Descricao |
 |-----------|-----------|
-| [Getting Started](docs/getting-started.md) | Instalacao e primeiros passos |
-| [Configuration](docs/configuration.md) | Sistema de configuracao TOML |
-| [API Reference](docs/api-reference.md) | Referencia completa da API |
-| [Transforms](docs/transforms.md) | Funcoes de transformacao temporal |
-| [Overlays](docs/overlays.md) | Elementos visuais secundarios |
-| [Styling](docs/styling.md) | Tema, cores e formatadores |
-| [Architecture](docs/architecture.md) | Arquitetura interna |
-| [Internals](docs/internals.md) | Thread-safety, caching e logging |
+| [Architecture](docs/contributing/architecture.md) | Visao geral e fluxo de dados |
+| [Extending](docs/contributing/extending.md) | MetricRegistry e extensibilidade |
+| [Internals](docs/contributing/internals.md) | Thread-safety, caching e logging |
 
 ## Requisitos
 

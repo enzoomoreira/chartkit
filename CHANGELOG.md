@@ -1,5 +1,33 @@
 # Project Changelog
 
+## [2026-01-30 05:20]
+### Added
+- **Novo modulo `metrics/`**: Sistema declarativo de metricas para graficos
+  - Substitui flags booleanas (`show_ath=True`) por lista de metricas: `plot(metrics=['ath', 'ma:12'])`
+  - `MetricRegistry`: Registro central com decorator para metricas customizadas
+  - Metricas built-in: `ath`, `atl`, `ma:N`, `hline:V`, `band:L:U`
+  - Sintaxe com parametros: `'ma:12'` (media movel 12 periodos), `'band:1.5:4.5'` (banda entre valores)
+- **Novo `PlotResult`**: Resultado de plotagem que permite method chaining
+  - `df.chartkit.plot().save('chart.png').show()`
+  - Properties `.axes` e `.figure` para acesso direto ao matplotlib
+- **Novo `TransformAccessor`**: Accessor encadeavel para transforms
+  - Permite encadeamento completo: `df.chartkit.yoy().mom().plot()`
+  - Property `.df` para acessar DataFrame transformado
+- **Transforms expostos no accessor principal**: `df.chartkit.yoy()`, `df.chartkit.mom()`, etc.
+  - Cada transform retorna `TransformAccessor` para encadeamento
+
+### Changed
+- **API de plotagem simplificada**: Argumentos `moving_avg`, `show_ath`, `show_atl`, `overlays` substituidos por `metrics: list[str]`
+- **Retorno de `plot()`**: Agora retorna `PlotResult` em vez de `Axes` diretamente
+  - Acesso ao axes via `result.axes` (backwards compatible)
+- **Accessor refatorado**: Metodos de transform agora retornam `TransformAccessor` para encadeamento
+  - Cada acesso ao accessor cria nova instancia (removido cache de plotter)
+
+### Removed
+- **`real_rate()` de transforms**: Funcao removida do modulo temporal
+- **Metodo `save()` do accessor**: Removido em favor de `plot().save()`
+- **Cache de plotter no accessor**: Removido `_PLOTTER_ATTR` (criava complexidade desnecessaria)
+
 ## [2026-01-30 02:10]
 ### Added
 - **Formatador de moeda compacto**: Nova funcao `compact_currency_formatter()` para notacao abreviada

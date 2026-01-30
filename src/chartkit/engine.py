@@ -5,27 +5,31 @@ Orquestra temas, formatadores e componentes para criar graficos
 financeiros padronizados.
 """
 
-import pandas as pd
-import matplotlib.pyplot as plt
+from __future__ import annotations
+
 from pathlib import Path
 
-from .settings import get_config, get_charts_path
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from ._internal import resolve_collisions
+from .charts.bar import plot_bar
+from .charts.line import plot_line
+from .decorations import add_footer
+from .metrics import MetricRegistry
+from .result import PlotResult
+from .settings import get_charts_path, get_config
 from .styling import (
-    theme,
     compact_currency_formatter,
     currency_formatter,
-    percent_formatter,
     human_readable_formatter,
+    percent_formatter,
     points_formatter,
+    theme,
 )
-from .decorations import add_footer
-from ._internal import resolve_collisions
-from .charts.line import plot_line
-from .charts.bar import plot_bar
-from .overlays import add_moving_average, add_ath_line, add_atl_line, add_hline, add_band
 
 
-# Mapa de formatadores para eixo Y (Open/Closed: adicionar novos sem modificar _apply_y_formatter)
+# Mapa de formatadores para eixo Y
 _FORMATTERS = {
     "BRL": lambda: currency_formatter("BRL"),
     "USD": lambda: currency_formatter("USD"),
@@ -40,7 +44,13 @@ _FORMATTERS = {
 class ChartingPlotter:
     """
     Factory de visualizacao financeira padronizada.
-    Orquestra temas, formatadores e componentes.
+
+    Orquestra temas, formatadores e componentes para criar graficos.
+
+    Attributes:
+        df: DataFrame pandas com os dados.
+        _fig: Matplotlib Figure (criada em plot()).
+        _ax: Matplotlib Axes (criada em plot()).
     """
 
     def __init__(self, df: pd.DataFrame) -> None:
@@ -55,50 +65,46 @@ class ChartingPlotter:
         self._fig = None
         self._ax = None
 
-    # =========================================================================
-    # API Publica
-    # =========================================================================
-
     def plot(
         self,
-        x: str = None,
-        y: str | list[str] = None,
+        x: str | None = None,
+        y: str | list[str] | None = None,
         kind: str = "line",
-        title: str = None,
-        units: str = None,
-        source: str = None,
+        title: str | None = None,
+        units: str | None = None,
+        source: str | None = None,
         highlight_last: bool = False,
         y_origin: str = "zero",
-        save_path: str = None,
-        moving_avg: int = None,
-        show_ath: bool = False,
-        show_atl: bool = False,
-        overlays: dict = None,
+        save_path: str | None = None,
+        metrics: list[str] | None = None,
         **kwargs,
-    ):
+    ) -> PlotResult:
         """
         Gera um grafico padronizado.
 
         Args:
-            x: Coluna para eixo X (default: index)
-            y: Coluna(s) para eixo Y (default: todas numericas)
-            kind: Tipo de grafico ('line' ou 'bar')
-            title: Titulo do grafico
-            units: Formatacao do eixo Y ('BRL', 'USD', '%', 'points', 'human')
-            source: Fonte dos dados para rodape (ex: 'BCB', 'IBGE')
-            highlight_last: Se True, destaca o ultimo valor da serie
-            y_origin: Origem do eixo Y para barras ('zero', 'auto'). Default 'zero'.
-            save_path: Caminho para salvar o grafico
-            moving_avg: Janela da media movel (ex: 12 para MM12)
-            show_ath: Se True, mostra linha no All-Time High
-            show_atl: Se True, mostra linha no All-Time Low
-            overlays: Dicionario com overlays customizados:
-                - 'hlines': Lista de dicts com {value, label, color, linestyle}
-                - 'band': Dict com {lower, upper, color, alpha, label}
-            **kwargs: Argumentos extras para matplotlib
+            x: Coluna para eixo X (default: index).
+            y: Coluna(s) para eixo Y (default: todas numericas).
+            kind: Tipo de grafico ('line' ou 'bar').
+            title: Titulo do grafico.
+            units: Formatacao do eixo Y ('BRL', 'USD', '%', 'points', 'human').
+            source: Fonte dos dados para rodape (ex: 'BCB', 'IBGE').
+            highlight_last: Se True, destaca o ultimo valor da serie.
+            y_origin: Origem do eixo Y para barras ('zero', 'auto').
+            save_path: Caminho para salvar o grafico.
+            metrics: Lista de metricas a aplicar. Formatos suportados:
+                - 'ath': All-Time High
+                - 'atl': All-Time Low
+                - 'ma:N': Media movel de N periodos (ex: 'ma:12')
+                - 'hline:V': Linha horizontal no valor V (ex: 'hline:3.0')
+                - 'band:L:U': Banda entre L e U (ex: 'band:1.5:4.5')
+            **kwargs: Argumentos extras para matplotlib.
 
         Returns:
-            matplotlib Axes
+            PlotResult com metodos .save(), .show() e acesso ao axes.
+
+        Example:
+            >>> df.chartkit.plot(metrics=['ath', 'ma:12']).save('chart.png')
         """
         config = get_config()
 
@@ -116,27 +122,22 @@ class ChartingPlotter:
         else:
             y_data = self.df[y]
 
-        # 3. Aplica formatter ANTES da plotagem (para highlight_last usar o formatter correto)
+        # 3. Aplica formatter ANTES da plotagem
         self._apply_y_formatter(ax, units)
 
         # 4. Plotagem Core
         if kind == "line":
             plot_line(ax, x_data, y_data, highlight_last, **kwargs)
         elif kind == "bar":
-            plot_bar(ax, x_data, y_data, highlight=highlight_last, y_origin=y_origin, **kwargs)
+            plot_bar(
+                ax, x_data, y_data, highlight=highlight_last, y_origin=y_origin, **kwargs
+            )
         else:
             raise ValueError(f"Chart type '{kind}' not supported.")
 
-        # 5. Aplicacao de Overlays
-        self._apply_overlays(
-            ax,
-            x_data,
-            y_data,
-            moving_avg=moving_avg,
-            show_ath=show_ath,
-            show_atl=show_atl,
-            overlays=overlays,
-        )
+        # 5. Aplica metricas
+        if metrics:
+            MetricRegistry.apply(ax, x_data, y_data, metrics)
 
         # 6. Resolver colisoes de labels
         resolve_collisions(ax)
@@ -149,85 +150,11 @@ class ChartingPlotter:
         if save_path:
             self.save(save_path)
 
-        return ax
-
-    # =========================================================================
-    # Helpers de Overlays
-    # =========================================================================
-
-    def _apply_overlays(
-        self,
-        ax,
-        x_data,
-        y_data,
-        moving_avg: int = None,
-        show_ath: bool = False,
-        show_atl: bool = False,
-        overlays: dict = None,
-    ):
-        """
-        Aplica overlays sobre o grafico.
-
-        Args:
-            ax: Matplotlib Axes
-            x_data: Dados do eixo X
-            y_data: Dados do eixo Y (Series ou DataFrame)
-            moving_avg: Janela da media movel
-            show_ath: Mostrar linha ATH
-            show_atl: Mostrar linha ATL
-            overlays: Dicionario com overlays customizados
-        """
-        config = get_config()
-
-        # Media movel
-        if moving_avg:
-            add_moving_average(ax, x_data, y_data, window=moving_avg)
-
-        # All-Time High
-        if show_ath:
-            add_ath_line(ax, y_data)
-
-        # All-Time Low
-        if show_atl:
-            add_atl_line(ax, y_data)
-
-        # Overlays customizados via dicionario
-        if overlays:
-            # Linhas horizontais customizadas
-            if "hlines" in overlays:
-                for hline_config in overlays["hlines"]:
-                    add_hline(
-                        ax,
-                        value=hline_config["value"],
-                        label=hline_config.get("label"),
-                        color=hline_config.get("color"),
-                        linestyle=hline_config.get("linestyle"),
-                        linewidth=hline_config.get("linewidth"),
-                    )
-
-            # Banda sombreada
-            if "band" in overlays:
-                band_config = overlays["band"]
-                add_band(
-                    ax,
-                    lower=band_config["lower"],
-                    upper=band_config["upper"],
-                    color=band_config.get("color"),
-                    alpha=band_config.get("alpha"),
-                    label=band_config.get("label"),
-                )
-
-    # =========================================================================
-    # Helpers de Decoracao
-    # =========================================================================
+        return PlotResult(fig=self._fig, ax=ax, plotter=self)
 
     def _apply_y_formatter(self, ax, units: str | None) -> None:
         """
         Aplica formatador no eixo Y baseado na unidade especificada.
-
-        Utiliza o mapa _FORMATTERS para converter o identificador de unidade
-        em um Formatter do matplotlib. Se a unidade nao for reconhecida,
-        nenhum formatador e aplicado (usa default do mpl).
 
         Args:
             ax: Matplotlib Axes onde o formatador sera aplicado.
@@ -240,9 +167,6 @@ class ChartingPlotter:
     def _apply_title(self, ax, title: str | None) -> None:
         """
         Aplica titulo centralizado no topo do grafico.
-
-        O titulo e posicionado no centro com padding e estilo configurados
-        em settings.
 
         Args:
             ax: Matplotlib Axes onde o titulo sera aplicado.
@@ -264,41 +188,31 @@ class ChartingPlotter:
         """
         Aplica decoracoes visuais finais ao grafico.
 
-        Atualmente adiciona o rodape com fonte dos dados e branding.
-        Extensivel para futuras decoracoes como watermarks ou bordas.
-
         Args:
             fig: Matplotlib Figure onde as decoracoes serao aplicadas.
-            source: Fonte dos dados para exibir no rodape (ex: 'BCB', 'IBGE')
-                ou None para omitir a fonte.
+            source: Fonte dos dados para exibir no rodape.
         """
         add_footer(fig, source)
 
-    # =========================================================================
-    # IO e Exportacao
-    # =========================================================================
-
-    def save(self, path: str, dpi: int = None):
+    def save(self, path: str, dpi: int | None = None) -> None:
         """
         Salva o grafico atual em arquivo.
 
         Args:
-            path: Caminho do arquivo (ex: 'grafico.png')
-            dpi: Resolucao em DPI (default: config.layout.dpi)
+            path: Caminho do arquivo (ex: 'grafico.png').
+            dpi: Resolucao em DPI (default: config.layout.dpi).
 
         Raises:
-            RuntimeError: Se nenhum grafico foi gerado ainda
+            RuntimeError: Se nenhum grafico foi gerado ainda.
         """
         if self._fig is None:
             raise RuntimeError("Nenhum grafico gerado. Chame plot() primeiro.")
 
         config = get_config()
 
-        # Usa DPI da config se nao especificado
         if dpi is None:
             dpi = config.layout.dpi
 
-        # Resolve path
         path_obj = Path(path)
         if not path_obj.is_absolute():
             charts_path = get_charts_path()
