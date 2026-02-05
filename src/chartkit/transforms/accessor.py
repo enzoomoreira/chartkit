@@ -62,14 +62,14 @@ class TransformAccessor:
     # Transforms (cada um retorna novo TransformAccessor)
     # =========================================================================
 
-    def yoy(self, periods: int = 12) -> TransformAccessor:
+    def yoy(self, periods: int | None = None) -> TransformAccessor:
         """
         Calcula variacao percentual anual (Year-over-Year).
 
         Assume dados mensais por default (12 periodos = 1 ano).
 
         Args:
-            periods: Numero de periodos para comparacao (default: 12).
+            periods: Numero de periodos para comparacao (default: config.transforms.yoy_periods).
 
         Returns:
             Novo TransformAccessor com dados transformados.
@@ -80,12 +80,12 @@ class TransformAccessor:
         """
         return TransformAccessor(yoy(self._df, periods))
 
-    def mom(self, periods: int = 1) -> TransformAccessor:
+    def mom(self, periods: int | None = None) -> TransformAccessor:
         """
         Calcula variacao percentual mensal (Month-over-Month).
 
         Args:
-            periods: Numero de periodos para comparacao (default: 1).
+            periods: Numero de periodos para comparacao (default: config.transforms.mom_periods).
 
         Returns:
             Novo TransformAccessor com dados transformados.
@@ -126,7 +126,7 @@ class TransformAccessor:
         return TransformAccessor(diff(self._df, periods))
 
     def normalize(
-        self, base: int = 100, base_date: str | None = None
+        self, base: int | None = None, base_date: str | None = None
     ) -> TransformAccessor:
         """
         Normaliza serie para um valor base em uma data especifica.
@@ -134,7 +134,7 @@ class TransformAccessor:
         Util para comparar series com escalas diferentes.
 
         Args:
-            base: Valor base para normalizacao (default: 100).
+            base: Valor base para normalizacao (default: config.transforms.normalize_base).
             base_date: Data base para normalizacao. Se None, usa primeira data.
 
         Returns:
@@ -146,14 +146,14 @@ class TransformAccessor:
         """
         return TransformAccessor(normalize(self._df, base, base_date))
 
-    def annualize_daily(self, trading_days: int = 252) -> TransformAccessor:
+    def annualize_daily(self, trading_days: int | None = None) -> TransformAccessor:
         """
         Anualiza taxa diaria para taxa anual usando juros compostos.
 
         Formula: ((1 + r_diaria) ^ dias_uteis - 1) * 100
 
         Args:
-            trading_days: Dias uteis no ano (default: 252 para Brasil).
+            trading_days: Dias uteis no ano (default: config.transforms.trading_days_per_year).
 
         Returns:
             Novo TransformAccessor com dados transformados.
@@ -163,7 +163,7 @@ class TransformAccessor:
         """
         return TransformAccessor(annualize_daily(self._df, trading_days))
 
-    def compound_rolling(self, window: int = 12) -> TransformAccessor:
+    def compound_rolling(self, window: int | None = None) -> TransformAccessor:
         """
         Calcula retorno composto em janela movel.
 
@@ -171,7 +171,7 @@ class TransformAccessor:
         Util para calcular Selic acumulada 12 meses.
 
         Args:
-            window: Tamanho da janela em periodos (default: 12).
+            window: Tamanho da janela em periodos (default: config.transforms.rolling_window).
 
         Returns:
             Novo TransformAccessor com dados transformados.

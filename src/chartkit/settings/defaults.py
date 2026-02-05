@@ -14,7 +14,6 @@ from .schema import (
     ChartingConfig,
     CollisionConfig,
     ColorsConfig,
-    CurrencyConfig,
     FontsConfig,
     FontSizesConfig,
     FooterConfig,
@@ -124,10 +123,6 @@ def create_default_config() -> ChartingConfig:
             rolling_window=12,
         ),
         formatters=FormattersConfig(
-            currency=CurrencyConfig(
-                BRL="R$ ",
-                USD="$ ",
-            ),
             locale=LocaleConfig(
                 decimal=",",
                 thousands=".",

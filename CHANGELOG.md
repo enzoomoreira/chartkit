@@ -1,5 +1,27 @@
 # Project Changelog
 
+## [2026-02-05 01:54]
+### Added
+- **Sintaxe `@` para metricas**: Direciona metrica para coluna especifica de um DataFrame
+  - `'ath@revenue'`, `'ma:12@costs'` aplicam metrica apenas na coluna indicada
+  - `rsplit("@", 1)` preserva `:` em nomes de coluna
+  - `MetricSpec(name, series='col@weird')` como escape hatch para colunas com `@` no nome
+  - Metricas data-independent (`hline`, `band`) ignoram `@` silenciosamente via `kwargs.pop`
+- **`metrics` aceita string unica**: `plot(metrics='ath')` alem de lista
+  - Normalizacao automatica via `isinstance(metrics, str)` no engine
+- **`zorder.data` explicito**: `ax.bar()` e `ax.plot()` agora passam `config.layout.zorder.data`
+
+### Changed
+- **Transforms config-driven**: Defaults de `yoy`, `mom`, `normalize`, `annualize_daily` e `compound_rolling` lidos de `get_config().transforms.*` em vez de hardcoded
+  - Pattern consistente: `if param is None: param = get_config().transforms.<field>`
+  - Assinaturas atualizadas em `temporal.py`, `transforms/accessor.py` e `accessor.py`
+- **Type hint corrigido**: `base_date: str = None` -> `base_date: str | None = None` em `normalize()`
+
+### Removed
+- **`CurrencyConfig`**: Dataclass removida de `schema.py` e `defaults.py` (substituida por Babel via `babel_locale`)
+- **`[formatters.currency]`**: Secao removida do `charting.example.toml`
+- **`project_root_markers`**: Removido do TOML de exemplo (configuracao interna, nao exposta ao usuario)
+
 ## [2026-01-30 14:29]
 ### Added
 - **Runtime path discovery** (`runtime_discovery.py`): Nova estrategia de descoberta de paths via `sys.modules`

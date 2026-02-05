@@ -137,13 +137,10 @@ rolling_window = 12          # Janela para rolling
 # -----------------------------------------------------------------------------
 # Formatadores - Formatacao de texto
 # -----------------------------------------------------------------------------
-[formatters.currency]
-BRL = "R$ "  # Prefixo Real
-USD = "$ "   # Prefixo Dolar
-
 [formatters.locale]
-decimal = ","    # Separador decimal
-thousands = "."  # Separador de milhares
+decimal = ","         # Separador decimal
+thousands = "."       # Separador de milhares
+babel_locale = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.) - afeta formatacao de moedas
 
 [formatters.magnitude]
 suffixes = ["", "k", "M", "B", "T"]  # Sufixos para notacao compacta
@@ -171,6 +168,3 @@ outputs_dir = ""
 # Alternativa a [fonts].assets_path para configuracao centralizada
 # Pode ser relativo ao project root ou absoluto
 assets_dir = ""
-
-# Markers para detectar a raiz do projeto
-project_root_markers = [".git", "pyproject.toml", "setup.py", "setup.cfg", ".project-root"]

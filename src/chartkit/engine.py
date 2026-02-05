@@ -76,7 +76,7 @@ class ChartingPlotter:
         highlight_last: bool = False,
         y_origin: str = "zero",
         save_path: str | None = None,
-        metrics: list[str] | None = None,
+        metrics: str | list[str] | None = None,
         **kwargs,
     ) -> PlotResult:
         """
@@ -92,19 +92,22 @@ class ChartingPlotter:
             highlight_last: Se True, destaca o ultimo valor da serie.
             y_origin: Origem do eixo Y para barras ('zero', 'auto').
             save_path: Caminho para salvar o grafico.
-            metrics: Lista de metricas a aplicar. Formatos suportados:
+            metrics: Metrica(s) a aplicar (str ou lista). Formatos:
                 - 'ath': All-Time High
                 - 'atl': All-Time Low
                 - 'ma:N': Media movel de N periodos (ex: 'ma:12')
                 - 'hline:V': Linha horizontal no valor V (ex: 'hline:3.0')
                 - 'band:L:U': Banda entre L e U (ex: 'band:1.5:4.5')
+                - 'metrica@coluna': Aplica na coluna especifica
+                  (ex: 'ath@revenue', 'ma:12@costs')
             **kwargs: Argumentos extras para matplotlib.
 
         Returns:
             PlotResult com metodos .save(), .show() e acesso ao axes.
 
         Example:
-            >>> df.chartkit.plot(metrics=['ath', 'ma:12']).save('chart.png')
+            >>> df.chartkit.plot(metrics='ath').save('chart.png')
+            >>> df.chartkit.plot(metrics=['ath@revenue', 'ma:12@costs'])
         """
         config = get_config()
 
@@ -137,6 +140,8 @@ class ChartingPlotter:
 
         # 5. Aplica metricas
         if metrics:
+            if isinstance(metrics, str):
+                metrics = [metrics]
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
         # 6. Resolver colisoes de labels

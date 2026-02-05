@@ -10,6 +10,12 @@ Metricas disponiveis:
 - 'ma:N': Media movel de N periodos (ex: 'ma:12')
 - 'hline:V': Linha horizontal no valor V (ex: 'hline:3.0')
 - 'band:L:U': Banda sombreada entre L e U (ex: 'band:1.5:4.5')
+
+Com '@' para selecionar coluna alvo (ath, atl, ma):
+- 'ath@revenue': ATH da coluna 'revenue'
+- 'ma:12@costs': Media movel 12 periodos da coluna 'costs'
+
+Metricas data-independent (hline, band) ignoram '@' silenciosamente.
 """
 
 from __future__ import annotations
@@ -67,11 +73,14 @@ def register_builtin_metrics() -> None:
         """
         Adiciona linha horizontal em valor especifico.
 
+        Nao depende de dados da serie; ignora `series` se passado via '@'.
+
         Args:
             value: Valor Y onde a linha sera desenhada.
 
         Uso: metrics=['hline:3.0'] para linha em y=3.0.
         """
+        kwargs.pop("series", None)
         add_hline(ax, value=value, **kwargs)
 
     @MetricRegistry.register("band", param_names=["lower", "upper"])
@@ -81,10 +90,13 @@ def register_builtin_metrics() -> None:
         """
         Adiciona banda sombreada entre dois valores.
 
+        Nao depende de dados da serie; ignora `series` se passado via '@'.
+
         Args:
             lower: Limite inferior da banda.
             upper: Limite superior da banda.
 
         Uso: metrics=['band:1.5:4.5'] para banda entre 1.5 e 4.5.
         """
+        kwargs.pop("series", None)
         add_band(ax, lower=lower, upper=upper, **kwargs)

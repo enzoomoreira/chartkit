@@ -63,12 +63,12 @@ class ChartingAccessor:
     # Transforms (retornam TransformAccessor para encadeamento)
     # =========================================================================
 
-    def yoy(self, periods: int = 12) -> TransformAccessor:
+    def yoy(self, periods: int | None = None) -> TransformAccessor:
         """
         Calcula variacao percentual anual (Year-over-Year).
 
         Args:
-            periods: Numero de periodos para comparacao (default: 12).
+            periods: Numero de periodos para comparacao (default: config.transforms.yoy_periods).
 
         Returns:
             TransformAccessor para encadeamento.
@@ -78,12 +78,12 @@ class ChartingAccessor:
         """
         return TransformAccessor(self._obj).yoy(periods)
 
-    def mom(self, periods: int = 1) -> TransformAccessor:
+    def mom(self, periods: int | None = None) -> TransformAccessor:
         """
         Calcula variacao percentual mensal (Month-over-Month).
 
         Args:
-            periods: Numero de periodos para comparacao (default: 1).
+            periods: Numero de periodos para comparacao (default: config.transforms.mom_periods).
 
         Returns:
             TransformAccessor para encadeamento.
@@ -121,13 +121,13 @@ class ChartingAccessor:
         return TransformAccessor(self._obj).diff(periods)
 
     def normalize(
-        self, base: int = 100, base_date: str | None = None
+        self, base: int | None = None, base_date: str | None = None
     ) -> TransformAccessor:
         """
         Normaliza serie para um valor base.
 
         Args:
-            base: Valor base para normalizacao (default: 100).
+            base: Valor base para normalizacao (default: config.transforms.normalize_base).
             base_date: Data base para normalizacao. Se None, usa primeira data.
 
         Returns:
@@ -138,12 +138,12 @@ class ChartingAccessor:
         """
         return TransformAccessor(self._obj).normalize(base, base_date)
 
-    def annualize_daily(self, trading_days: int = 252) -> TransformAccessor:
+    def annualize_daily(self, trading_days: int | None = None) -> TransformAccessor:
         """
         Anualiza taxa diaria para taxa anual.
 
         Args:
-            trading_days: Dias uteis no ano (default: 252).
+            trading_days: Dias uteis no ano (default: config.transforms.trading_days_per_year).
 
         Returns:
             TransformAccessor para encadeamento.
@@ -153,12 +153,12 @@ class ChartingAccessor:
         """
         return TransformAccessor(self._obj).annualize_daily(trading_days)
 
-    def compound_rolling(self, window: int = 12) -> TransformAccessor:
+    def compound_rolling(self, window: int | None = None) -> TransformAccessor:
         """
         Calcula retorno composto em janela movel.
 
         Args:
-            window: Tamanho da janela em periodos (default: 12).
+            window: Tamanho da janela em periodos (default: config.transforms.rolling_window).
 
         Returns:
             TransformAccessor para encadeamento.
@@ -195,7 +195,7 @@ class ChartingAccessor:
         highlight_last: bool = False,
         y_origin: str = "zero",
         save_path: str | None = None,
-        metrics: list[str] | None = None,
+        metrics: str | list[str] | None = None,
         **kwargs,
     ) -> PlotResult:
         """
@@ -211,19 +211,22 @@ class ChartingAccessor:
             highlight_last: Se True, destaca o ultimo valor da serie.
             y_origin: Origem do eixo Y para barras ('zero' ou 'auto').
             save_path: Se fornecido, salva o grafico neste caminho.
-            metrics: Lista de metricas a aplicar. Formatos suportados:
+            metrics: Metrica(s) a aplicar (str ou lista). Formatos:
                 - 'ath': All-Time High
                 - 'atl': All-Time Low
                 - 'ma:N': Media movel de N periodos (ex: 'ma:12')
                 - 'hline:V': Linha horizontal no valor V (ex: 'hline:3.0')
                 - 'band:L:U': Banda entre L e U (ex: 'band:1.5:4.5')
+                - 'metrica@coluna': Aplica na coluna especifica
+                  (ex: 'ath@revenue', 'ma:12@costs')
             **kwargs: Argumentos extras passados para matplotlib.
 
         Returns:
             PlotResult com metodos .save(), .show() e acesso ao axes.
 
         Example:
-            >>> df.chartkit.plot(metrics=['ath', 'ma:12']).save('chart.png')
+            >>> df.chartkit.plot(metrics='ath').save('chart.png')
+            >>> df.chartkit.plot(metrics=['ath@revenue', 'ma:12@costs'])
         """
         plotter = ChartingPlotter(self._obj)
         return plotter.plot(

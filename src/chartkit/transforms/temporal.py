@@ -11,14 +11,16 @@ Uso:
 
 import pandas as pd
 
+from ..settings import get_config
 
-def mom(df: pd.DataFrame | pd.Series, periods: int = 1) -> pd.DataFrame | pd.Series:
+
+def mom(df: pd.DataFrame | pd.Series, periods: int | None = None) -> pd.DataFrame | pd.Series:
     """
     Calcula variacao percentual mensal (Month-over-Month).
 
     Args:
         df: DataFrame ou Series com indice temporal
-        periods: Numero de periodos para comparacao (default: 1)
+        periods: Numero de periodos para comparacao (default: config.transforms.mom_periods)
 
     Returns:
         DataFrame/Series com variacao percentual
@@ -26,10 +28,12 @@ def mom(df: pd.DataFrame | pd.Series, periods: int = 1) -> pd.DataFrame | pd.Ser
     Example:
         >>> df_mom = mom(df)  # Variacao mensal em %
     """
+    if periods is None:
+        periods = get_config().transforms.mom_periods
     return df.pct_change(periods=periods) * 100
 
 
-def yoy(df: pd.DataFrame | pd.Series, periods: int = 12) -> pd.DataFrame | pd.Series:
+def yoy(df: pd.DataFrame | pd.Series, periods: int | None = None) -> pd.DataFrame | pd.Series:
     """
     Calcula variacao percentual anual (Year-over-Year).
 
@@ -37,7 +41,7 @@ def yoy(df: pd.DataFrame | pd.Series, periods: int = 12) -> pd.DataFrame | pd.Se
 
     Args:
         df: DataFrame ou Series com indice temporal
-        periods: Numero de periodos para comparacao (default: 12 para mensal)
+        periods: Numero de periodos para comparacao (default: config.transforms.yoy_periods)
 
     Returns:
         DataFrame/Series com variacao percentual
@@ -46,6 +50,8 @@ def yoy(df: pd.DataFrame | pd.Series, periods: int = 12) -> pd.DataFrame | pd.Se
         >>> df_yoy = yoy(df)          # YoY para dados mensais
         >>> df_yoy = yoy(df, periods=4)  # YoY para dados trimestrais
     """
+    if periods is None:
+        periods = get_config().transforms.yoy_periods
     return df.pct_change(periods=periods) * 100
 
 
@@ -91,8 +97,8 @@ def diff(df: pd.DataFrame | pd.Series, periods: int = 1) -> pd.DataFrame | pd.Se
 
 def normalize(
     df: pd.DataFrame | pd.Series,
-    base: int = 100,
-    base_date: str = None
+    base: int | None = None,
+    base_date: str | None = None
 ) -> pd.DataFrame | pd.Series:
     """
     Normaliza serie para um valor base em uma data especifica.
@@ -101,7 +107,7 @@ def normalize(
 
     Args:
         df: DataFrame ou Series com indice temporal
-        base: Valor base para normalizacao (default: 100)
+        base: Valor base para normalizacao (default: config.transforms.normalize_base)
         base_date: Data base para normalizacao. Se None, usa primeira data.
 
     Returns:
@@ -111,6 +117,8 @@ def normalize(
         >>> df_norm = normalize(df)  # Base 100 na primeira data
         >>> df_norm = normalize(df, base_date='2020-01-01')  # Base 100 em 2020
     """
+    if base is None:
+        base = get_config().transforms.normalize_base
     if base_date is not None:
         base_date = pd.Timestamp(base_date)
         base_value = df.loc[base_date]
@@ -122,7 +130,7 @@ def normalize(
 
 def annualize_daily(
     df: pd.DataFrame | pd.Series,
-    trading_days: int = 252
+    trading_days: int | None = None
 ) -> pd.DataFrame | pd.Series:
     """
     Anualiza taxa diaria para taxa anual usando juros compostos.
@@ -131,7 +139,7 @@ def annualize_daily(
 
     Args:
         df: DataFrame ou Series com taxas diarias em %
-        trading_days: Dias uteis no ano (default: 252 para Brasil)
+        trading_days: Dias uteis no ano (default: config.transforms.trading_days_per_year)
 
     Returns:
         DataFrame/Series com taxas anualizadas em %
@@ -140,6 +148,8 @@ def annualize_daily(
         >>> cdi_diario = sgs.read('cdi')  # Taxa diaria em %
         >>> cdi_anual = annualize_daily(cdi_diario)
     """
+    if trading_days is None:
+        trading_days = get_config().transforms.trading_days_per_year
     # Converte % para decimal, aplica formula, retorna em %
     rate_decimal = df / 100
     annualized = (1 + rate_decimal) ** trading_days - 1
@@ -148,7 +158,7 @@ def annualize_daily(
 
 def compound_rolling(
     df: pd.DataFrame | pd.Series,
-    window: int = 12
+    window: int | None = None
 ) -> pd.DataFrame | pd.Series:
     """
     Calcula retorno composto em janela movel.
@@ -158,7 +168,7 @@ def compound_rolling(
 
     Args:
         df: DataFrame ou Series com taxas em % (ex: Selic mensal)
-        window: Tamanho da janela em periodos (default: 12 meses)
+        window: Tamanho da janela em periodos (default: config.transforms.rolling_window)
 
     Returns:
         DataFrame/Series com retorno composto em %
@@ -167,6 +177,8 @@ def compound_rolling(
         >>> selic_mensal = sgs.read('selic_acumm_mensal')
         >>> selic_12m = compound_rolling(selic_mensal)
     """
+    if window is None:
+        window = get_config().transforms.rolling_window
     # Converte % para fator, aplica produto rolling, retorna em %
     factor = 1 + (df / 100)
 

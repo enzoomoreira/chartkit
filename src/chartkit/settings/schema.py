@@ -25,7 +25,6 @@ __all__ = [
     "MarkersConfig",
     "CollisionConfig",
     "TransformsConfig",
-    "CurrencyConfig",
     "LocaleConfig",
     "MagnitudeConfig",
     "FormattersConfig",
@@ -222,14 +221,6 @@ class TransformsConfig:
 
 
 @dataclass
-class CurrencyConfig:
-    """Prefixos de moeda."""
-
-    BRL: str = "R$ "
-    USD: str = "$ "
-
-
-@dataclass
 class LocaleConfig:
     """Configuracoes de locale para formatacao."""
 
@@ -251,7 +242,6 @@ class MagnitudeConfig:
 class FormattersConfig:
     """Configuracoes de formatadores de texto."""
 
-    currency: CurrencyConfig = field(default_factory=CurrencyConfig)
     locale: LocaleConfig = field(default_factory=LocaleConfig)
     magnitude: MagnitudeConfig = field(default_factory=MagnitudeConfig)
 

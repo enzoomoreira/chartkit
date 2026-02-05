@@ -51,7 +51,8 @@ def plot_line(
 
         # Matplotlib 3.0+ aceita pandas diretamente
         line, = ax.plot(
-            x, y_data[col], linewidth=lines.main_width, color=c, label=label, **kwargs
+            x, y_data[col], linewidth=lines.main_width, color=c, label=label,
+            zorder=config.layout.zorder.data, **kwargs
         )
         plot_lines.append(line)
 

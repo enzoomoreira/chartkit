@@ -2,9 +2,13 @@
 Sistema de metricas para graficos.
 
 Metricas sao elementos visuais aplicados ao grafico de forma declarativa.
-Em vez de flags booleanas (show_ath=True), use uma lista de metricas:
+Em vez de flags booleanas (show_ath=True), use uma lista (ou str) de metricas:
 
+    df.chartkit.plot(metrics='ath')
     df.chartkit.plot(metrics=['ath', 'atl', 'ma:12'])
+
+Sintaxe '@' para selecionar coluna alvo:
+    df.chartkit.plot(y=['revenue', 'costs'], metrics=['ath@revenue', 'ma:3@costs'])
 
 Metricas disponiveis:
 - 'ath': Linha no All-Time High
@@ -22,6 +26,10 @@ Para adicionar metricas customizadas:
 
     # Uso
     df.chartkit.plot(metrics=['my_metric:5.0'])
+
+Para edge cases (colunas com '@' no nome), use MetricSpec diretamente:
+    from chartkit.metrics import MetricSpec
+    df.chartkit.plot(metrics=[MetricSpec('ath', series='col@weird')])
 """
 
 from .builtin import register_builtin_metrics

@@ -40,6 +40,7 @@ def add_moving_average(
     # Resolve series se for DataFrame
     if isinstance(y_data, pd.DataFrame):
         col = series if series else y_data.columns[0]
+        # TODO(errors): validar col em y_data.columns (KeyError cru se invalido)
         y_data = y_data[col]
 
     # Calcula media movel com min_periods configuravel

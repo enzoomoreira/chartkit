@@ -62,7 +62,7 @@ def plot_bar(
     else:
         vals = y_data
 
-    ax.bar(x, vals, width=width, **kwargs)
+    ax.bar(x, vals, width=width, zorder=config.layout.zorder.data, **kwargs)
 
     # Ajusta origem do eixo Y
     if y_origin == "auto":
