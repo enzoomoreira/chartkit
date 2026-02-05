@@ -1,20 +1,4 @@
-"""
-Descobre paths de outputs e assets em modulos ja importados.
-
-Este modulo implementa runtime discovery, que busca variaveis OUTPUTS_PATH
-e ASSETS_PATH em sys.modules - modulos que ja foram importados pelo processo.
-
-Isso permite que bibliotecas host (como adb) exponham seus paths automaticamente
-ao serem importadas, sem necessidade de configuracao explicita.
-
-Exemplo de uso esperado:
-    # Em adb/__init__.py
-    from adb.config import OUTPUTS_PATH  # Expoe no namespace
-
-    # Em qualquer script
-    import adb          # OUTPUTS_PATH ja esta em sys.modules['adb']
-    import chartkit     # chartkit.OUTPUTS_PATH pega de adb automaticamente
-"""
+"""Descobre paths de outputs e assets em modulos ja importados via sys.modules."""
 
 import sys
 from pathlib import Path
@@ -26,22 +10,12 @@ __all__ = ["RuntimePathDiscovery"]
 
 
 class RuntimePathDiscovery:
-    """
-    Descobre OUTPUTS_PATH e ASSETS_PATH de modulos ja importados.
+    """Busca OUTPUTS_PATH e ASSETS_PATH em sys.modules.
 
-    Busca em sys.modules por atributos definidos em runtime,
-    permitindo que bibliotecas host exponham seus paths
-    automaticamente ao serem importadas.
-
-    A busca ignora modulos internos do Python (stdlib) e pacotes
-    conhecidos que nao devem conter paths de projeto.
-
-    Attributes:
-        SKIP_PREFIXES: Prefixos de modulos a ignorar na busca.
-        SKIP_MODULES: Nomes exatos de modulos a ignorar.
+    Permite que bibliotecas host exponham paths automaticamente ao serem
+    importadas, sem configuracao explicita.
     """
 
-    # Prefixos de modulos a ignorar (stdlib, internos)
     SKIP_PREFIXES: tuple[str, ...] = (
         "_",
         "builtins",
@@ -129,7 +103,7 @@ class RuntimePathDiscovery:
         "difflib",
         "string",
         "operator",
-        # Pacotes de terceiros comuns que nao tem paths de projeto
+        # Terceiros comuns sem paths de projeto
         "numpy",
         "pandas",
         "matplotlib",
@@ -170,11 +144,9 @@ class RuntimePathDiscovery:
         "yaml",
         "dotenv",
         "babel",
-        # O proprio chartkit nao deve ser fonte
         "chartkit",
     )
 
-    # Modulos exatos a ignorar
     SKIP_MODULES: frozenset[str] = frozenset(
         {
             "antigravity",
@@ -188,42 +160,18 @@ class RuntimePathDiscovery:
     )
 
     def __init__(self) -> None:
-        """Inicializa o descobridor com cache vazio."""
         self._cache: dict[str, Optional[Path]] = {}
 
     def discover_outputs_path(self) -> Optional[Path]:
-        """
-        Busca OUTPUTS_PATH em modulos importados.
-
-        Returns:
-            Path descoberto ou None se nao encontrado.
-        """
         return self._discover_var("OUTPUTS_PATH")
 
     def discover_assets_path(self) -> Optional[Path]:
-        """
-        Busca ASSETS_PATH em modulos importados.
-
-        Returns:
-            Path descoberto ou None se nao encontrado.
-        """
         return self._discover_var("ASSETS_PATH")
 
     def _should_skip_module(self, module_name: str) -> bool:
-        """
-        Verifica se um modulo deve ser ignorado na busca.
-
-        Args:
-            module_name: Nome do modulo a verificar.
-
-        Returns:
-            True se o modulo deve ser ignorado.
-        """
-        # Modulos exatos a ignorar
         if module_name in self.SKIP_MODULES:
             return True
 
-        # Modulos com prefixos conhecidos
         for prefix in self.SKIP_PREFIXES:
             if module_name == prefix or module_name.startswith(f"{prefix}."):
                 return True
@@ -231,34 +179,21 @@ class RuntimePathDiscovery:
         return False
 
     def _discover_var(self, var_name: str) -> Optional[Path]:
-        """
-        Busca uma variavel em todos os modulos importados.
-
-        Args:
-            var_name: Nome da variavel a buscar (ex: "OUTPUTS_PATH").
-
-        Returns:
-            Path descoberto ou None se nao encontrado.
-        """
+        """Busca variavel em todos os modulos importados (cacheado)."""
         if var_name in self._cache:
             logger.debug("{}: usando cache ({})", var_name, self._cache[var_name])
             return self._cache[var_name]
 
-        # Itera sobre copia da lista para evitar RuntimeError
         for module_name, module in list(sys.modules.items()):
-            # Pula modulos internos/stdlib/terceiros conhecidos
             if self._should_skip_module(module_name):
                 continue
 
-            # Modulos podem ser None durante import
             if module is None:
                 continue
 
-            # Procura o atributo no modulo
             value = getattr(module, var_name, None)
 
             if value is not None:
-                # Aceita Path ou str
                 if isinstance(value, Path):
                     path = value
                 elif isinstance(value, str):
@@ -266,7 +201,6 @@ class RuntimePathDiscovery:
                 else:
                     continue
 
-                # Valida que e um path razoavel (nao vazio)
                 if str(path):
                     logger.debug(
                         "{} descoberto via runtime em modulo '{}': {}",
@@ -277,12 +211,10 @@ class RuntimePathDiscovery:
                     self._cache[var_name] = path
                     return path
 
-        # Nao encontrado em nenhum modulo
         logger.debug("{}: nao encontrado em sys.modules", var_name)
         self._cache[var_name] = None
         return None
 
     def clear_cache(self) -> None:
-        """Limpa o cache de descoberta."""
         self._cache.clear()
         logger.debug("RuntimePathDiscovery: cache limpo")

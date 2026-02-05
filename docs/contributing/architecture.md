@@ -142,9 +142,9 @@ src/chartkit/
 │   ├── temporal.py       # Implementacoes das funcoes de transformacao
 │   └── accessor.py       # TransformAccessor para encadeamento
 │
-└── _internal/            # Utilitarios privados (nao exportar)
-    ├── __init__.py       # Facade: resolve_collisions
-    └── collision.py      # Resolucao de colisoes de labels
+└── _internal/            # Utilitarios privados
+    ├── __init__.py       # Facade: register_moveable, register_fixed, register_passive, resolve_collisions
+    └── collision.py      # Engine generica de resolucao de colisao (bbox-based)
 ```
 
 ---

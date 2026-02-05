@@ -1,9 +1,4 @@
-"""
-Motor de plotagem principal.
-
-Orquestra temas, formatadores e componentes para criar graficos
-financeiros padronizados.
-"""
+"""Motor de plotagem principal."""
 
 from __future__ import annotations
 
@@ -29,7 +24,6 @@ from .styling import (
 )
 
 
-# Mapa de formatadores para eixo Y
 _FORMATTERS = {
     "BRL": lambda: currency_formatter("BRL"),
     "USD": lambda: currency_formatter("USD"),
@@ -42,25 +36,9 @@ _FORMATTERS = {
 
 
 class ChartingPlotter:
-    """
-    Factory de visualizacao financeira padronizada.
-
-    Orquestra temas, formatadores e componentes para criar graficos.
-
-    Attributes:
-        df: DataFrame pandas com os dados.
-        _fig: Matplotlib Figure (criada em plot()).
-        _ax: Matplotlib Axes (criada em plot()).
-    """
+    """Factory de visualizacao financeira padronizada."""
 
     def __init__(self, df: pd.DataFrame) -> None:
-        """
-        Inicializa o motor de plotagem com um DataFrame.
-
-        Args:
-            df: DataFrame pandas contendo os dados a serem plotados.
-                O indice deve ser do tipo DatetimeIndex para graficos temporais.
-        """
         self.df = df
         self._fig = None
         self._ax = None
@@ -79,45 +57,24 @@ class ChartingPlotter:
         metrics: str | list[str] | None = None,
         **kwargs,
     ) -> PlotResult:
-        """
-        Gera um grafico padronizado.
+        """Gera grafico padronizado.
 
         Args:
-            x: Coluna para eixo X (default: index).
-            y: Coluna(s) para eixo Y (default: todas numericas).
-            kind: Tipo de grafico ('line' ou 'bar').
-            title: Titulo do grafico.
-            units: Formatacao do eixo Y ('BRL', 'USD', '%', 'points', 'human').
-            source: Fonte dos dados para rodape (ex: 'BCB', 'IBGE').
-            highlight_last: Se True, destaca o ultimo valor da serie.
-            y_origin: Origem do eixo Y para barras ('zero', 'auto').
-            save_path: Caminho para salvar o grafico.
-            metrics: Metrica(s) a aplicar (str ou lista). Formatos:
-                - 'ath': All-Time High
-                - 'atl': All-Time Low
-                - 'ma:N': Media movel de N periodos (ex: 'ma:12')
-                - 'hline:V': Linha horizontal no valor V (ex: 'hline:3.0')
-                - 'band:L:U': Banda entre L e U (ex: 'band:1.5:4.5')
-                - 'metrica@coluna': Aplica na coluna especifica
-                  (ex: 'ath@revenue', 'ma:12@costs')
-            **kwargs: Argumentos extras para matplotlib.
-
-        Returns:
-            PlotResult com metodos .save(), .show() e acesso ao axes.
-
-        Example:
-            >>> df.chartkit.plot(metrics='ath').save('chart.png')
-            >>> df.chartkit.plot(metrics=['ath@revenue', 'ma:12@costs'])
+            units: Formatacao do eixo Y (``'BRL'``, ``'USD'``, ``'%'``,
+                ``'human'``, ``'points'``, ``'BRL_compact'``, ``'USD_compact'``).
+            metrics: Metrica(s) declarativas. Ver ``chartkit.metrics`` para
+                sintaxe completa (ex: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``).
+            y_origin: ``'zero'`` (default) ou ``'auto'`` (apenas para barras).
         """
         config = get_config()
 
-        # 1. Setup inicial (Style)
+        # 1. Style
         theme.apply()
         fig, ax = plt.subplots(figsize=config.layout.figsize)
         self._fig = fig
         self._ax = ax
 
-        # 2. Resolucao de dados
+        # 2. Data
         x_data = self.df.index if x is None else self.df[x]
 
         if y is None:
@@ -125,10 +82,10 @@ class ChartingPlotter:
         else:
             y_data = self.df[y]
 
-        # 3. Aplica formatter ANTES da plotagem
+        # 3. Y formatter
         self._apply_y_formatter(ax, units)
 
-        # 4. Plotagem Core
+        # 4. Plot
         if kind == "line":
             plot_line(ax, x_data, y_data, highlight_last, **kwargs)
         elif kind == "bar":
@@ -138,16 +95,16 @@ class ChartingPlotter:
         else:
             raise ValueError(f"Chart type '{kind}' not supported.")
 
-        # 5. Aplica metricas
+        # 5. Metrics
         if metrics:
             if isinstance(metrics, str):
                 metrics = [metrics]
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
-        # 6. Resolver colisoes de labels
+        # 6. Collision resolution
         resolve_collisions(ax)
 
-        # 7. Aplicacao de Componentes e Decoracoes
+        # 7. Decorations
         self._apply_title(ax, title)
         self._apply_decorations(fig, source)
 
@@ -158,25 +115,10 @@ class ChartingPlotter:
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
 
     def _apply_y_formatter(self, ax, units: str | None) -> None:
-        """
-        Aplica formatador no eixo Y baseado na unidade especificada.
-
-        Args:
-            ax: Matplotlib Axes onde o formatador sera aplicado.
-            units: Identificador da unidade ('BRL', 'USD', '%', 'human', 'points')
-                ou None para usar formatacao padrao.
-        """
         if units and units in _FORMATTERS:
             ax.yaxis.set_major_formatter(_FORMATTERS[units]())
 
     def _apply_title(self, ax, title: str | None) -> None:
-        """
-        Aplica titulo centralizado no topo do grafico.
-
-        Args:
-            ax: Matplotlib Axes onde o titulo sera aplicado.
-            title: Texto do titulo ou None para nao exibir titulo.
-        """
         if title:
             config = get_config()
             ax.set_title(
@@ -190,22 +132,10 @@ class ChartingPlotter:
             )
 
     def _apply_decorations(self, fig, source: str | None) -> None:
-        """
-        Aplica decoracoes visuais finais ao grafico.
-
-        Args:
-            fig: Matplotlib Figure onde as decoracoes serao aplicadas.
-            source: Fonte dos dados para exibir no rodape.
-        """
         add_footer(fig, source)
 
     def save(self, path: str, dpi: int | None = None) -> None:
-        """
-        Salva o grafico atual em arquivo.
-
-        Args:
-            path: Caminho do arquivo (ex: 'grafico.png').
-            dpi: Resolucao em DPI (default: config.layout.dpi).
+        """Salva o grafico em arquivo.
 
         Raises:
             RuntimeError: Se nenhum grafico foi gerado ainda.

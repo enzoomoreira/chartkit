@@ -1,7 +1,3 @@
-"""
-Grafico de barras para series temporais.
-"""
-
 import pandas as pd
 from matplotlib.axes import Axes
 
@@ -18,22 +14,11 @@ def plot_bar(
     y_origin: str = "zero",
     **kwargs,
 ) -> None:
-    """
-    Plota grafico de barras com largura automatica baseada na frequencia.
-
-    A largura das barras e calculada automaticamente com base no intervalo
-    entre pontos de dados (diario, mensal ou anual).
+    """Plota grafico de barras com largura automatica baseada na frequencia.
 
     Args:
-        ax: Matplotlib Axes onde o grafico sera desenhado.
-        x: Dados do eixo X (index do DataFrame ou coluna especifica).
-        y_data: Series ou DataFrame com dados do eixo Y. Se DataFrame com
-            multiplas colunas, usa plotagem agrupada do pandas.
-        highlight: Se True, destaca o ultimo valor com label no topo da barra.
-        y_origin: Origem do eixo Y:
-            - 'zero': Inclui zero no eixo Y (default, recomendado para barras)
-            - 'auto': Ajusta limites para focar nos dados com margem de 10%
-        **kwargs: Argumentos extras passados para ax.bar() do matplotlib.
+        y_origin: ``'zero'`` inclui zero no eixo Y (default),
+            ``'auto'`` ajusta limites para focar nos dados com margem.
     """
     config = get_config()
     bars = config.bars
@@ -41,12 +26,11 @@ def plot_bar(
     if "color" not in kwargs:
         kwargs["color"] = theme.colors.primary
 
-    # Largura da barra inteligente baseada na frequencia dos dados
+    # Largura inteligente baseada na frequencia dos dados
     width = bars.width_default
     if pd.api.types.is_datetime64_any_dtype(x):
         if len(x) > 1:
             avg_diff = (x.max() - x.min()) / (len(x) - 1)
-            # Ordem importa: verificar anual primeiro (maior threshold)
             if avg_diff.days > bars.frequency_detection.annual_threshold:
                 width = bars.width_annual
             elif avg_diff.days > bars.frequency_detection.monthly_threshold:
@@ -54,7 +38,6 @@ def plot_bar(
 
     if isinstance(y_data, pd.DataFrame):
         if y_data.shape[1] > 1:
-            # Multiplas series: usa pandas plot
             y_data.plot(kind="bar", ax=ax, width=bars.width_default, **kwargs)
             return
         else:
@@ -64,23 +47,19 @@ def plot_bar(
 
     ax.bar(x, vals, width=width, zorder=config.layout.zorder.data, **kwargs)
 
-    # Ajusta origem do eixo Y
     if y_origin == "auto":
-        # Ajusta eixo Y para focar nos dados com margem configuravel
         vals_clean = vals.dropna()
         if not vals_clean.empty:
             ymin, ymax = vals_clean.min(), vals_clean.max()
             margin = (ymax - ymin) * bars.auto_margin
             ax.set_ylim(ymin - margin, ymax + margin)
     else:
-        # Default: inclui zero no eixo Y
         ymin, ymax = ax.get_ylim()
         if ymin > 0:
             ax.set_ylim(0, ymax)
         elif ymax < 0:
             ax.set_ylim(ymin, 0)
 
-    # Destaca ultimo valor se solicitado
     if highlight:
         color = kwargs.get("color", theme.colors.primary)
         highlight_last_bar(ax, x, vals, color=color)

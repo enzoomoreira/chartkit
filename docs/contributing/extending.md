@@ -366,7 +366,34 @@ __all__ = [
 ]
 ```
 
-### 3. Opcional - Crie uma metrica para o overlay
+### 3. Integre com a Collision Engine
+
+Overlays que criam elementos visuais devem registra-los na collision engine
+para que labels sejam reposicionados automaticamente. Use a categoria
+apropriada:
+
+```python
+from .._internal.collision import register_fixed, register_moveable, register_passive
+
+# Linhas de referencia: obstaculos que labels devem evitar
+line = ax.axhline(y=value, ...)
+register_fixed(ax, line)
+
+# Labels de texto: podem ser reposicionados
+text = ax.text(x, y, "Label", ...)
+register_moveable(ax, text)
+
+# Areas de fundo: existem visualmente mas nao sao obstaculos
+patch = ax.axhspan(lower, upper, alpha=0.1, ...)
+register_passive(ax, patch)
+```
+
+Se o overlay nao cria elementos que interagem com labels (ex: linhas de dados
+como media movel), nenhum registro e necessario.
+
+Para mais detalhes, veja o [guia da collision engine](../guide/collision.md).
+
+### 4. Opcional - Crie uma metrica para o overlay
 
 ```python
 # Em src/chartkit/metrics/builtin.py (ou novo arquivo)

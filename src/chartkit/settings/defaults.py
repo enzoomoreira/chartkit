@@ -1,9 +1,4 @@
-"""
-Valores default para configuracao.
-
-Valores neutros usados quando nenhum arquivo de configuracao
-customizado e encontrado. Configure via TOML para personalizar.
-"""
+"""Valores default para configuracao."""
 
 __all__ = ["DEFAULT_CONFIG", "create_default_config"]
 
@@ -33,12 +28,6 @@ from .schema import (
 
 
 def create_default_config() -> ChartingConfig:
-    """
-    Cria uma instancia de ChartingConfig com todos os valores default.
-
-    Returns:
-        ChartingConfig com valores padrao neutros.
-    """
     return ChartingConfig(
         branding=BrandingConfig(
             company_name="",
@@ -104,17 +93,8 @@ def create_default_config() -> ChartingConfig:
         bands=BandsConfig(
             alpha=0.15,
         ),
-        markers=MarkersConfig(
-            scatter_size=30,
-            label_offset_x=5,
-            label_offset_y=8,
-        ),
-        collision=CollisionConfig(
-            margin_px=5,
-            guide_threshold_px=30,
-            extra_padding_px=15,
-            px_to_points_ratio=0.75,
-        ),
+        markers=MarkersConfig(),
+        collision=CollisionConfig(),
         transforms=TransformsConfig(
             mom_periods=1,
             yoy_periods=12,
@@ -152,5 +132,4 @@ def create_default_config() -> ChartingConfig:
     )
 
 
-# Instancia singleton com valores default
 DEFAULT_CONFIG = create_default_config()

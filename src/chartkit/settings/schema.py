@@ -1,12 +1,6 @@
-"""
-Schema de configuracao.
-
-Define dataclasses tipadas para todas as configuracoes da biblioteca,
-permitindo validacao em tempo de desenvolvimento e autocompletar em IDEs.
-"""
+"""Schema de configuracao com dataclasses tipadas."""
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 __all__ = [
     "BrandingConfig",
@@ -36,8 +30,6 @@ __all__ = [
 
 @dataclass
 class BrandingConfig:
-    """Configuracoes de branding/marca para rodapes."""
-
     company_name: str = ""
     footer_format: str = "Fonte: {source}, {company_name}"
     footer_format_no_source: str = "{company_name}"
@@ -45,8 +37,6 @@ class BrandingConfig:
 
 @dataclass
 class ColorsConfig:
-    """Paleta de cores para graficos."""
-
     # Cores principais (gradiente institucional)
     primary: str = "#00464D"
     secondary: str = "#006B6B"
@@ -79,8 +69,6 @@ class ColorsConfig:
 
 @dataclass
 class FontSizesConfig:
-    """Tamanhos de fonte em pontos."""
-
     default: int = 11
     title: int = 18
     footer: int = 9
@@ -89,20 +77,14 @@ class FontSizesConfig:
 
 @dataclass
 class FontsConfig:
-    """Configuracoes de fontes."""
-
-    # Caminho relativo a assets_path ou caminho absoluto (vazio = usa fallback)
-    file: str = ""
+    file: str = ""  # Caminho relativo a assets_path ou absoluto (vazio = fallback)
     fallback: str = "sans-serif"
-    # Caminho base para assets (vazio = auto-discovery do projeto host)
-    assets_path: str = ""
+    assets_path: str = ""  # Vazio = auto-discovery do projeto host
     sizes: FontSizesConfig = field(default_factory=FontSizesConfig)
 
 
 @dataclass
 class FooterConfig:
-    """Configuracoes de posicao e estilo do rodape."""
-
     x: float = 0.01
     y: float = 0.01
     color: str = "gray"
@@ -110,20 +92,13 @@ class FooterConfig:
 
 @dataclass
 class TitleConfig:
-    """Configuracoes de estilo do titulo."""
-
     padding: int = 20
     weight: str = "bold"
 
 
 @dataclass
 class ZOrderConfig:
-    """
-    Ordem de camadas visuais (z-order) para elementos do grafico.
-
-    Valores maiores aparecem na frente. A ordem padrao e:
-    bands (0) < reference_lines (1) < moving_average (2) < data (3) < markers (5)
-    """
+    """Ordem de camadas: bands(0) < reference_lines(1) < moving_average(2) < data(3) < markers(5)."""
 
     bands: int = 0
     reference_lines: int = 1
@@ -134,8 +109,6 @@ class ZOrderConfig:
 
 @dataclass
 class LayoutConfig:
-    """Configuracoes de layout do grafico."""
-
     figsize: tuple[float, float] = (10.0, 6.0)
     dpi: int = 300
     footer: FooterConfig = field(default_factory=FooterConfig)
@@ -145,35 +118,27 @@ class LayoutConfig:
 
 @dataclass
 class LegendConfig:
-    """Configuracoes de legenda."""
-
     alpha: float = 0.9
     frameon: bool = True
 
 
 @dataclass
 class LinesConfig:
-    """Configuracoes de linhas."""
-
     main_width: float = 2.0
     overlay_width: float = 1.5
     reference_style: str = "--"
-    moving_avg_min_periods: int = 1  # Minimo de periodos para media movel
+    moving_avg_min_periods: int = 1
     legend: LegendConfig = field(default_factory=LegendConfig)
 
 
 @dataclass
 class FrequencyDetectionConfig:
-    """Thresholds para deteccao de frequencia de dados."""
-
     monthly_threshold: int = 25
     annual_threshold: int = 300
 
 
 @dataclass
 class BarsConfig:
-    """Configuracoes de graficos de barras."""
-
     width_default: float = 0.8
     width_monthly: int = 20
     width_annual: int = 300
@@ -185,34 +150,27 @@ class BarsConfig:
 
 @dataclass
 class BandsConfig:
-    """Configuracoes de bandas sombreadas."""
-
     alpha: float = 0.15
 
 
 @dataclass
 class MarkersConfig:
-    """Configuracoes de marcadores (scatter, labels)."""
-
     scatter_size: int = 30
-    label_offset_x: int = 5
-    label_offset_y: int = 8
 
 
 @dataclass
 class CollisionConfig:
-    """Configuracoes para deteccao de colisao de labels."""
-
-    margin_px: int = 5
-    guide_threshold_px: int = 30
-    extra_padding_px: int = 15
-    px_to_points_ratio: float = 0.75
+    movement: str = "y"
+    obstacle_padding_px: float = 8.0
+    label_padding_px: float = 4.0
+    max_iterations: int = 50
+    connector_threshold_px: float = 30.0
+    connector_alpha: float = 0.6
+    connector_style: str = "-"
 
 
 @dataclass
 class TransformsConfig:
-    """Configuracoes para transformacoes de dados."""
-
     mom_periods: int = 1
     yoy_periods: int = 12
     trading_days_per_year: int = 252
@@ -222,17 +180,13 @@ class TransformsConfig:
 
 @dataclass
 class LocaleConfig:
-    """Configuracoes de locale para formatacao."""
-
     decimal: str = ","
     thousands: str = "."
-    babel_locale: str = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.)
+    babel_locale: str = "pt_BR"
 
 
 @dataclass
 class MagnitudeConfig:
-    """Sufixos para notacao compacta."""
-
     suffixes: list[str] = field(
         default_factory=lambda: ["", "k", "M", "B", "T"]
     )
@@ -240,16 +194,12 @@ class MagnitudeConfig:
 
 @dataclass
 class FormattersConfig:
-    """Configuracoes de formatadores de texto."""
-
     locale: LocaleConfig = field(default_factory=LocaleConfig)
     magnitude: MagnitudeConfig = field(default_factory=MagnitudeConfig)
 
 
 @dataclass
 class LabelsConfig:
-    """Configuracoes de rotulos padrao."""
-
     ath: str = "ATH"
     atl: str = "ATL"
     moving_average_format: str = "MM{window}"
@@ -257,13 +207,9 @@ class LabelsConfig:
 
 @dataclass
 class PathsConfig:
-    """Configuracoes de caminhos e diretorios."""
-
     charts_subdir: str = "charts"
-    # Caminho explicito para outputs (vazio = auto-discovery do projeto host)
-    outputs_dir: str = ""
-    # Caminho explicito para assets (vazio = auto-discovery do projeto host)
-    assets_dir: str = ""
+    outputs_dir: str = ""  # Vazio = auto-discovery do projeto host
+    assets_dir: str = ""  # Vazio = auto-discovery do projeto host
     project_root_markers: list[str] = field(
         default_factory=lambda: [
             ".git",
@@ -277,18 +223,7 @@ class PathsConfig:
 
 @dataclass
 class ChartingConfig:
-    """
-    Configuracao principal da biblioteca de charting.
-
-    Agrega todas as sub-configuracoes em uma unica estrutura tipada.
-    Pode ser criada a partir de defaults ou carregada de arquivo TOML.
-
-    Example:
-        >>> from chartkit.settings import get_config
-        >>> config = get_config()
-        >>> print(config.colors.primary)
-        '#00464D'
-    """
+    """Configuracao principal que agrega todas as sub-configuracoes."""
 
     branding: BrandingConfig = field(default_factory=BrandingConfig)
     colors: ColorsConfig = field(default_factory=ColorsConfig)

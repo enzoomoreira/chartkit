@@ -1,10 +1,4 @@
-"""
-Overlays para graficos.
-
-Este modulo contem funcoes para adicionar elementos visuais secundarios
-(overlays) sobre graficos, como medias moveis, linhas de referencia,
-bandas e marcadores de destaque.
-"""
+"""Overlays visuais para graficos (medias moveis, linhas de referencia, bandas, marcadores)."""
 
 from .moving_average import add_moving_average
 from .reference_lines import add_ath_line, add_atl_line, add_hline

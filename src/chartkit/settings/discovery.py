@@ -1,9 +1,4 @@
-"""
-Descoberta de project root e arquivos de configuracao.
-
-Fornece funcoes para localizar a raiz do projeto e encontrar
-arquivos de configuracao em ordem de precedencia.
-"""
+"""Descoberta de project root e arquivos de configuracao."""
 
 import os
 import sys
@@ -23,13 +18,11 @@ __all__ = [
     "reset_project_root_cache",
 ]
 
-# Cache thread-safe com limite de 32 entries
 _project_root_lock = RLock()
 _project_root_cache: LRUCache = LRUCache(maxsize=32)
 
 
 def _cache_key(start_path: Optional[Path] = None) -> Path:
-    """Gera chave de cache normalizada."""
     if start_path is None:
         return Path.cwd().resolve()
     return start_path.resolve()
@@ -37,21 +30,7 @@ def _cache_key(start_path: Optional[Path] = None) -> Path:
 
 @cached(cache=_project_root_cache, key=_cache_key, lock=_project_root_lock)
 def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
-    """
-    Busca recursiva pelo project root usando markers comuns.
-
-    Sobe a arvore de diretorios a partir de start_path (ou cwd) procurando
-    por markers que indicam a raiz de um projeto Python.
-
-    Cache e automaticamente gerenciado pelo decorator @cached.
-    Use reset_project_root_cache() para limpar manualmente.
-
-    Args:
-        start_path: Diretorio inicial da busca. Se None, usa cwd.
-
-    Returns:
-        Path do project root se encontrado, None caso contrario.
-    """
+    """Sobe a arvore de diretorios procurando markers de projeto (cacheado)."""
     if start_path is None:
         start_path = Path.cwd()
 
@@ -72,25 +51,13 @@ def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
 
 
 def reset_project_root_cache() -> None:
-    """
-    Limpa o cache de project root.
-
-    Util para testes ou quando o diretorio de trabalho muda.
-    """
     with _project_root_lock:
         _project_root_cache.clear()
     logger.debug("find_project_root: cache limpo")
 
 
 def get_user_config_dir() -> Optional[Path]:
-    """
-    Retorna diretorio de configuracao do usuario baseado no OS.
-
-    Returns:
-        Path para diretorio de config do usuario, ou None se nao disponivel.
-        - Windows: %APPDATA%/charting
-        - Linux/Mac: ~/.config/charting
-    """
+    """Retorna dir de config do usuario (Windows: %APPDATA%/charting, Linux: ~/.config/charting)."""
     if sys.platform == "win32":
         appdata = os.environ.get("APPDATA")
         if appdata:
@@ -100,24 +67,13 @@ def get_user_config_dir() -> Optional[Path]:
 
 
 def find_config_files(project_root: Optional[Path] = None) -> list[Path]:
-    """
-    Encontra arquivos de configuracao em ordem de precedencia.
+    """Encontra arquivos de config em ordem de precedencia.
 
-    Procura em:
-        1. Diretorio atual e project root (.charting.toml, charting.toml)
-        2. pyproject.toml no project root
-        3. Diretorio de configuracao do usuario
-
-    Args:
-        project_root: Raiz do projeto. Se None, sera detectada automaticamente.
-
-    Returns:
-        Lista de paths de arquivos existentes, em ordem de precedencia
-        (primeiro = maior prioridade).
+    Busca: .charting.toml/charting.toml no projeto, pyproject.toml [tool.charting],
+    e config do usuario.
     """
     config_files = []
 
-    # Detecta project root se nao fornecido
     if project_root is None:
         project_root = find_project_root()
 
@@ -132,13 +88,13 @@ def find_config_files(project_root: Optional[Path] = None) -> list[Path]:
             if candidate.exists():
                 config_files.append(candidate)
 
-    # 2. pyproject.toml (verificado separadamente pois precisa da secao [tool.charting])
+    # 2. pyproject.toml
     if project_root:
         pyproject = project_root / "pyproject.toml"
         if pyproject.exists():
             config_files.append(pyproject)
 
-    # 3. Diretorio de configuracao do usuario
+    # 3. Config do usuario
     user_config_dir = get_user_config_dir()
     if user_config_dir:
         user_config = user_config_dir / "config.toml"

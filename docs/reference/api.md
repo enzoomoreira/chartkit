@@ -352,17 +352,18 @@ class ChartingConfig:
 | Campo | Tipo | Default |
 |-------|------|---------|
 | `scatter_size` | `int` | `30` |
-| `label_offset_x` | `int` | `5` |
-| `label_offset_y` | `int` | `8` |
 
 #### CollisionConfig
 
 | Campo | Tipo | Default |
 |-------|------|---------|
-| `margin_px` | `int` | `5` |
-| `guide_threshold_px` | `int` | `30` |
-| `extra_padding_px` | `int` | `15` |
-| `px_to_points_ratio` | `float` | `0.75` |
+| `movement` | `str` | `"y"` |
+| `obstacle_padding_px` | `float` | `8.0` |
+| `label_padding_px` | `float` | `4.0` |
+| `max_iterations` | `int` | `50` |
+| `connector_threshold_px` | `float` | `30.0` |
+| `connector_alpha` | `float` | `0.6` |
+| `connector_style` | `str` | `"-"` |
 
 #### TransformsConfig
 
@@ -437,6 +438,11 @@ from chartkit import (
     CHARTS_PATH,
     OUTPUTS_PATH,
     ASSETS_PATH,
+
+    # Collision API
+    register_fixed,
+    register_moveable,
+    register_passive,
 
     # Classes principais
     ChartingAccessor,
