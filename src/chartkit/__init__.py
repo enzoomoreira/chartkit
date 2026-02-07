@@ -5,12 +5,14 @@
     df.chartkit.yoy().plot(title='YoY').save('chart.png')
 """
 
+from typing import Any
+
 from loguru import logger
 
 logger.disable("chartkit")
 
 
-def configure_logging(level: str = "DEBUG", sink=None) -> None:
+def configure_logging(level: str = "DEBUG", sink: Any = None) -> None:
     """Ativa logging da biblioteca chartkit.
 
     Args:
@@ -23,6 +25,7 @@ def configure_logging(level: str = "DEBUG", sink=None) -> None:
 
 from ._internal import register_fixed, register_moveable, register_passive
 from .accessor import ChartingAccessor
+from .charts import ChartRegistry
 from .engine import ChartingPlotter
 from .metrics import MetricRegistry
 from .result import PlotResult
@@ -78,6 +81,7 @@ __all__ = [
     # Classes principais
     "ChartingAccessor",
     "ChartingPlotter",
+    "ChartRegistry",
     "PlotResult",
     "TransformAccessor",
     "MetricRegistry",

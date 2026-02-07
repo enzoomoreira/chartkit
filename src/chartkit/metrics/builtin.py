@@ -25,16 +25,12 @@ def register_builtin_metrics() -> None:
     def metric_ma(ax, x_data, y_data, window: int, **kwargs) -> None:
         add_moving_average(ax, x_data, y_data, window=window, **kwargs)
 
-    @MetricRegistry.register("hline", param_names=["value"])
+    @MetricRegistry.register("hline", param_names=["value"], uses_series=False)
     def metric_hline(ax, x_data, y_data, value: float, **kwargs) -> None:
-        # Ignora series - nao depende dos dados
-        kwargs.pop("series", None)
         add_hline(ax, value=value, **kwargs)
 
-    @MetricRegistry.register("band", param_names=["lower", "upper"])
+    @MetricRegistry.register("band", param_names=["lower", "upper"], uses_series=False)
     def metric_band(
         ax, x_data, y_data, lower: float, upper: float, **kwargs
     ) -> None:
-        # Ignora series - nao depende dos dados
-        kwargs.pop("series", None)
         add_band(ax, lower=lower, upper=upper, **kwargs)

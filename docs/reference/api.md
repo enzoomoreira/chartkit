@@ -17,9 +17,8 @@ def plot(
     units: str | None = None,
     source: str | None = None,
     highlight_last: bool = False,
-    y_origin: str = "zero",
     save_path: str | None = None,
-    metrics: list[str] | None = None,
+    metrics: str | list[str] | None = None,
     **kwargs,
 ) -> PlotResult
 ```
@@ -30,15 +29,14 @@ def plot(
 |-----------|------|---------|-----------|
 | `x` | `str \| None` | `None` | Coluna para eixo X. Se `None`, usa o index |
 | `y` | `str \| list[str] \| None` | `None` | Coluna(s) para eixo Y. Se `None`, usa colunas numericas |
-| `kind` | `str` | `"line"` | Tipo: `"line"` ou `"bar"` |
+| `kind` | `str` | `"line"` | Tipo de grafico registrado no `ChartRegistry` (ex: `"line"`, `"bar"`) |
 | `title` | `str \| None` | `None` | Titulo do grafico |
 | `units` | `str \| None` | `None` | Formatacao do eixo Y (ver tabela abaixo) |
 | `source` | `str \| None` | `None` | Fonte dos dados para rodape |
 | `highlight_last` | `bool` | `False` | Destaca ultimo valor |
-| `y_origin` | `str` | `"zero"` | Origem Y para barras: `"zero"` ou `"auto"` |
 | `save_path` | `str \| None` | `None` | Caminho para salvar |
-| `metrics` | `list[str] \| None` | `None` | Lista de metricas a aplicar |
-| `**kwargs` | - | - | Argumentos extras para matplotlib |
+| `metrics` | `str \| list[str] \| None` | `None` | Metrica(s) a aplicar (string ou lista) |
+| `**kwargs` | - | - | Parametros chart-specific (ex: `y_origin='auto'`) e extras matplotlib |
 
 #### Metricas Disponiveis
 
@@ -125,6 +123,30 @@ Formatadores de moeda usam Babel. Locale configuravel via `formatters.locale.bab
 
 ---
 
+## ChartRegistry
+
+Sistema plugavel de chart types via decorator.
+
+### Registrar novo tipo
+
+```python
+from chartkit.charts.registry import ChartRegistry
+
+@ChartRegistry.register("scatter")
+def plot_scatter(ax, x, y_data, highlight=False, **kwargs):
+    ...
+```
+
+### Metodos
+
+| Metodo | Retorno | Descricao |
+|--------|---------|-----------|
+| `register(name)` | decorator | Registra funcao como chart type |
+| `get(name)` | `ChartFunc` | Retorna funcao registrada |
+| `available()` | `list[str]` | Lista nomes registrados |
+
+---
+
 ## ChartingPlotter
 
 Uso avancado para controle total.
@@ -147,9 +169,8 @@ def plot(
     units: str | None = None,
     source: str | None = None,
     highlight_last: bool = False,
-    y_origin: str = "zero",
     save_path: str | None = None,
-    metrics: list[str] | None = None,
+    metrics: str | list[str] | None = None,
     **kwargs,
 ) -> PlotResult
 
@@ -185,7 +206,7 @@ configure(layout={"figsize": [12.0, 8.0], "dpi": 150})
 def get_config() -> ChartingConfig
 ```
 
-Retorna dataclass tipada com todas as configuracoes.
+Retorna pydantic BaseSettings com todas as configuracoes.
 
 ### reset_config()
 
@@ -198,7 +219,7 @@ Reseta configuracoes para defaults.
 ### configure_logging()
 
 ```python
-def configure_logging(level: str = "DEBUG", sink=None) -> None
+def configure_logging(level: str = "DEBUG", sink: Any = None) -> None
 ```
 
 Ativa logging da biblioteca (desabilitado por padrao).
@@ -210,8 +231,12 @@ Ativa logging da biblioteca (desabilitado por padrao).
 Estrutura principal de configuracao.
 
 ```python
-@dataclass
-class ChartingConfig:
+class ChartingConfig(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="CHARTKIT_",
+        env_nested_delimiter="__",
+    )
+
     branding: BrandingConfig
     colors: ColorsConfig
     fonts: FontsConfig
@@ -379,16 +404,8 @@ class ChartingConfig:
 
 | Campo | Tipo | Default |
 |-------|------|---------|
-| `currency` | `CurrencyConfig` | (ver abaixo) |
 | `locale` | `LocaleConfig` | (ver abaixo) |
 | `magnitude` | `MagnitudeConfig` | (ver abaixo) |
-
-#### CurrencyConfig
-
-| Campo | Tipo | Default |
-|-------|------|---------|
-| `BRL` | `str` | `"R$ "` |
-| `USD` | `str` | `"$ "` |
 
 #### LocaleConfig
 
@@ -419,7 +436,6 @@ class ChartingConfig:
 | `charts_subdir` | `str` | `"charts"` |
 | `outputs_dir` | `str` | `""` |
 | `assets_dir` | `str` | `""` |
-| `project_root_markers` | `list[str]` | `[".git", "pyproject.toml", ...]` |
 
 ---
 
@@ -447,6 +463,7 @@ from chartkit import (
     # Classes principais
     ChartingAccessor,
     ChartingPlotter,
+    ChartRegistry,
     PlotResult,
     TransformAccessor,
     MetricRegistry,

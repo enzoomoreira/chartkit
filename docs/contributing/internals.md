@@ -18,7 +18,6 @@ compartilhados usam locks para evitar race conditions.
 | Modulo | Lock | Protege |
 |--------|------|---------|
 | `discovery.py` | `RLock` | `_project_root_cache` (LRUCache) |
-| `loader.py` | `RLock` | `_path_cache` (TTLCache) |
 
 ### Padrao de Uso
 
@@ -34,7 +33,7 @@ _lock = RLock()
 _cache: LRUCache = LRUCache(maxsize=32)
 
 @cached(cache=_cache, lock=_lock)
-def find_project_root(start_path: Optional[Path] = None) -> Optional[Path]:
+def find_project_root(start_path: Path | None = None) -> Path | None:
     ...
 ```
 
@@ -83,16 +82,16 @@ def test_concurrent_access():
 
 ### Niveis de Cache
 
-A biblioteca implementa multiplos niveis de cache para minimizar I/O:
+A biblioteca usa cache simples com invalidacao por flag:
 
 ```
 +---------------------------+
-|  ConfigLoader._path_cache |  TTLCache (1h TTL, 3 entries)
+|  ConfigLoader._config     |  None flag (invalida via _invalidate())
 +---------------------------+
             |
             v
 +---------------------------+
-|  _project_root_cache      |  LRUCache (32 entries)
+|  _project_root_cache      |  LRUCache (32 entries, thread-safe)
 +---------------------------+
             |
             v
@@ -103,7 +102,7 @@ A biblioteca implementa multiplos niveis de cache para minimizar I/O:
 
 ### Cache de Project Root
 
-**Tipo:** `LRUCache(maxsize=32)`
+**Tipo:** `LRUCache(maxsize=32)` com `RLock`
 
 **Chave:** Path absoluto normalizado (start_path ou cwd)
 
@@ -120,41 +119,21 @@ root = find_project_root()
 root = find_project_root()
 ```
 
-### Cache de Paths Resolvidos
+### Cache de Config
 
-**Tipo:** `TTLCache(maxsize=3, ttl=3600)`
+**Tipo:** Flag simples (`_config: ChartingConfig | None`)
 
-**Entries:**
-- `outputs_path`
-- `assets_path`
-- (reserva para extensao)
-
-**Razao para TTL de 1 hora:**
-- Paths raramente mudam durante uma sessao
-- TTL permite recarregar se arquivos de config mudarem
-- 1 hora balanceia performance vs freshness
-
-### Invalidacao de Cache
-
-O `ConfigLoader` usa versionamento para invalidacao:
+O `ConfigLoader` usa `_config = None` como flag de invalidacao. Quando
+`configure()` ou `reset()` sao chamados, `_invalidate()` seta `_config = None`
+e a proxima chamada a `get_config()` reconstroi o objeto pydantic:
 
 ```python
-class ConfigLoader:
-    def __init__(self):
-        self._cache_version = 0
-
-    def _cache_key(self, name: str) -> tuple:
-        return (name, self._cache_version)
-
-    def _clear_caches(self) -> None:
-        self._path_cache.clear()
-        self._cache_version += 1  # Invalida chaves antigas
+def _invalidate(self) -> None:
+    self._config = None
+    self._project_root = None
+    self._project_root_resolved = False
+    ChartingConfig._toml_data = {}
 ```
-
-Quando `configure()` ou `reset()` sao chamados:
-1. Caches sao limpos
-2. Versao e incrementada
-3. Proximas chamadas tem cache miss
 
 ### Benchmarks Tipicos
 
@@ -239,9 +218,7 @@ logger.debug(f"find_project_root: encontrado {current}")
 | Modulo | DEBUG | INFO | WARNING |
 |--------|-------|------|---------|
 | `discovery.py` | Cache hits/misses, paths encontrados | - | - |
-| `loader.py` | Config files merged, cache stats | - | - |
-| `paths.py` | Resolucao de paths, fallbacks | - | Paths nao encontrados |
-| `toml.py` | - | - | Erros de parsing |
+| `loader.py` | Config files merged, overrides aplicados | - | Erros de TOML parsing |
 | `fonts.py` | - | - | Fonte nao encontrada |
 
 ### Logging Conservador
@@ -263,134 +240,27 @@ def dict_to_dataclass(cls, data):
 
 ---
 
-## Sistema de Discovery de Paths
+## Resolucao de Paths
 
-O chartkit pode descobrir automaticamente OUTPUTS_PATH e ASSETS_PATH
-de projetos host usando duas estrategias complementares: runtime discovery
-e AST discovery.
-
-### Cadeia de Precedencia para Paths
-
-O `PathResolver` resolve paths na seguinte ordem:
+O `ConfigLoader` resolve paths usando uma cadeia 3-tier inline:
 
 1. **Configuracao explicita** via `configure(outputs_path=...)`
-2. **TOML** (`[paths].outputs_dir` ou `[fonts].assets_path`)
-3. **Runtime discovery** via `sys.modules`
-4. **Auto-discovery AST**
-5. **Fallback** (`project_root / subdir`)
+2. **Config (TOML/env)** (`[paths].outputs_dir` ou `CHARTKIT_PATHS__OUTPUTS_DIR`)
+3. **Fallback** (`project_root / subdir`)
 
 ```python
 # Em loader.py
-resolver = PathResolver(
-    name="OUTPUTS_PATH",
-    explicit_path=self._outputs_path,            # 1. Explicito
-    toml_getters=[lambda: config.paths.outputs_dir],  # 2. TOML
-    runtime_getter=self._runtime_discovery.discover_outputs_path,  # 3. Runtime
-    ast_getter=lambda: self._get_ast_discovery().outputs_path,     # 4. AST
-    fallback_subdir="outputs",                   # 5. Fallback
-    project_root=self.project_root,
-)
-return resolver.resolve()
+@property
+def outputs_path(self) -> Path:
+    if self._outputs_path is not None:
+        return self._outputs_path                    # 1. Explicito
+    config = self.get_config()
+    if config.paths.outputs_dir:
+        return self._resolve_relative(Path(config.paths.outputs_dir))  # 2. Config
+    return (find_project_root() or Path.cwd()) / "outputs"  # 3. Fallback
 ```
 
-### Runtime Discovery (Prioridade 3)
-
-Busca `OUTPUTS_PATH` e `ASSETS_PATH` em modulos ja importados via `sys.modules`.
-Esta estrategia e mais rapida pois nao requer I/O.
-
-```python
-from chartkit.settings.runtime_discovery import RuntimePathDiscovery
-
-discovery = RuntimePathDiscovery()
-outputs = discovery.discover_outputs_path()  # Path ou None
-assets = discovery.discover_assets_path()    # Path ou None
-```
-
-**Modulos ignorados:**
-- Stdlib do Python (prefixos: `os`, `sys`, `pathlib`, `typing`, etc.)
-- Pacotes de terceiros comuns (`numpy`, `pandas`, `matplotlib`, `pydantic`, etc.)
-- O proprio `chartkit`
-
-**Uso esperado:**
-
-```python
-# Em adb/__init__.py (biblioteca host)
-from adb.config import OUTPUTS_PATH  # Expoe no namespace
-
-# Em qualquer script
-import adb          # OUTPUTS_PATH ja esta em sys.modules['adb']
-import chartkit     # chartkit descobre automaticamente
-```
-
-### AST Discovery (Prioridade 4)
-
-Se runtime discovery nao encontrar os paths, usa parsing AST para
-buscar arquivos `config.py` recursivamente no projeto.
-
-```python
-from chartkit.settings.ast_discovery import ASTPathDiscovery, DiscoveredPaths
-
-discovery = ASTPathDiscovery(project_root)
-paths = discovery.discover()
-
-print(paths.outputs_path)  # Path ou None
-print(paths.assets_path)   # Path ou None
-```
-
-### Busca Recursiva de config.py
-
-O ASTPathDiscovery usa `rglob("config.py")` com filtragem inteligente:
-
-```python
-# Diretorios ignorados na busca
-SKIP_DIRS = frozenset({
-    ".venv", "venv", ".env", "env",
-    ".git", "__pycache__", ".mypy_cache",
-    "node_modules", "dist", "build",
-    "site-packages", "chartkit",  # ignora o proprio chartkit
-})
-```
-
-**Ordenacao por profundidade:**
-- Arquivos mais proximos da raiz sao processados primeiro
-- Isso prioriza `config.py` sobre `src/pkg/config.py`
-
-### Padroes de Codigo Suportados pelo AST
-
-O parser AST reconhece varios padroes comuns:
-
-```python
-# Path com operador /
-OUTPUTS_PATH = PROJECT_ROOT / 'data' / 'outputs'
-
-# Via variavel intermediaria
-DATA_PATH = PROJECT_ROOT / 'data'
-OUTPUTS_PATH = DATA_PATH / 'outputs'
-
-# Path() explicito
-ASSETS_PATH = Path('assets')
-
-# Path relativo a __file__
-ASSETS_PATH = Path(__file__).parent / 'assets'
-
-# Funcoes get_*_root()
-PROJECT_ROOT = get_project_root()
-```
-
-### Variaveis de Root Conhecidas
-
-O parser reconhece automaticamente estas variaveis como apontando para root:
-
-```python
-_ROOT_VARS = {
-    "PROJECT_ROOT",
-    "ROOT",
-    "BASE_DIR",
-    "BASE_PATH",
-    "ROOT_DIR",
-    "ROOT_PATH",
-}
-```
+Paths relativos sao resolvidos contra o project root via `_resolve_relative()`.
 
 ---
 
@@ -573,10 +443,9 @@ def clean_state():
 ### Otimizacoes Aplicadas
 
 1. **Lazy init**: Nada e carregado ate primeiro uso
-2. **Dependency injection**: PathResolver recebe project_root para evitar lookups
-3. **TTL cache**: Paths resolvidos tem TTL de 1 hora
-4. **Versionamento**: Invalidacao seletiva em vez de limpar tudo
-5. **AST discovery cacheado**: Parsing AST acontece uma vez por sessao
+2. **LRUCache**: `find_project_root()` cacheado com 32 entries
+3. **Flag simples**: `_config = None` evita reconstrucao desnecessaria do objeto pydantic
+4. **Lazy project_root**: Property no ConfigLoader com flag `_project_root_resolved`
 
 ### Dicas para Contribuidores
 

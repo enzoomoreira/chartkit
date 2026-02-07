@@ -41,8 +41,8 @@ df.chartkit.yoy().plot(title="Variacao YoY").save("grafico.png").show()
 - **Formatadores**: BRL, USD, BRL_compact, USD_compact, %, pontos, notacao humana (1k, 1M)
 - **Metricas Declarativas**: Sistema flexivel via `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5']`
 - **Transforms Encadeados**: `df.chartkit.yoy().mom().plot()` com method chaining
-- **Auto-discovery**: Detecta automaticamente paths de output do projeto
-- **Configuracao TOML**: Personalize cores, branding e layout via arquivo TOML
+- **ChartRegistry**: Sistema plugavel de chart types via decorator
+- **Configuracao TOML + Env Vars**: Personalize via arquivo TOML ou variaveis de ambiente (`CHARTKIT_*`)
 
 ## Documentacao
 
@@ -78,3 +78,4 @@ df.chartkit.yoy().plot(title="Variacao YoY").save("grafico.png").show()
 - pandas >= 2.2.0
 - matplotlib >= 3.10.0
 - numpy >= 2.0.0
+- pydantic-settings >= 2.12.0

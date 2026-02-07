@@ -21,13 +21,13 @@ Sistema declarativo de metricas para adicionar elementos visuais sobre os dados 
 
 ## Uso Basico
 
-Todas as metricas sao passadas como lista de strings no parametro `metrics`:
+Metricas sao passadas como string ou lista de strings no parametro `metrics`:
 
 ```python
-# Uma metrica
-df.chartkit.plot(metrics=['ath'])
+# Uma metrica (string unica)
+df.chartkit.plot(metrics='ath')
 
-# Multiplas metricas
+# Multiplas metricas (lista)
 df.chartkit.plot(metrics=['ath', 'atl', 'ma:12'])
 
 # Combinacao completa
@@ -294,6 +294,45 @@ Esta hierarquia garante que:
 2. Linhas de referencia (ATH, ATL, hlines) ficam visiveis mas nao interferem nos dados
 3. Media movel acompanha os dados mas nao os sobrepoe
 4. Dados principais sempre ficam visiveis no topo
+
+---
+
+## Sintaxe @ (Direcionar para Coluna)
+
+Para DataFrames com multiplas colunas, use a sintaxe `@` para direcionar uma
+metrica a uma coluna especifica:
+
+```python
+df = pd.DataFrame({
+    'revenue': [100, 120, 110, 140],
+    'costs': [80, 90, 85, 95],
+}, index=pd.date_range('2024-01', periods=4, freq='ME'))
+
+# ATH apenas na coluna revenue
+df.chartkit.plot(metrics=['ath@revenue'])
+
+# Media movel na coluna costs
+df.chartkit.plot(metrics=['ma:12@costs'])
+
+# Combinacao
+df.chartkit.plot(metrics=['ath@revenue', 'atl@costs', 'ma:6@revenue'])
+```
+
+### Sintaxe
+
+- `'metrica@coluna'` - Aplica metrica apenas na coluna especificada
+- `'metrica:param@coluna'` - Com parametros: `'ma:12@revenue'`
+- Sem `@`: metrica usa a primeira coluna (ou a unica coluna para Series)
+
+### Metricas Data-Independent
+
+Metricas que nao dependem dos dados (`hline`, `band`) ignoram o `@`
+automaticamente, pois sao registradas com `uses_series=False`.
+
+```python
+# hline ignora @coluna silenciosamente
+df.chartkit.plot(metrics=['hline:3.0', 'ath@revenue'])
+```
 
 ---
 

@@ -1,71 +1,49 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
+from matplotlib.axes import Axes
 
 from .._internal.collision import register_moveable
 from ..settings import get_config
 from ..styling.theme import theme
 
 
-def highlight_last_point(ax, series: pd.Series, color: str | None = None) -> None:
-    """Destaca o ultimo ponto valido com marcador e label formatado.
+@dataclass(frozen=True)
+class HighlightStyle:
+    """Estrategia de posicionamento para highlight de ultimo valor."""
 
-    Ignora silenciosamente se a serie estiver vazia, toda NaN, ou com
-    ultimo valor infinito. O valor e formatado pelo formatter do eixo Y.
-    """
-    if series.empty:
-        return
-
-    config = get_config()
-    markers = config.markers
-
-    valid_series = series.dropna()
-    if valid_series.empty:
-        return
-
-    last_date = valid_series.index[-1]
-    last_val = valid_series.iloc[-1]
-
-    if not np.isfinite(last_val):
-        return
-
-    if color is None:
-        color = theme.colors.primary
-
-    ax.scatter(
-        [last_date],
-        [last_val],
-        color=color,
-        s=markers.scatter_size,
-        zorder=config.layout.zorder.markers,
-    )
-
-    y_fmt = ax.yaxis.get_major_formatter()
-    label_text = y_fmt(last_val, None)
-
-    if not label_text:
-        label_text = f"{last_val:.2f}"
-
-    # Espacos no inicio criam gap visual entre o marcador e o texto
-    text = ax.text(
-        last_date,
-        last_val,
-        f"  {label_text}",
-        ha="left",
-        va="center",
-        color=color,
-        fontproperties=theme.font,
-        fontweight="bold",
-        zorder=config.layout.zorder.markers,
-    )
-
-    register_moveable(ax, text)
+    ha: str
+    va: str | None  # None = auto-detect pelo sinal do valor
+    label_prefix: str
+    show_scatter: bool
 
 
-def highlight_last_bar(ax, x, series: pd.Series, color: str | None = None) -> None:
-    """Destaca o valor da ultima barra com label no topo.
+HIGHLIGHT_STYLES: dict[str, HighlightStyle] = {
+    "line": HighlightStyle(ha="left", va="center", label_prefix="  ", show_scatter=True),
+    "bar": HighlightStyle(ha="center", va=None, label_prefix="", show_scatter=False),
+}
+
+
+def highlight_last(
+    ax: Axes,
+    series: pd.Series,
+    style: str | HighlightStyle = "line",
+    color: str | None = None,
+    x: pd.Index | pd.Series | None = None,
+) -> None:
+    """Destaca o ultimo ponto valido com label formatado.
 
     Ignora silenciosamente se a serie estiver vazia, toda NaN, ou com
     ultimo valor infinito.
+
+    Args:
+        style: Nome de um style registrado em ``HIGHLIGHT_STYLES`` ou
+            instancia de ``HighlightStyle``.
+        x: Dados X explicitos. Necessario quando a posicao X requer
+            resolucao (ex: bar charts com DatetimeIndex).
     """
     if series.empty:
         return
@@ -85,8 +63,11 @@ def highlight_last_bar(ax, x, series: pd.Series, color: str | None = None) -> No
     if color is None:
         color = theme.colors.primary
 
-    # Resolve posicao X a partir do indice
-    if hasattr(x, "get_loc"):
+    if isinstance(style, str):
+        style = HIGHLIGHT_STYLES[style]
+
+    # Resolve posicao X
+    if x is not None and hasattr(x, "get_loc"):
         try:
             x_pos = x.get_loc(last_idx)
             x_val = x[x_pos]
@@ -95,19 +76,32 @@ def highlight_last_bar(ax, x, series: pd.Series, color: str | None = None) -> No
     else:
         x_val = last_idx
 
+    # Scatter marker
+    if style.show_scatter:
+        ax.scatter(
+            [x_val],
+            [last_val],
+            color=color,
+            s=config.markers.scatter_size,
+            zorder=config.layout.zorder.markers,
+        )
+
+    # Label formatado
     y_fmt = ax.yaxis.get_major_formatter()
     label_text = y_fmt(last_val, None)
 
     if not label_text:
         label_text = f"{last_val:.2f}"
 
-    va = "bottom" if last_val >= 0 else "top"
+    va = style.va
+    if va is None:
+        va = "bottom" if last_val >= 0 else "top"
 
     text = ax.text(
         x_val,
         last_val,
-        label_text,
-        ha="center",
+        f"{style.label_prefix}{label_text}",
+        ha=style.ha,
         va=va,
         color=color,
         fontproperties=theme.font,

@@ -8,13 +8,14 @@ O chartkit carrega configuracoes de multiplas fontes, mesclando-as em ordem de p
 
 | Prioridade | Fonte | Descricao |
 |------------|-------|-----------|
-| 1 | `configure()` | Configuracao programatica em runtime |
-| 2 | `configure(config_path=...)` | Arquivo TOML explicito |
-| 3 | `.charting.toml` / `charting.toml` | Arquivo na raiz do projeto |
-| 4 | `pyproject.toml [tool.charting]` | Secao no pyproject.toml |
-| 5 | `~/.config/charting/config.toml` | Config global do usuario (Linux/Mac) |
-| 6 | `%APPDATA%/charting/config.toml` | Config global do usuario (Windows) |
-| 7 | Defaults built-in | Valores neutros da biblioteca |
+| 1 | `configure()` (init_settings) | Configuracao programatica em runtime |
+| 2 | Variaveis de ambiente (`CHARTKIT_*`) | Env vars com prefixo e nested delimiter `__` |
+| 3 | `configure(config_path=...)` | Arquivo TOML explicito |
+| 4 | `.charting.toml` / `charting.toml` | Arquivo na raiz do projeto |
+| 5 | `pyproject.toml [tool.charting]` | Secao no pyproject.toml |
+| 6 | `~/.config/charting/config.toml` | Config global do usuario (Linux/Mac) |
+| 7 | `%APPDATA%/charting/config.toml` | Config global do usuario (Windows) |
+| 8 | Defaults built-in | Valores default dos pydantic models |
 
 Configuracoes de maior prioridade sobrescrevem as de menor prioridade. O merge e profundo, permitindo sobrescrever apenas campos especificos sem perder o restante.
 
@@ -77,10 +78,6 @@ reference_style = "--"
 width_default = 0.8
 width_monthly = 20
 width_annual = 300
-
-[formatters.currency]
-BRL = "R$ "
-USD = "$ "
 
 [formatters.locale]
 decimal = ","
@@ -187,21 +184,32 @@ configure(
 
 O arquivo especificado sera carregado e mesclado com os defaults. Overrides programaticos ainda tem prioridade sobre o arquivo.
 
-## Variavel de Ambiente
+## Variaveis de Ambiente
 
-O chartkit suporta a variavel de ambiente `CHARTING_OUTPUTS_PATH` para definir o diretorio de outputs:
+O chartkit usa pydantic-settings com prefixo `CHARTKIT_` e nested delimiter `__`. Qualquer campo da configuracao pode ser definido via env var:
+
+**Exemplos:**
+
+```bash
+# Campos simples
+export CHARTKIT_LAYOUT__DPI=72
+export CHARTKIT_COLORS__PRIMARY="#FF0000"
+
+# Paths
+export CHARTKIT_PATHS__OUTPUTS_DIR="/caminho/para/outputs"
+export CHARTKIT_PATHS__ASSETS_DIR="/caminho/para/assets"
+
+# Branding
+export CHARTKIT_BRANDING__COMPANY_NAME="Minha Empresa"
+```
 
 **PowerShell:**
 ```powershell
-$env:CHARTING_OUTPUTS_PATH = "C:/caminho/para/outputs"
+$env:CHARTKIT_LAYOUT__DPI = "72"
+$env:CHARTKIT_PATHS__OUTPUTS_DIR = "C:/caminho/para/outputs"
 ```
 
-**Bash:**
-```bash
-export CHARTING_OUTPUTS_PATH="/caminho/para/outputs"
-```
-
-Esta variavel e util para ambientes de CI/CD ou quando voce precisa sobrescrever o path sem modificar o codigo.
+Env vars tem prioridade sobre TOML mas abaixo de `configure()`. Uteis para CI/CD ou ambientes onde nao se pode modificar arquivos.
 
 ## Verificar Configuracao Atual
 
@@ -229,7 +237,7 @@ print(f"Outputs: {OUTPUTS_PATH}")
 print(f"Assets: {ASSETS_PATH}")
 ```
 
-O objeto `ChartingConfig` retornado e uma dataclass tipada com acesso estruturado a todas as configuracoes.
+O objeto `ChartingConfig` retornado e um pydantic BaseSettings com acesso estruturado a todas as configuracoes.
 
 ## Reset de Configuracao
 
@@ -257,69 +265,8 @@ O chartkit possui um sistema inteligente de auto-discovery para detectar automat
 ### Cadeia de Precedencia para Paths
 
 1. **Configuracao explicita via API**: `configure(outputs_path=..., assets_path=...)`
-2. **Configuracao no TOML**: `[paths].outputs_dir`, `[paths].assets_dir`
-3. **Runtime discovery via sys.modules**: Busca em modulos ja importados
-4. **Auto-discovery via AST**: Analisa arquivos `config.py` do projeto host
-5. **Fallback**: `project_root/outputs` e `project_root/assets`
-
-### Runtime Discovery (Prioridade 3)
-
-O runtime discovery busca `OUTPUTS_PATH` e `ASSETS_PATH` em modulos que ja foram importados pelo processo Python. Isso permite que bibliotecas host exponham seus paths automaticamente ao serem importadas.
-
-**Como funciona:**
-
-```python
-# Em sua biblioteca host (ex: adb/__init__.py)
-from adb.config import OUTPUTS_PATH, ASSETS_PATH  # Expoe no namespace
-
-# Em qualquer script
-import adb          # OUTPUTS_PATH ja esta em sys.modules['adb']
-import chartkit     # chartkit.OUTPUTS_PATH pega de adb automaticamente
-```
-
-Esta abordagem e mais rapida que AST discovery pois nao requer I/O - os modulos ja estao carregados em memoria.
-
-**Modulos ignorados:**
-- Stdlib do Python (os, sys, pathlib, etc.)
-- Pacotes de terceiros comuns (numpy, pandas, matplotlib, etc.)
-- O proprio chartkit
-
-### Auto-Discovery via AST (Prioridade 4)
-
-Se runtime discovery nao encontrar os paths, o sistema usa parsing AST para buscar arquivos `config.py` recursivamente no projeto.
-
-**Busca recursiva:**
-- Busca `config.py` em todo o projeto usando `rglob()`
-- Ordena por profundidade (arquivos mais proximos da raiz primeiro)
-- Ignora diretorios comuns: `.venv`, `node_modules`, `__pycache__`, `build`, etc.
-
-Usando AST (Abstract Syntax Tree), extrai as variaveis `OUTPUTS_PATH` e `ASSETS_PATH` sem importar o modulo. Isso evita side effects e dependencias pesadas.
-
-**Padroes de codigo suportados:**
-
-```python
-# Padrao 1: Path com divisao
-OUTPUTS_PATH = PROJECT_ROOT / 'data' / 'outputs'
-ASSETS_PATH = PROJECT_ROOT / 'assets'
-
-# Padrao 2: Variaveis intermediarias
-DATA_PATH = PROJECT_ROOT / 'data'
-OUTPUTS_PATH = DATA_PATH / 'outputs'
-
-# Padrao 3: Path direto
-OUTPUTS_PATH = Path('data/outputs')
-
-# Padrao 4: Path relativo ao arquivo
-ASSETS_PATH = Path(__file__).parent / 'assets'
-```
-
-**Variaveis reconhecidas como project root:**
-- `PROJECT_ROOT`
-- `ROOT`
-- `BASE_DIR`
-- `BASE_PATH`
-- `ROOT_DIR`
-- `ROOT_PATH`
+2. **Configuracao via TOML/env**: `[paths].outputs_dir`, `[paths].assets_dir` ou `CHARTKIT_PATHS__OUTPUTS_DIR`
+3. **Fallback**: `project_root/outputs` e `project_root/assets`
 
 ### Deteccao do Project Root
 
@@ -412,7 +359,6 @@ O log mostrara:
 - Quais arquivos de configuracao foram encontrados
 - Ordem de merge das configuracoes
 - Qual fonte foi usada para cada path
-- Falhas na descoberta de paths via AST
 
 ## Exemplos Completos
 

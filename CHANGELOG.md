@@ -1,5 +1,54 @@
 # Project Changelog
 
+## [2026-02-07 02:22]
+### Added
+- **ChartRegistry**: Sistema plugavel de chart types via decorator `@ChartRegistry.register("name")`
+  - Engine agora despacha via registry em vez de if/elif hardcoded
+  - Chart functions registradas automaticamente ao importar o modulo
+  - `ChartRegistry` exposto na API publica (`from chartkit import ChartRegistry`)
+- **Highlight system unificado**: `HighlightStyle` dataclass + `HIGHLIGHT_STYLES` dict em `overlays/markers.py`
+  - Substitui `highlight_last_point` e `highlight_last_bar` por funcao unica `highlight_last(style="line"|"bar")`
+  - Extensivel para novos chart types via registro no dict
+- **`_ipython_display_` em PlotResult**: Evita rendering duplicado em notebooks Jupyter
+- **`uses_series` em MetricRegistry**: Flag que indica se metrica usa parametro `series` para selecionar coluna
+  - `hline` e `band` registrados com `uses_series=False` (eliminam `kwargs.pop("series")` manual)
+  - Warn de parametros extras ignorados no parse de specs
+- **`__all__` em `charts/registry.py` e `styling/__init__.py`**: Exports explicitamente definidos
+- **`PROJECT_ROOT_MARKERS` como constante**: Tuple hardcoded em `discovery.py` substitui campo configuravel de PathsConfig
+
+### Changed
+- **Settings migrado para pydantic-settings**: Schema inteiro reescrito de dataclasses para pydantic BaseModel/BaseSettings
+  - `ChartingConfig` agora herda de `BaseSettings` com suporte a env vars (`CHARTKIT_*`, nested `__`)
+  - Novo `_DictSource` custom source para injecao de TOML data no pipeline pydantic-settings
+  - Precedencia: init_settings > env vars > TOML files > field defaults
+- **ConfigLoader simplificado**: Removidas camadas de indirection (PathResolver, TTLCache, cachedmethod)
+  - Path resolution inline com cadeia 3-tier: API explicita > Config (TOML/env) > Fallback
+  - TOML loading e deep merge agora como funcoes module-level (`_load_toml`, `_deep_merge`)
+- **Engine usa ChartRegistry.get()**: Dispatch generico substitui bloco if/elif para chart types
+- **`y_origin` removido de engine e accessor**: Agora flui via `**kwargs` (chart-specific, nao generico)
+- **Correcao `is not None`**: Todos os comparativos falsy (`if color`, `if series`) corrigidos para `is not None` em overlays (reference_lines, moving_average, bands)
+  - Permite valores como `color=""`, `linewidth=0` serem respeitados
+- **line.py: kwargs.pop() para color/linewidth/zorder**: Corrige TypeError quando usuario passa esses parametros via kwargs
+- **Type hints adicionados**: `ax: Axes`, `x: pd.Index | pd.Series`, `fig: Figure`, `sink: Any`, `field: FieldInfo` em multiplos modulos
+- **PEP 604 union syntax**: `Optional[X]` substituido por `X | None` em `discovery.py` e `loader.py`
+- **Exception handling refinado**: `except Exception` substituido por `except (tomllib.TOMLDecodeError, OSError)` em `_load_toml`
+- **Moving average registrado como passive**: `register_passive(ax, lines[0])` para participar do collision system
+- **MetricRegistry.apply() type hints**: Parametros `ax`, `x_data`, `y_data` agora tipados com Axes, pd.Index, pd.Series/DataFrame
+
+### Removed
+- **5 modulos de settings deletados**: `ast_discovery.py`, `runtime_discovery.py`, `paths.py`, `converters.py`, `defaults.py`
+  - AST discovery e runtime discovery eliminados (complexidade desproporcional ao beneficio)
+  - `PathResolver` inline no `ConfigLoader` (3-tier simples)
+  - `converters.py` (dict_to_dataclass/dataclass_to_dict) desnecessario com pydantic
+  - `defaults.py` (DEFAULT_CONFIG) desnecessario com pydantic field defaults
+- **`toml.py` modulo separado**: Funcoes absorvidas no `loader.py` (simplificacao)
+- **`highlight_last_point` e `highlight_last_bar`**: Substituidos por `highlight_last` unificado
+- **`project_root_markers` de PathsConfig**: Agora constante `PROJECT_ROOT_MARKERS` em `discovery.py`
+- **Comentarios inline no schema**: Removidos comentarios redundantes em campos de dataclass/model
+
+### Dependencies
+- Adicionado `pydantic-settings>=2.12.0` (traz pydantic e pydantic-core como transitivas)
+
 ## [2026-02-05 01:54]
 ### Added
 - **Sintaxe `@` para metricas**: Direciona metrica para coluna especifica de um DataFrame

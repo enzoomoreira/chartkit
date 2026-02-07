@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from ._internal import resolve_collisions
-from .charts.bar import plot_bar
-from .charts.line import plot_line
+from .charts import ChartRegistry
 from .decorations import add_footer
 from .metrics import MetricRegistry
 from .result import PlotResult
@@ -52,7 +51,6 @@ class ChartingPlotter:
         units: str | None = None,
         source: str | None = None,
         highlight_last: bool = False,
-        y_origin: str = "zero",
         save_path: str | None = None,
         metrics: str | list[str] | None = None,
         **kwargs,
@@ -64,7 +62,8 @@ class ChartingPlotter:
                 ``'human'``, ``'points'``, ``'BRL_compact'``, ``'USD_compact'``).
             metrics: Metrica(s) declarativas. Ver ``chartkit.metrics`` para
                 sintaxe completa (ex: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``).
-            y_origin: ``'zero'`` (default) ou ``'auto'`` (apenas para barras).
+            **kwargs: Parametros chart-specific (ex: ``y_origin='auto'`` para barras)
+                e parametros matplotlib passados diretamente ao renderer.
         """
         config = get_config()
 
@@ -86,14 +85,8 @@ class ChartingPlotter:
         self._apply_y_formatter(ax, units)
 
         # 4. Plot
-        if kind == "line":
-            plot_line(ax, x_data, y_data, highlight_last, **kwargs)
-        elif kind == "bar":
-            plot_bar(
-                ax, x_data, y_data, highlight=highlight_last, y_origin=y_origin, **kwargs
-            )
-        else:
-            raise ValueError(f"Chart type '{kind}' not supported.")
+        chart_fn = ChartRegistry.get(kind)
+        chart_fn(ax, x_data, y_data, highlight=highlight_last, **kwargs)
 
         # 5. Metrics
         if metrics:

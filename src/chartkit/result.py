@@ -46,5 +46,9 @@ class PlotResult:
     def figure(self) -> Figure:
         return self.fig
 
+    def _ipython_display_(self, **kwargs: object) -> None:
+        # No-op: matplotlib's inline backend already renders the figure.
+        pass
+
     def __repr__(self) -> str:
         return f"<PlotResult: {self.ax.get_title() or 'Untitled'}>"

@@ -1,18 +1,16 @@
-from pathlib import Path
-from threading import RLock
-from typing import Any, Optional
+"""Carregador de configuracoes com TOML loading e path resolution."""
 
-from cachetools import TTLCache, cachedmethod
+from __future__ import annotations
+
+import tomllib
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
 from loguru import logger
 
-from .ast_discovery import ASTPathDiscovery, DiscoveredPaths
-from .converters import dataclass_to_dict, dict_to_dataclass
-from .defaults import DEFAULT_CONFIG
 from .discovery import find_config_files, find_project_root, reset_project_root_cache
-from .paths import PathResolver
-from .runtime_discovery import RuntimePathDiscovery
 from .schema import ChartingConfig
-from .toml import deep_merge, load_pyproject_section, load_toml
 
 __all__ = [
     "ConfigLoader",
@@ -25,86 +23,51 @@ __all__ = [
 ]
 
 
+def _load_toml(path: Path) -> dict[str, Any]:
+    """Carrega TOML, retorna {} em caso de erro."""
+    if not path.exists():
+        return {}
+    try:
+        with open(path, "rb") as f:
+            return tomllib.load(f)
+    except (tomllib.TOMLDecodeError, OSError) as e:
+        logger.warning("Erro ao ler {}: {}", path, e)
+        return {}
+
+
+def _load_pyproject_section(path: Path) -> dict[str, Any]:
+    return _load_toml(path).get("tool", {}).get("charting", {})
+
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    result = deepcopy(base)
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = deepcopy(value)
+    return result
+
+
 class ConfigLoader:
-    """Carregador de configuracoes com cache, merge multi-fonte e path resolution."""
+    """Carregador de configuracoes com merge multi-fonte e path resolution."""
 
     def __init__(self) -> None:
-        self._config: Optional[ChartingConfig] = None
-        self._config_path: Optional[Path] = None
-        self._overrides: dict = {}
-        self._outputs_path: Optional[Path] = None
-        self._assets_path: Optional[Path] = None
-        self._ast_discovery: Optional[ASTPathDiscovery] = None
-        self._runtime_discovery: RuntimePathDiscovery = RuntimePathDiscovery()
-
-        self._project_root: Optional[Path] = None
+        self._config: ChartingConfig | None = None
+        self._config_path: Path | None = None
+        self._overrides: dict[str, Any] = {}
+        self._outputs_path: Path | None = None
+        self._assets_path: Path | None = None
+        self._project_root: Path | None = None
         self._project_root_resolved: bool = False
-
-        self._path_cache: TTLCache = TTLCache(maxsize=3, ttl=3600)
-        self._cache_lock = RLock()
-        self._cache_version = 0
-
-    def _cache_key(self, name: str) -> tuple:
-        return (name, self._cache_version)
-
-    @cachedmethod(
-        cache=lambda self: self._path_cache,
-        key=lambda self: self._cache_key("outputs"),
-        lock=lambda self: self._cache_lock,
-    )
-    def _resolve_outputs_path(self) -> Path:
-        logger.debug("Resolvendo outputs_path (cache miss)")
-        config = self.get_config()
-        resolver = PathResolver(
-            name="OUTPUTS_PATH",
-            explicit_path=self._outputs_path,
-            toml_getters=[lambda: config.paths.outputs_dir],
-            runtime_getter=self._runtime_discovery.discover_outputs_path,
-            ast_getter=lambda: self._get_ast_discovery().outputs_path,
-            fallback_subdir="outputs",
-            project_root=self.project_root,
-        )
-        return resolver.resolve()
-
-    @cachedmethod(
-        cache=lambda self: self._path_cache,
-        key=lambda self: self._cache_key("assets"),
-        lock=lambda self: self._cache_lock,
-    )
-    def _resolve_assets_path(self) -> Path:
-        logger.debug("Resolvendo assets_path (cache miss)")
-        config = self.get_config()
-        resolver = PathResolver(
-            name="ASSETS_PATH",
-            explicit_path=self._assets_path,
-            toml_getters=[
-                lambda: config.fonts.assets_path,
-                lambda: config.paths.assets_dir,
-            ],
-            runtime_getter=self._runtime_discovery.discover_assets_path,
-            ast_getter=lambda: self._get_ast_discovery().assets_path,
-            fallback_subdir="assets",
-            project_root=self.project_root,
-        )
-        return resolver.resolve()
-
-    def _clear_caches(self) -> None:
-        self._path_cache.clear()
-        self._config = None
-        self._ast_discovery = None
-        self._runtime_discovery.clear_cache()
-        self._project_root = None
-        self._project_root_resolved = False
-        self._cache_version += 1
-        logger.debug("Caches do ConfigLoader limpos (versao={})", self._cache_version)
 
     def configure(
         self,
-        config_path: Optional[Path] = None,
-        outputs_path: Optional[Path] = None,
-        assets_path: Optional[Path] = None,
+        config_path: Path | None = None,
+        outputs_path: Path | None = None,
+        assets_path: Path | None = None,
         **overrides: Any,
-    ) -> "ConfigLoader":
+    ) -> ConfigLoader:
         """Configura o carregador com opcoes explicitas.
 
         Args:
@@ -128,14 +91,14 @@ class ConfigLoader:
             self._assets_path = Path(assets_path)
 
         if overrides:
-            self._overrides = deep_merge(self._overrides, overrides)
+            self._overrides = _deep_merge(self._overrides, overrides)
             logger.debug("Overrides aplicados: {}", list(overrides.keys()))
 
-        self._clear_caches()
+        self._invalidate()
 
         return self
 
-    def reset(self) -> "ConfigLoader":
+    def reset(self) -> ConfigLoader:
         """Reseta todas as configuracoes para o estado inicial."""
         logger.debug("reset() chamado - limpando todas as configuracoes")
 
@@ -144,7 +107,7 @@ class ConfigLoader:
         self._outputs_path = None
         self._assets_path = None
 
-        self._clear_caches()
+        self._invalidate()
         reset_project_root_cache()
 
         return self
@@ -156,53 +119,34 @@ class ConfigLoader:
 
         logger.debug("Carregando configuracoes (cache miss)")
 
-        config_dict = dataclass_to_dict(DEFAULT_CONFIG)
+        toml_data = self._load_merged_toml()
 
-        config_files = find_config_files()
+        ChartingConfig._toml_data = toml_data
 
-        if self._config_path and self._config_path.exists():
-            config_files.insert(0, self._config_path)
-            logger.debug("Arquivo de config explicito: {}", self._config_path)
-
-        # Merge em ordem reversa (menor prioridade primeiro)
-        for config_file in reversed(config_files):
-            if config_file.name == "pyproject.toml":
-                file_config = load_pyproject_section(config_file)
-            else:
-                file_config = load_toml(config_file)
-
-            if file_config:
-                config_dict = deep_merge(config_dict, file_config)
-                logger.debug("Config merged de: {}", config_file)
-
-        if self._overrides:
-            config_dict = deep_merge(config_dict, self._overrides)
-            logger.debug("Overrides programaticos aplicados")
-
-        self._config = dict_to_dataclass(ChartingConfig, config_dict)
+        self._config = ChartingConfig(**self._overrides)
 
         return self._config
 
-    def _get_ast_discovery(self) -> DiscoveredPaths:
-        root = find_project_root()
-        if not root:
-            return DiscoveredPaths()
-
-        if self._ast_discovery is None:
-            logger.debug("Inicializando ASTPathDiscovery para: {}", root)
-            self._ast_discovery = ASTPathDiscovery(root)
-
-        return self._ast_discovery.discover()
-
     @property
     def outputs_path(self) -> Path:
-        """Resolve outputs_path via cadeia: API > TOML > runtime > AST > fallback."""
-        return self._resolve_outputs_path()
+        """Resolve outputs_path: API explicita > Config (TOML/env) > Fallback."""
+        if self._outputs_path is not None:
+            return self._outputs_path
+        config = self.get_config()
+        if config.paths.outputs_dir:
+            return self._resolve_relative(Path(config.paths.outputs_dir))
+        return (find_project_root() or Path.cwd()) / "outputs"
 
     @property
     def assets_path(self) -> Path:
-        """Resolve assets_path via cadeia: API > TOML > runtime > AST > fallback."""
-        return self._resolve_assets_path()
+        """Resolve assets_path: API explicita > Config (TOML/env) > Fallback."""
+        if self._assets_path is not None:
+            return self._assets_path
+        config = self.get_config()
+        for val in [config.fonts.assets_path, config.paths.assets_dir]:
+            if val:
+                return self._resolve_relative(Path(val))
+        return (find_project_root() or Path.cwd()) / "assets"
 
     @property
     def charts_path(self) -> Path:
@@ -210,20 +154,56 @@ class ConfigLoader:
         return self.outputs_path / config.paths.charts_subdir
 
     @property
-    def project_root(self) -> Optional[Path]:
+    def project_root(self) -> Path | None:
         if not self._project_root_resolved:
             self._project_root = find_project_root()
             self._project_root_resolved = True
         return self._project_root
+
+    def _invalidate(self) -> None:
+        self._config = None
+        self._project_root = None
+        self._project_root_resolved = False
+        ChartingConfig._toml_data = {}
+
+    def _load_merged_toml(self) -> dict[str, Any]:
+        """Descobre e mergeia todos os TOML files em ordem de precedencia."""
+        config_files = find_config_files()
+
+        if self._config_path and self._config_path.exists():
+            config_files.insert(0, self._config_path)
+            logger.debug("Arquivo de config explicito: {}", self._config_path)
+
+        merged: dict[str, Any] = {}
+
+        for config_file in reversed(config_files):
+            if config_file.name == "pyproject.toml":
+                file_config = _load_pyproject_section(config_file)
+            else:
+                file_config = _load_toml(config_file)
+
+            if file_config:
+                merged = _deep_merge(merged, file_config)
+                logger.debug("Config merged de: {}", config_file)
+
+        return merged
+
+    def _resolve_relative(self, path: Path) -> Path:
+        if path.is_absolute():
+            return path
+        root = self.project_root
+        if root:
+            return root / path
+        return Path.cwd() / path
 
 
 _loader = ConfigLoader()
 
 
 def configure(
-    config_path: Optional[Path] = None,
-    outputs_path: Optional[Path] = None,
-    assets_path: Optional[Path] = None,
+    config_path: Path | None = None,
+    outputs_path: Path | None = None,
+    assets_path: Path | None = None,
     **overrides: Any,
 ) -> ConfigLoader:
     """Configura o chartkit com paths explicitos e/ou overrides de secoes.

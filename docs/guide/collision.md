@@ -83,8 +83,8 @@ serem criados e antes das decoracoes finais:
 1. Style           theme.apply()
 2. Data            resolve x_data, y_data
 3. Y Formatter     ax.yaxis.set_major_formatter(...)
-4. Plot Core       plot_line/plot_bar + highlights (register_moveable)
-5. Metrics         ATH/ATL/hline (register_fixed) + band (register_passive)
+4. Plot Core       ChartRegistry dispatch + highlights (register_moveable)
+5. Metrics         ATH/ATL/hline (register_fixed) + MA (register_passive) + band (register_passive)
 6. Collisions      resolve_collisions(ax)
 7. Title/Footer    ax.set_title(), fig.text()
 8. Output          PlotResult
@@ -188,10 +188,9 @@ df.chartkit.plot(metrics=["target:100", "ath"], highlight_last=True)
 Se sua metrica cria uma area de fundo que nao deve ser obstaculo:
 
 ```python
-@MetricRegistry.register("zone", param_names=["lower", "upper"])
+@MetricRegistry.register("zone", param_names=["lower", "upper"], uses_series=False)
 def metric_zone(ax, x_data, y_data, lower: float, upper: float, **kwargs):
     """Zona sombreada (nao-obstaculo)."""
-    kwargs.pop("series", None)
     patch = ax.axhspan(lower, upper, alpha=0.1, color="blue")
     register_passive(ax, patch)
 ```

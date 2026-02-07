@@ -41,8 +41,9 @@ df.chartkit.plot(metrics=['minha_metrica:10.0'])
 
 ```python
 @MetricRegistry.register(
-    name='nome_da_metrica',      # Nome usado na string de especificacao
-    param_names=['param1', 'param2']  # Nomes dos parametros posicionais
+    name='nome_da_metrica',           # Nome usado na string de especificacao
+    param_names=['param1', 'param2'], # Nomes dos parametros posicionais
+    uses_series=True,                 # Se recebe 'series' para DataFrames multi-coluna
 )
 def funcao(ax, x_data, y_data, param1, param2, **kwargs):
     ...
@@ -57,6 +58,11 @@ def funcao(ax, x_data, y_data, param1, param2, **kwargs):
 - Definidos em `param_names`, serao extraidos da string de especificacao
 - Formato da string: `'nome:valor1:valor2'`
 - Valores sao automaticamente convertidos para numeros se possivel
+
+**`uses_series`:**
+- Default `True`: a metrica recebe `series=col` via kwargs quando o usuario
+  usa sintaxe `@` (ex: `'ath@revenue'`)
+- Use `False` para metricas que nao dependem dos dados (ex: `hline`, `band`)
 
 ### Exemplos de Metricas Complexas
 
@@ -215,34 +221,35 @@ df.chartkit.meu_transform().yoy().plot()
 
 ## Criando Novos Tipos de Grafico
 
+Novos chart types sao registrados via `@ChartRegistry.register()`. O engine
+despacha automaticamente via `ChartRegistry.get(kind)` -- nao e necessario
+modificar o `engine.py`.
+
 ### 1. Crie o arquivo do chart
+
+A funcao deve seguir o protocolo `ChartFunc`:
 
 ```python
 # Em src/chartkit/charts/scatter.py
 
 import pandas as pd
-from ..settings import get_config
-from ..styling import theme
+from matplotlib.axes import Axes
 
+from ..settings import get_config
+from ..styling.theme import theme
+from .registry import ChartRegistry
+
+
+@ChartRegistry.register("scatter")
 def plot_scatter(
-    ax,
-    x_data,
+    ax: Axes,
+    x: pd.Index | pd.Series,
     y_data: pd.DataFrame | pd.Series,
+    highlight: bool = False,
     size: int = 50,
     alpha: float = 0.7,
-    **kwargs
+    **kwargs,
 ) -> None:
-    """
-    Renderiza grafico de dispersao.
-
-    Args:
-        ax: Matplotlib Axes.
-        x_data: Dados do eixo X.
-        y_data: Dados do eixo Y.
-        size: Tamanho dos pontos.
-        alpha: Transparencia.
-        **kwargs: Argumentos extras para ax.scatter().
-    """
     config = get_config()
 
     if isinstance(y_data, pd.Series):
@@ -253,45 +260,38 @@ def plot_scatter(
     for i, col in enumerate(y_data.columns):
         color = colors[i % len(colors)]
         ax.scatter(
-            x_data,
+            x,
             y_data[col],
             s=size,
             alpha=alpha,
             color=color,
             label=col,
-            **kwargs
+            **kwargs,
         )
 
     if len(y_data.columns) > 1:
         ax.legend()
 ```
 
-### 2. Exporte em `charts/__init__.py`
+### 2. Importe em `charts/__init__.py`
+
+O import dispara o registro automatico via decorator:
 
 ```python
-from .line import plot_line
+from .registry import ChartRegistry
 from .bar import plot_bar
-from .scatter import plot_scatter  # Novo
+from .line import plot_line
+from .scatter import plot_scatter  # Import dispara @ChartRegistry.register("scatter")
 
-__all__ = ["plot_line", "plot_bar", "plot_scatter"]
+__all__ = ["ChartRegistry", "plot_bar", "plot_line", "plot_scatter"]
 ```
 
-### 3. Adicione ao switch em `engine.py`
+Nao e necessario modificar `engine.py`. O dispatch e automatico:
 
 ```python
-from .charts.scatter import plot_scatter
-
-class ChartingPlotter:
-    def plot(self, ..., kind: str = "line", ...):
-        # ...
-        if kind == "line":
-            plot_line(ax, x_data, y_data, highlight_last, **kwargs)
-        elif kind == "bar":
-            plot_bar(ax, x_data, y_data, highlight=highlight_last, y_origin=y_origin, **kwargs)
-        elif kind == "scatter":  # Novo
-            plot_scatter(ax, x_data, y_data, **kwargs)
-        else:
-            raise ValueError(f"Chart type '{kind}' not supported.")
+# engine.py (ja existente)
+chart_fn = ChartRegistry.get(kind)
+chart_fn(ax, x_data, y_data, highlight=highlight_last, **kwargs)
 ```
 
 Uso:
@@ -388,8 +388,13 @@ patch = ax.axhspan(lower, upper, alpha=0.1, ...)
 register_passive(ax, patch)
 ```
 
-Se o overlay nao cria elementos que interagem com labels (ex: linhas de dados
-como media movel), nenhum registro e necessario.
+Overlays que existem visualmente mas nao devem bloquear labels (como medias moveis)
+devem ser registrados como passive:
+
+```python
+lines = ax.plot(x, ma_values, color=line_color, ...)
+register_passive(ax, lines[0])
+```
 
 Para mais detalhes, veja o [guia da collision engine](../guide/collision.md).
 
@@ -427,40 +432,29 @@ df.chartkit.plot(metrics=['ath', 'trend'])
 
 ### Adicionando Novas Secoes de Config
 
-**1. Defina a dataclass em `settings/schema.py`:**
+**1. Defina o model em `settings/schema.py`:**
 
 ```python
-@dataclass
-class MeuConfig:
-    """Configuracoes para minha feature."""
-    enabled: bool
-    threshold: float
-    color: str
+from pydantic import BaseModel, Field
+
+class MeuConfig(BaseModel):
+    enabled: bool = True
+    threshold: float = 0.5
+    color: str = "#FF0000"
 ```
 
 **2. Adicione a `ChartingConfig`:**
 
 ```python
-@dataclass
-class ChartingConfig:
+class ChartingConfig(BaseSettings):
     # ... existentes ...
-    meu_config: MeuConfig
+    meu_config: MeuConfig = Field(default_factory=MeuConfig)
 ```
 
-**3. Adicione defaults em `settings/defaults.py`:**
+Defaults sao definidos nos proprios campos do pydantic model -- nao existe
+arquivo `defaults.py` separado.
 
-```python
-DEFAULT_CONFIG = ChartingConfig(
-    # ... existentes ...
-    meu_config=MeuConfig(
-        enabled=True,
-        threshold=0.5,
-        color="#FF0000",
-    ),
-)
-```
-
-**4. Use via `get_config()`:**
+**3. Use via `get_config()`:**
 
 ```python
 from chartkit.settings import get_config

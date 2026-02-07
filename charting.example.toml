@@ -38,7 +38,7 @@ senary = "#2E8B57"       # Sexta serie
 
 # Cores semanticas
 text = "#00464D"         # Cor do texto
-grid = "lightgray"       # Cor da grid
+grid = "lightgray"       # Cor de elementos neutros (hline, bands, connectors)
 background = "white"     # Cor de fundo
 positive = "#00464D"     # Valores positivos (ATH)
 negative = "#8B0000"     # Valores negativos (ATL)
@@ -51,7 +51,7 @@ moving_average = "#888888"  # Linha de media movel
 # Caminho relativo ao assets_path ou caminho absoluto (vazio = usa fallback)
 file = ""
 fallback = "sans-serif"
-# Caminho base para assets (vazio = auto-discovery do projeto host via AST)
+# Caminho base para assets (vazio = auto-discovery do projeto host)
 # Pode ser relativo ao project root ou absoluto
 assets_path = ""
 
@@ -69,7 +69,6 @@ figsize = [10.0, 6.0]  # Largura x Altura em polegadas
 dpi = 300              # Resolucao para exportacao
 
 [layout.footer]
-x = 0.01        # Posicao X (0-1, coordenadas de figura)
 y = 0.01        # Posicao Y (0-1, coordenadas de figura)
 color = "gray"  # Cor do texto
 
@@ -77,13 +76,22 @@ color = "gray"  # Cor do texto
 padding = 20     # Espacamento em pixels
 weight = "bold"  # Peso da fonte
 
+[layout.zorder]
+# Ordem de camadas do grafico (menor = mais atras)
+bands = 0              # Bandas sombreadas
+reference_lines = 1    # Linhas de referencia (ATH, ATL, hline)
+moving_average = 2     # Media movel
+data = 3               # Serie de dados principal
+markers = 5            # Marcadores de ponto (ATH, ATL)
+
 # -----------------------------------------------------------------------------
 # Linhas - Configuracao de linhas de grafico
 # -----------------------------------------------------------------------------
 [lines]
-main_width = 2.0        # Espessura da linha principal
-overlay_width = 1.5     # Espessura de overlays (MM, ATH, etc)
-reference_style = "--"  # Estilo de linhas de referencia
+main_width = 2.0              # Espessura da linha principal
+overlay_width = 1.5           # Espessura de overlays (MM, ATH, etc)
+reference_style = "--"        # Estilo de linhas de referencia
+moving_avg_min_periods = 1    # Periodos minimos para calculo da media movel
 
 [lines.legend]
 alpha = 0.9      # Transparencia do fundo da legenda
@@ -96,6 +104,7 @@ frameon = true   # Mostrar borda da legenda
 width_default = 0.8   # Largura padrao
 width_monthly = 20    # Largura para dados mensais
 width_annual = 300    # Largura para dados anuais
+auto_margin = 0.1     # Margem automatica nos eixos
 
 [bars.frequency_detection]
 monthly_threshold = 25   # Dias entre pontos para considerar mensal
@@ -112,17 +121,18 @@ alpha = 0.15  # Transparencia das bandas
 # -----------------------------------------------------------------------------
 [markers]
 scatter_size = 30     # Tamanho do marcador circular
-label_offset_x = 5    # Offset X do label em pontos
-label_offset_y = 8    # Offset Y do label em pontos
 
 # -----------------------------------------------------------------------------
 # Colisao - Deteccao de sobreposicao de labels
 # -----------------------------------------------------------------------------
 [collision]
-margin_px = 5             # Margem para deteccao em pixels
-guide_threshold_px = 30   # Distancia para adicionar linha guia
-extra_padding_px = 15     # Padding adicional apos reposicionamento
-px_to_points_ratio = 0.75 # Conversao pixels para pontos
+movement = "y"                   # Eixo de movimentacao ("y" ou "x")
+obstacle_padding_px = 8.0        # Padding ao redor de obstaculos em pixels
+label_padding_px = 4.0           # Padding entre labels em pixels
+max_iterations = 50              # Iteracoes maximas do solver
+connector_threshold_px = 30.0    # Distancia para adicionar linha guia
+connector_alpha = 0.6            # Transparencia da linha guia
+connector_style = "-"            # Estilo da linha guia
 
 # -----------------------------------------------------------------------------
 # Transforms - Parametros de transformacao de dados
@@ -140,7 +150,7 @@ rolling_window = 12          # Janela para rolling
 [formatters.locale]
 decimal = ","         # Separador decimal
 thousands = "."       # Separador de milhares
-babel_locale = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.) - afeta formatacao de moedas
+babel_locale = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.)
 
 [formatters.magnitude]
 suffixes = ["", "k", "M", "B", "T"]  # Sufixos para notacao compacta
@@ -159,12 +169,11 @@ moving_average_format = "MM{window}"  # Formato da legenda de MM
 [paths]
 charts_subdir = "charts"           # Subdiretorio para graficos dentro de outputs
 
-# Diretorio de outputs (vazio = auto-discovery do OUTPUTS_PATH do projeto host via AST)
+# Diretorio de outputs (vazio = auto-discovery do projeto host)
 # Pode ser relativo ao project root ou absoluto
-# Exemplo: "data/outputs" ou "C:/absolute/path/to/outputs"
 outputs_dir = ""
 
-# Diretorio de assets (vazio = auto-discovery do ASSETS_PATH do projeto host via AST)
+# Diretorio de assets (vazio = auto-discovery do projeto host)
 # Alternativa a [fonts].assets_path para configuracao centralizada
 # Pode ser relativo ao project root ou absoluto
 assets_dir = ""

@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+import pandas as pd
+from loguru import logger
+from matplotlib.axes import Axes
+
 
 @dataclass
 class MetricSpec:
@@ -19,11 +23,14 @@ class MetricSpec:
 class MetricRegistry:
     """Registro central de metricas com parse de string specs e aplicacao em batch."""
 
-    _metrics: dict[str, tuple[Callable, list[str]]] = {}
+    _metrics: dict[str, tuple[Callable, list[str], bool]] = {}
 
     @classmethod
     def register(
-        cls, name: str, param_names: list[str] | None = None
+        cls,
+        name: str,
+        param_names: list[str] | None = None,
+        uses_series: bool = True,
     ) -> Callable[[Callable], Callable]:
         """Decorator para registrar uma metrica.
 
@@ -31,10 +38,12 @@ class MetricRegistry:
             name: Nome da metrica (usado na string spec).
             param_names: Nomes dos parametros posicionais extraidos da string.
                 Ex: ``['window']`` faz ``'ma:12'`` virar ``{'window': 12}``.
+            uses_series: Se a metrica usa o parametro ``series`` para
+                selecionar coluna em DataFrames multi-serie.
         """
 
         def decorator(func: Callable) -> Callable:
-            cls._metrics[name] = (func, param_names or [])
+            cls._metrics[name] = (func, param_names or [], uses_series)
             return func
 
         return decorator
@@ -72,10 +81,15 @@ class MetricRegistry:
                 f"Metrica desconhecida: '{name}'. Disponiveis: {available}"
             )
 
-        _, param_names = cls._metrics[name]
+        _, param_names, _ = cls._metrics[name]
         params: dict[str, Any] = {}
 
-        for i, value in enumerate(parts[1:]):
+        raw_params = parts[1:]
+        extra = raw_params[len(param_names):]
+        if extra:
+            logger.warning("Parametros extras ignorados em '{}': {}", spec, extra)
+
+        for i, value in enumerate(raw_params):
             if i < len(param_names):
                 try:
                     parsed_value: Any = float(value)
@@ -90,18 +104,18 @@ class MetricRegistry:
     @classmethod
     def apply(
         cls,
-        ax,
-        x_data,
-        y_data,
+        ax: Axes,
+        x_data: pd.Index | pd.Series,
+        y_data: pd.Series | pd.DataFrame,
         specs: list[str | MetricSpec],
     ) -> None:
         """Aplica lista de metricas ao grafico."""
         for spec in specs:
             parsed = cls.parse(spec)
-            func, _ = cls._metrics[parsed.name]
-            kwargs = parsed.params
-            if parsed.series is not None:
-                kwargs = {**kwargs, "series": parsed.series}
+            func, _, uses_series = cls._metrics[parsed.name]
+            kwargs = parsed.params.copy()
+            if parsed.series is not None and uses_series:
+                kwargs["series"] = parsed.series
             func(ax, x_data, y_data, **kwargs)
 
     @classmethod

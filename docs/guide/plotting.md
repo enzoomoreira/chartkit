@@ -83,7 +83,7 @@ df.chartkit.plot(kind='bar', title="Saldo Mensal", units='BRL')
 
 ### Origem do Eixo Y (y_origin)
 
-O parametro `y_origin` controla onde o eixo Y comeca:
+O parametro `y_origin` e especifico de graficos de barras e passado via `**kwargs`:
 
 ```python
 # Origem no zero (padrao) - mostra a magnitude completa

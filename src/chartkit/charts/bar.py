@@ -1,11 +1,13 @@
 import pandas as pd
 from matplotlib.axes import Axes
 
-from ..overlays.markers import highlight_last_bar
+from ..overlays.markers import highlight_last
 from ..settings import get_config
 from ..styling.theme import theme
+from .registry import ChartRegistry
 
 
+@ChartRegistry.register("bar")
 def plot_bar(
     ax: Axes,
     x: pd.Index | pd.Series,
@@ -62,4 +64,4 @@ def plot_bar(
 
     if highlight:
         color = kwargs.get("color", theme.colors.primary)
-        highlight_last_bar(ax, x, vals, color=color)
+        highlight_last(ax, vals, style="bar", color=color, x=x)

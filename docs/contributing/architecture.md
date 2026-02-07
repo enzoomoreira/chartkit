@@ -57,7 +57,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Aplica tema via `theme.apply()`
    - Resolve dados X/Y
    - Aplica formatadores de eixo
-   - Delega para `plot_line()` ou `plot_bar()`
+   - Despacha via `ChartRegistry.get(kind)` para o chart type registrado
    - Aplica metricas via `MetricRegistry.apply()`
    - Resolve colisoes de labels
    - Adiciona decoracoes (footer)
@@ -79,7 +79,7 @@ flowchart TD
     D1 --> D2["2. theme.apply()"]
     D2 --> D3["3. Resolve X/Y data"]
     D3 --> D4["4. _apply_y_formatter()"]
-    D4 --> D5["5. plot_line() / plot_bar()"]
+    D4 --> D5["5. ChartRegistry.get(kind)()"]
     D5 --> D6["6. MetricRegistry.apply()"]
     D6 --> D7["7. resolve_collisions()"]
     D7 --> D8["8. _apply_title()"]
@@ -99,16 +99,11 @@ src/chartkit/
 ├── engine.py             # ChartingPlotter - orquestrador principal
 ├── result.py             # PlotResult - resultado encadeavel
 │
-├── settings/             # Sistema de configuracao TOML
+├── settings/             # Sistema de configuracao (pydantic-settings)
 │   ├── __init__.py       # Exports: configure, get_config, ChartingConfig
-│   ├── schema.py         # Dataclasses tipadas para configuracao
-│   ├── defaults.py       # Valores default neutros
-│   ├── loader.py         # ConfigLoader - carregamento e cache
-│   ├── toml.py           # Parsing TOML e deep merge
-│   ├── converters.py     # Conversao dataclass <-> dict
-│   ├── discovery.py      # Descoberta de project root e config files
-│   ├── paths.py          # PathResolver - resolucao unificada de paths
-│   └── ast_discovery.py  # Auto-discovery de paths via AST parsing
+│   ├── schema.py         # Pydantic BaseModel sub-configs + BaseSettings root
+│   ├── loader.py         # ConfigLoader singleton + TOML loading + path resolution
+│   └── discovery.py      # find_project_root (cached) + find_config_files
 │
 ├── styling/              # Tema e formatadores
 │   ├── __init__.py       # Facade
@@ -116,17 +111,18 @@ src/chartkit/
 │   ├── formatters.py     # Formatadores de eixo Y (Babel i18n)
 │   └── fonts.py          # Carregamento de fontes customizadas
 │
-├── charts/               # Tipos de graficos
-│   ├── __init__.py       # Facade: plot_line, plot_bar
-│   ├── line.py           # Grafico de linhas
-│   └── bar.py            # Grafico de barras
+├── charts/               # Tipos de graficos plugaveis
+│   ├── __init__.py       # Imports disparam registro automatico
+│   ├── registry.py       # ChartRegistry + ChartFunc Protocol
+│   ├── line.py           # Grafico de linhas (@ChartRegistry.register("line"))
+│   └── bar.py            # Grafico de barras (@ChartRegistry.register("bar"))
 │
 ├── overlays/             # Elementos visuais secundarios
 │   ├── __init__.py       # Facade
 │   ├── moving_average.py # Media movel
 │   ├── reference_lines.py# ATH, ATL, hlines
 │   ├── bands.py          # Bandas sombreadas
-│   └── markers.py        # Highlight de pontos/barras
+│   └── markers.py        # HighlightStyle + highlight_last unificado
 │
 ├── decorations/          # Decoracoes visuais
 │   ├── __init__.py       # Facade: add_footer
@@ -163,14 +159,9 @@ src/chartkit/
 
 | Modulo | Responsabilidade |
 |--------|-----------------|
-| `schema.py` | Define dataclasses tipadas para todas as secoes de config |
-| `defaults.py` | Valores default neutros (nao assumem contexto especifico) |
-| `loader.py` | ConfigLoader singleton; carrega e faz merge de configs; gerencia caches |
-| `toml.py` | Parsing de arquivos TOML; funcao `deep_merge()` para dicionarios |
-| `converters.py` | Converte entre dataclasses e dicionarios |
-| `discovery.py` | Encontra project root e arquivos de config |
-| `paths.py` | PathResolver com cadeia de precedencia |
-| `ast_discovery.py` | Descobre OUTPUTS_PATH/ASSETS_PATH via analise AST |
+| `schema.py` | Pydantic BaseModel sub-configs + ChartingConfig (BaseSettings) + _DictSource |
+| `loader.py` | ConfigLoader singleton; TOML loading + deep merge; path resolution 3-tier |
+| `discovery.py` | find_project_root (LRUCache) + find_config_files + get_user_config_dir |
 
 ### Styling
 
@@ -184,8 +175,9 @@ src/chartkit/
 
 | Modulo | Responsabilidade |
 |--------|-----------------|
-| `charts/line.py` | Renderiza grafico de linhas |
-| `charts/bar.py` | Renderiza grafico de barras |
+| `charts/registry.py` | ChartRegistry: decorator + dict + get/available |
+| `charts/line.py` | Renderiza grafico de linhas (registrado via @ChartRegistry.register) |
+| `charts/bar.py` | Renderiza grafico de barras (registrado via @ChartRegistry.register) |
 | `overlays/*` | Adiciona elementos secundarios (MA, ATH/ATL, bandas, markers) |
 | `decorations/footer.py` | Adiciona rodape com branding e fonte |
 
@@ -209,12 +201,10 @@ src/chartkit/
 
 A configuracao e carregada de multiplas fontes com merge:
 
-1. `configure()` - Overrides programaticos (maior prioridade)
-2. `configure(config_path=...)` - Arquivo TOML explicito
-3. `.charting.toml` / `charting.toml` - Projeto local
-4. `pyproject.toml [tool.charting]` - Secao no pyproject
-5. `~/.config/charting/config.toml` - Usuario global
-6. Defaults built-in (menor prioridade)
+1. `configure()` init_settings - Overrides programaticos (maior prioridade)
+2. Env vars (`CHARTKIT_*`, nested `__`)
+3. TOML files (`.charting.toml` > `pyproject.toml [tool.charting]` > user config)
+4. Field defaults dos pydantic models (menor prioridade)
 
 ---
 
@@ -259,14 +249,10 @@ def minha_funcao():
 ```
 __init__.py
     <- loader.py
-        <- ast_discovery.py
-        <- converters.py
-        <- defaults.py <- schema.py
-        <- discovery.py <- defaults.py
-        <- paths.py <- discovery.py
-        <- toml.py
+        <- discovery.py
+        <- schema.py
     <- schema.py
 ```
 
 **Importante:** Evitar imports circulares. `loader.py` e o hub central.
-Novos modulos devem importar de `schema.py` ou `defaults.py`, nunca de `loader.py`.
+Novos modulos devem importar de `schema.py`, nunca de `loader.py`.

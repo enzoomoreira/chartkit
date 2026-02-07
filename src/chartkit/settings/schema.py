@@ -1,6 +1,14 @@
-"""Schema de configuracao com dataclasses tipadas."""
+"""Schema de configuracao com pydantic models."""
 
-from dataclasses import dataclass, field
+from typing import Any, ClassVar
+
+from pydantic import BaseModel, Field
+from pydantic.fields import FieldInfo
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 __all__ = [
     "BrandingConfig",
@@ -28,16 +36,13 @@ __all__ = [
 ]
 
 
-@dataclass
-class BrandingConfig:
+class BrandingConfig(BaseModel):
     company_name: str = ""
     footer_format: str = "Fonte: {source}, {company_name}"
     footer_format_no_source: str = "{company_name}"
 
 
-@dataclass
-class ColorsConfig:
-    # Cores principais (gradiente institucional)
+class ColorsConfig(BaseModel):
     primary: str = "#00464D"
     secondary: str = "#006B6B"
     tertiary: str = "#008B8B"
@@ -45,14 +50,12 @@ class ColorsConfig:
     quinary: str = "#5F9EA0"
     senary: str = "#2E8B57"
 
-    # Cores semanticas
     text: str = "#00464D"
     grid: str = "lightgray"
     background: str = "white"
     positive: str = "#00464D"
     negative: str = "#8B0000"
 
-    # Overlays
     moving_average: str = "#888888"
 
     def cycle(self) -> list[str]:
@@ -67,37 +70,31 @@ class ColorsConfig:
         ]
 
 
-@dataclass
-class FontSizesConfig:
+class FontSizesConfig(BaseModel):
     default: int = 11
     title: int = 18
     footer: int = 9
     axis_label: int = 11
 
 
-@dataclass
-class FontsConfig:
-    file: str = ""  # Caminho relativo a assets_path ou absoluto (vazio = fallback)
+class FontsConfig(BaseModel):
+    file: str = ""
     fallback: str = "sans-serif"
-    assets_path: str = ""  # Vazio = auto-discovery do projeto host
-    sizes: FontSizesConfig = field(default_factory=FontSizesConfig)
+    assets_path: str = ""
+    sizes: FontSizesConfig = Field(default_factory=FontSizesConfig)
 
 
-@dataclass
-class FooterConfig:
-    x: float = 0.01
+class FooterConfig(BaseModel):
     y: float = 0.01
     color: str = "gray"
 
 
-@dataclass
-class TitleConfig:
+class TitleConfig(BaseModel):
     padding: int = 20
     weight: str = "bold"
 
 
-@dataclass
-class ZOrderConfig:
+class ZOrderConfig(BaseModel):
     """Ordem de camadas: bands(0) < reference_lines(1) < moving_average(2) < data(3) < markers(5)."""
 
     bands: int = 0
@@ -107,59 +104,51 @@ class ZOrderConfig:
     markers: int = 5
 
 
-@dataclass
-class LayoutConfig:
+class LayoutConfig(BaseModel):
     figsize: tuple[float, float] = (10.0, 6.0)
     dpi: int = 300
-    footer: FooterConfig = field(default_factory=FooterConfig)
-    title: TitleConfig = field(default_factory=TitleConfig)
-    zorder: ZOrderConfig = field(default_factory=ZOrderConfig)
+    footer: FooterConfig = Field(default_factory=FooterConfig)
+    title: TitleConfig = Field(default_factory=TitleConfig)
+    zorder: ZOrderConfig = Field(default_factory=ZOrderConfig)
 
 
-@dataclass
-class LegendConfig:
+class LegendConfig(BaseModel):
     alpha: float = 0.9
     frameon: bool = True
 
 
-@dataclass
-class LinesConfig:
+class LinesConfig(BaseModel):
     main_width: float = 2.0
     overlay_width: float = 1.5
     reference_style: str = "--"
     moving_avg_min_periods: int = 1
-    legend: LegendConfig = field(default_factory=LegendConfig)
+    legend: LegendConfig = Field(default_factory=LegendConfig)
 
 
-@dataclass
-class FrequencyDetectionConfig:
+class FrequencyDetectionConfig(BaseModel):
     monthly_threshold: int = 25
     annual_threshold: int = 300
 
 
-@dataclass
-class BarsConfig:
+class BarsConfig(BaseModel):
     width_default: float = 0.8
     width_monthly: int = 20
     width_annual: int = 300
-    auto_margin: float = 0.1  # Margem (%) para y_origin='auto'
-    frequency_detection: FrequencyDetectionConfig = field(
+    auto_margin: float = 0.1
+    frequency_detection: FrequencyDetectionConfig = Field(
         default_factory=FrequencyDetectionConfig
     )
 
 
-@dataclass
-class BandsConfig:
+class BandsConfig(BaseModel):
     alpha: float = 0.15
 
 
-@dataclass
-class MarkersConfig:
+class MarkersConfig(BaseModel):
     scatter_size: int = 30
 
 
-@dataclass
-class CollisionConfig:
+class CollisionConfig(BaseModel):
     movement: str = "y"
     obstacle_padding_px: float = 8.0
     label_padding_px: float = 4.0
@@ -169,8 +158,7 @@ class CollisionConfig:
     connector_style: str = "-"
 
 
-@dataclass
-class TransformsConfig:
+class TransformsConfig(BaseModel):
     mom_periods: int = 1
     yoy_periods: int = 12
     trading_days_per_year: int = 252
@@ -178,63 +166,89 @@ class TransformsConfig:
     rolling_window: int = 12
 
 
-@dataclass
-class LocaleConfig:
+class LocaleConfig(BaseModel):
     decimal: str = ","
     thousands: str = "."
     babel_locale: str = "pt_BR"
 
 
-@dataclass
-class MagnitudeConfig:
-    suffixes: list[str] = field(
-        default_factory=lambda: ["", "k", "M", "B", "T"]
-    )
+class MagnitudeConfig(BaseModel):
+    suffixes: list[str] = Field(default_factory=lambda: ["", "k", "M", "B", "T"])
 
 
-@dataclass
-class FormattersConfig:
-    locale: LocaleConfig = field(default_factory=LocaleConfig)
-    magnitude: MagnitudeConfig = field(default_factory=MagnitudeConfig)
+class FormattersConfig(BaseModel):
+    locale: LocaleConfig = Field(default_factory=LocaleConfig)
+    magnitude: MagnitudeConfig = Field(default_factory=MagnitudeConfig)
 
 
-@dataclass
-class LabelsConfig:
+class LabelsConfig(BaseModel):
     ath: str = "ATH"
     atl: str = "ATL"
     moving_average_format: str = "MM{window}"
 
 
-@dataclass
-class PathsConfig:
+class PathsConfig(BaseModel):
     charts_subdir: str = "charts"
-    outputs_dir: str = ""  # Vazio = auto-discovery do projeto host
-    assets_dir: str = ""  # Vazio = auto-discovery do projeto host
-    project_root_markers: list[str] = field(
-        default_factory=lambda: [
-            ".git",
-            "pyproject.toml",
-            "setup.py",
-            "setup.cfg",
-            ".project-root",
-        ]
-    )
+    outputs_dir: str = ""
+    assets_dir: str = ""
 
 
-@dataclass
-class ChartingConfig:
+class _DictSource(PydanticBaseSettingsSource):
+    """Source customizado que recebe um dict pre-mergeado de TOML files."""
+
+    def __init__(self, settings_cls: type[BaseSettings], data: dict) -> None:
+        super().__init__(settings_cls)
+        self._data = data
+
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> tuple[Any, str, bool]:
+        val = self._data.get(field_name)
+        return val, field_name, False
+
+    def __call__(self) -> dict[str, Any]:
+        d: dict[str, Any] = {}
+        for field_name, field in self.settings_cls.model_fields.items():
+            val = self._data.get(field_name)
+            if val is not None:
+                d[field_name] = val
+        return d
+
+
+class ChartingConfig(BaseSettings):
     """Configuracao principal que agrega todas as sub-configuracoes."""
 
-    branding: BrandingConfig = field(default_factory=BrandingConfig)
-    colors: ColorsConfig = field(default_factory=ColorsConfig)
-    fonts: FontsConfig = field(default_factory=FontsConfig)
-    layout: LayoutConfig = field(default_factory=LayoutConfig)
-    lines: LinesConfig = field(default_factory=LinesConfig)
-    bars: BarsConfig = field(default_factory=BarsConfig)
-    bands: BandsConfig = field(default_factory=BandsConfig)
-    markers: MarkersConfig = field(default_factory=MarkersConfig)
-    collision: CollisionConfig = field(default_factory=CollisionConfig)
-    transforms: TransformsConfig = field(default_factory=TransformsConfig)
-    formatters: FormattersConfig = field(default_factory=FormattersConfig)
-    labels: LabelsConfig = field(default_factory=LabelsConfig)
-    paths: PathsConfig = field(default_factory=PathsConfig)
+    model_config = SettingsConfigDict(
+        env_prefix="CHARTKIT_",
+        env_nested_delimiter="__",
+    )
+
+    _toml_data: ClassVar[dict] = {}
+
+    branding: BrandingConfig = Field(default_factory=BrandingConfig)
+    colors: ColorsConfig = Field(default_factory=ColorsConfig)
+    fonts: FontsConfig = Field(default_factory=FontsConfig)
+    layout: LayoutConfig = Field(default_factory=LayoutConfig)
+    lines: LinesConfig = Field(default_factory=LinesConfig)
+    bars: BarsConfig = Field(default_factory=BarsConfig)
+    bands: BandsConfig = Field(default_factory=BandsConfig)
+    markers: MarkersConfig = Field(default_factory=MarkersConfig)
+    collision: CollisionConfig = Field(default_factory=CollisionConfig)
+    transforms: TransformsConfig = Field(default_factory=TransformsConfig)
+    formatters: FormattersConfig = Field(default_factory=FormattersConfig)
+    labels: LabelsConfig = Field(default_factory=LabelsConfig)
+    paths: PathsConfig = Field(default_factory=PathsConfig)
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        sources: list[PydanticBaseSettingsSource] = [init_settings, env_settings]
+        if cls._toml_data:
+            sources.append(_DictSource(settings_cls, cls._toml_data))
+        return tuple(sources)
