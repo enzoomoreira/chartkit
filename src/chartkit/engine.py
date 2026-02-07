@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -74,7 +75,9 @@ class ChartingPlotter:
         self._ax = ax
 
         # 2. Data
-        x_data = self.df.index if x is None else self.df[x]
+        x_data: pd.Index | pd.Series = (
+            self.df.index if x is None else cast(pd.Series, self.df[x])
+        )
 
         if y is None:
             y_data = self.df.select_dtypes(include=["number"])

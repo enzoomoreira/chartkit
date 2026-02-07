@@ -94,7 +94,8 @@ flowchart TD
 
 ```
 src/chartkit/
-├── __init__.py           # Entry point, exports publicos, configure_logging()
+├── __init__.py           # Entry point, exports publicos, __getattr__ lazy paths
+├── _logging.py           # Logging setup (loguru disable + configure_logging)
 ├── accessor.py           # Pandas DataFrame accessor (.chartkit)
 ├── engine.py             # ChartingPlotter - orquestrador principal
 ├── result.py             # PlotResult - resultado encadeavel
@@ -151,6 +152,7 @@ src/chartkit/
 
 | Modulo | Responsabilidade |
 |--------|-----------------|
+| `_logging.py` | Setup de loguru (`logger.disable`) + `configure_logging()` |
 | `accessor.py` | Registra `.chartkit` em DataFrames; delega para TransformAccessor ou ChartingPlotter |
 | `engine.py` | Orquestra criacao de graficos; gerencia Figure/Axes; aplica componentes |
 | `result.py` | Encapsula resultado; permite encadeamento com `.save()` e `.show()` |

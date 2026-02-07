@@ -1,35 +1,17 @@
 """Biblioteca de charting padronizado via Pandas accessor.
 
-    import chartkit
-    df.chartkit.plot(metrics=['ath', 'ma:12'], units='%')
-    df.chartkit.yoy().plot(title='YoY').save('chart.png')
+import chartkit
+df.chartkit.plot(metrics=['ath', 'ma:12'], units='%')
+df.chartkit.yoy().plot(title='YoY').save('chart.png')
 """
 
-from typing import Any
-
-from loguru import logger
-
-logger.disable("chartkit")
-
-
-def configure_logging(level: str = "DEBUG", sink: Any = None) -> None:
-    """Ativa logging da biblioteca chartkit.
-
-    Args:
-        sink: Destino opcional (arquivo, stream). Se None, usa stderr.
-    """
-    logger.enable("chartkit")
-    if sink:
-        logger.add(sink, level=level)
-
-
 from ._internal import register_fixed, register_moveable, register_passive
+from ._logging import configure_logging
 from .accessor import ChartingAccessor
 from .charts import ChartRegistry
 from .engine import ChartingPlotter
 from .metrics import MetricRegistry
 from .result import PlotResult
-from .transforms import TransformAccessor
 from .settings import (
     ChartingConfig,
     configure,
@@ -40,6 +22,7 @@ from .settings import (
     reset_config,
 )
 from .styling.theme import theme
+from .transforms import TransformAccessor
 from .transforms import (
     accum_12m,
     annualize_daily,
@@ -71,9 +54,9 @@ __all__ = [
     "reset_config",
     "ChartingConfig",
     # Paths
-    "CHARTS_PATH",
-    "OUTPUTS_PATH",
-    "ASSETS_PATH",
+    "CHARTS_PATH",  # pyright: ignore[reportUnsupportedDunderAll]
+    "OUTPUTS_PATH",  # pyright: ignore[reportUnsupportedDunderAll]
+    "ASSETS_PATH",  # pyright: ignore[reportUnsupportedDunderAll]
     # Collision API
     "register_fixed",
     "register_moveable",

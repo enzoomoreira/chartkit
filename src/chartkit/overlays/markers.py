@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -22,7 +23,9 @@ class HighlightStyle:
 
 
 HIGHLIGHT_STYLES: dict[str, HighlightStyle] = {
-    "line": HighlightStyle(ha="left", va="center", label_prefix="  ", show_scatter=True),
+    "line": HighlightStyle(
+        ha="left", va="center", label_prefix="  ", show_scatter=True
+    ),
     "bar": HighlightStyle(ha="center", va=None, label_prefix="", show_scatter=False),
 }
 
@@ -69,18 +72,21 @@ def highlight_last(
     # Resolve posicao X
     if x is not None and hasattr(x, "get_loc"):
         try:
-            x_pos = x.get_loc(last_idx)
-            x_val = x[x_pos]
+            loc_idx = x.get_loc(last_idx)
+            x_val = x[loc_idx]
         except KeyError:
             x_val = last_idx
     else:
         x_val = last_idx
 
+    x_pos = cast(float, x_val)
+    y_pos = cast(float, last_val)
+
     # Scatter marker
     if style.show_scatter:
         ax.scatter(
-            [x_val],
-            [last_val],
+            [x_pos],
+            [y_pos],
             color=color,
             s=config.markers.scatter_size,
             zorder=config.layout.zorder.markers,
@@ -98,8 +104,8 @@ def highlight_last(
         va = "bottom" if last_val >= 0 else "top"
 
     text = ax.text(
-        x_val,
-        last_val,
+        x_pos,
+        y_pos,
         f"{style.label_prefix}{label_text}",
         ha=style.ha,
         va=va,

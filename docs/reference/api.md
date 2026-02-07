@@ -94,13 +94,13 @@ Accessor encadeavel para transformacoes. Cada metodo retorna novo `TransformAcce
 
 | Metodo | Assinatura | Descricao |
 |--------|------------|-----------|
-| `yoy()` | `yoy(periods: int = 12) -> TransformAccessor` | Variacao percentual anual (Year-over-Year) |
-| `mom()` | `mom(periods: int = 1) -> TransformAccessor` | Variacao percentual mensal (Month-over-Month) |
+| `yoy()` | `yoy(periods: int \| None = None) -> TransformAccessor` | Variacao percentual anual (default: `config.transforms.yoy_periods`) |
+| `mom()` | `mom(periods: int \| None = None) -> TransformAccessor` | Variacao percentual mensal (default: `config.transforms.mom_periods`) |
 | `accum_12m()` | `accum_12m() -> TransformAccessor` | Variacao acumulada em 12 meses |
 | `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Diferenca absoluta entre periodos |
-| `normalize()` | `normalize(base: int = 100, base_date: str \| None = None) -> TransformAccessor` | Normaliza serie para valor base |
-| `annualize_daily()` | `annualize_daily(trading_days: int = 252) -> TransformAccessor` | Anualiza taxa diaria |
-| `compound_rolling()` | `compound_rolling(window: int = 12) -> TransformAccessor` | Retorno composto em janela movel |
+| `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normaliza serie (default: `config.transforms.normalize_base`) |
+| `annualize_daily()` | `annualize_daily(trading_days: int \| None = None) -> TransformAccessor` | Anualiza taxa diaria (default: `config.transforms.trading_days_per_year`) |
+| `compound_rolling()` | `compound_rolling(window: int \| None = None) -> TransformAccessor` | Retorno composto (default: `config.transforms.rolling_window`) |
 | `to_month_end()` | `to_month_end() -> TransformAccessor` | Normaliza indice para fim do mes |
 | `plot()` | `plot(**kwargs) -> PlotResult` | Finaliza cadeia e plota |
 | `df` | `@property -> pd.DataFrame` | Acesso ao DataFrame transformado |
@@ -311,7 +311,6 @@ class ChartingConfig(BaseSettings):
 
 | Campo | Tipo | Default |
 |-------|------|---------|
-| `x` | `float` | `0.01` |
 | `y` | `float` | `0.01` |
 | `color` | `str` | `"gray"` |
 

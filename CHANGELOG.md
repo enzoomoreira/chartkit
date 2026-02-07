@@ -1,5 +1,32 @@
 # Project Changelog
 
+## [2026-02-07 03:05]
+### Added
+- **`_logging.py` modulo dedicado**: `configure_logging()` extraido de `__init__.py` para modulo proprio
+  - Isola side effect (`logger.disable`) do namespace principal
+  - Modulo segue convencao do projeto com `__all__` definido
+- **`PositionableArtist` Protocol**: Tipagem estrutural para artists reposicionaveis na collision engine
+  - `runtime_checkable` permite filtragem segura com `isinstance` antes de chamar `get/set_position`
+  - Substitui uso implicito de duck typing sem garantias
+- **`@overload` em todas as transform functions**: Return-type narrowing para DataFrame/Series
+  - `mom`, `yoy`, `accum_12m`, `diff`, `normalize`, `annualize_daily`, `compound_rolling`, `to_month_end`
+  - Type checkers agora inferem o tipo correto baseado no input
+- **`pyrightconfig.json`**: Configuracao de type checking com modo `basic` para o projeto
+- **Type annotations com `cast()`**: Narrowing explicito em `engine.py`, `bar.py`, `line.py`, `markers.py`
+  - Resolve warnings de pyright em operacoes com tipos union do pandas
+
+### Changed
+- **Collision engine: monkey-patching -> WeakKeyDictionary**: Estado por-Axes migrado de `ax._charting_*` para `WeakKeyDictionary` module-level
+  - Elimina poluicao de namespace em objetos matplotlib
+  - Limpeza automatica via GC quando Axes sao destruidos
+- **`_pos_to_numeric`: `Number` ABC -> `isinstance(x, (int, float))`**: Check mais preciso para contexto de matplotlib dates
+- **`MetricRegistry.apply()` aceita `Sequence` em vez de `list`**: Tipo mais permissivo para specs
+- **`normalize()`: variavel `base_date` nao mais reatribuida**: Nova variavel `ts` para o `pd.Timestamp` convertido
+- **Formatacao de codigo**: Line breaks em chamadas longas (`line.py`, `collision.py`, `markers.py`)
+
+### Fixed
+- **Variable shadowing em `markers.py`**: `x_pos` usado para index posicional e coordenada X renomeado para `loc_idx`
+
 ## [2026-02-07 02:22]
 ### Added
 - **ChartRegistry**: Sistema plugavel de chart types via decorator `@ChartRegistry.register("name")`

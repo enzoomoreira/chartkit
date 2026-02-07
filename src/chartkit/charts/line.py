@@ -1,3 +1,5 @@
+from typing import cast
+
 import pandas as pd
 from matplotlib.axes import Axes
 
@@ -36,18 +38,23 @@ def plot_line(
         c = user_color if user_color is not None else colors[i % len(colors)]
         label = str(col)
 
-        line, = ax.plot(
-            x, y_data[col],
-            linewidth=user_linewidth if user_linewidth is not None else lines.main_width,
+        (line,) = ax.plot(
+            x,
+            y_data[col],
+            linewidth=user_linewidth
+            if user_linewidth is not None
+            else lines.main_width,
             color=c,
             label=label,
-            zorder=user_zorder if user_zorder is not None else config.layout.zorder.data,
+            zorder=user_zorder
+            if user_zorder is not None
+            else config.layout.zorder.data,
             **kwargs,
         )
         plot_lines.append(line)
 
         if highlight:
-            highlight_last(ax, y_data[col], style="line", color=c)
+            highlight_last(ax, cast(pd.Series, y_data[col]), style="line", color=c)
 
     if y_data.shape[1] > 1:
         ax.legend(

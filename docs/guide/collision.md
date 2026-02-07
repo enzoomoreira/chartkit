@@ -74,6 +74,16 @@ register_passive(ax, patch)
 
 ## Como Funciona
 
+### Estado Interno
+
+O estado de colisao (quais artists sao moveable, fixed, passive) e armazenado
+em `WeakKeyDictionary` module-level indexadas por `Axes`. Isso significa:
+
+- **Limpeza automatica**: quando um `Axes` e destruido pelo GC, suas entradas
+  sao removidas automaticamente. Nao ha risco de memory leak.
+- **Sem poluicao de namespace**: nenhum atributo privado e adicionado aos
+  objetos matplotlib (anteriormente usava `ax._charting_labels`, etc.).
+
 ### Pipeline de Rendering
 
 A collision engine e executada no step 6 do pipeline, apos todos os elementos
@@ -239,15 +249,18 @@ configure(collision={
 
 ## Decisoes de Design
 
-### Por que agnostica a tipos?
+### Por que agnostica a tipos concretos?
 
 A engine nunca faz `isinstance(artist, Text)` ou `isinstance(patch, Rectangle)`.
-Ela trabalha exclusivamente com `Artist.get_window_extent(renderer)`, que retorna
-um `Bbox` em display pixels.
+Para moveables, usa um `PositionableArtist` Protocol (`runtime_checkable`) que
+verifica estruturalmente se o artist tem `get_position()`, `set_position()` e
+`get_window_extent()`. Para obstaculos, trabalha exclusivamente com
+`Artist.get_window_extent(renderer)`, que retorna um `Bbox` em display pixels.
 
 Se amanha adicionarmos um novo tipo de overlay (ex: anotacoes, setas, boxes),
-ele funciona com a engine sem modificar uma unica linha dela. A responsabilidade
-de classificacao e do modulo que cria o elemento.
+ele funciona com a engine sem modificar uma unica linha dela -- basta que
+implemente os metodos do Protocol. A responsabilidade de classificacao e do
+modulo que cria o elemento.
 
 ### Por que display pixels?
 

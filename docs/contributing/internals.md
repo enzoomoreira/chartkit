@@ -160,7 +160,7 @@ Seguindo best practices para bibliotecas Python, logging esta
 desabilitado por padrao:
 
 ```python
-# Em __init__.py
+# Em _logging.py (importado por __init__.py)
 from loguru import logger
 logger.disable("chartkit")
 ```

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -85,7 +86,7 @@ class MetricRegistry:
         params: dict[str, Any] = {}
 
         raw_params = parts[1:]
-        extra = raw_params[len(param_names):]
+        extra = raw_params[len(param_names) :]
         if extra:
             logger.warning("Parametros extras ignorados em '{}': {}", spec, extra)
 
@@ -107,7 +108,7 @@ class MetricRegistry:
         ax: Axes,
         x_data: pd.Index | pd.Series,
         y_data: pd.Series | pd.DataFrame,
-        specs: list[str | MetricSpec],
+        specs: Sequence[str | MetricSpec],
     ) -> None:
         """Aplica lista de metricas ao grafico."""
         for spec in specs:

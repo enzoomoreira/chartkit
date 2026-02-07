@@ -8,7 +8,9 @@ Agnostica a tipos de elemento - qualquer Artist com get_window_extent() funciona
 from __future__ import annotations
 
 from math import sqrt
-from numbers import Number
+from collections.abc import Sequence
+from typing import Protocol, runtime_checkable
+from weakref import WeakKeyDictionary
 
 import matplotlib.dates as mdates
 from matplotlib.artist import Artist
@@ -19,19 +21,29 @@ from matplotlib.transforms import Bbox
 from ..settings import get_config
 from ..settings.schema import ChartingConfig, CollisionConfig
 
+# Estado de colisao por Axes, liberado automaticamente pelo GC.
+_labels: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
+_obstacles: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
+_passive: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
+
+
+@runtime_checkable
+class PositionableArtist(Protocol):
+    """Artist que suporta reposicionamento via get/set_position."""
+
+    def get_position(self) -> tuple[float, float]: ...
+    def set_position(self, xy: tuple[float, float]) -> None: ...
+    def get_window_extent(self, renderer: RendererBase | None = None) -> Bbox: ...
+
 
 def register_moveable(ax: Axes, artist: Artist) -> None:
     """Registra Artist que pode ser reposicionado pela engine."""
-    if not hasattr(ax, "_charting_labels"):
-        ax._charting_labels = []
-    ax._charting_labels.append(artist)
+    _labels.setdefault(ax, []).append(artist)
 
 
 def register_fixed(ax: Axes, artist: Artist) -> None:
     """Registra Artist que deve ser evitado por moveables."""
-    if not hasattr(ax, "_charting_obstacles"):
-        ax._charting_obstacles = []
-    ax._charting_obstacles.append(artist)
+    _obstacles.setdefault(ax, []).append(artist)
 
 
 def register_passive(ax: Axes, artist: Artist) -> None:
@@ -41,14 +53,12 @@ def register_passive(ax: Axes, artist: Artist) -> None:
     por padrao. Use esta funcao para excluir elementos visuais de fundo
     (bandas, areas sombreadas, etc.) da deteccao automatica.
     """
-    if not hasattr(ax, "_charting_passive"):
-        ax._charting_passive = []
-    ax._charting_passive.append(artist)
+    _passive.setdefault(ax, []).append(artist)
 
 
 def resolve_collisions(ax: Axes) -> None:
     """Resolve todas as colisoes registradas no axes."""
-    moveables = getattr(ax, "_charting_labels", [])
+    moveables = _labels.get(ax, [])
     if not moveables:
         return
 
@@ -57,25 +67,30 @@ def resolve_collisions(ax: Axes) -> None:
 
     fig = ax.figure
     fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+
+    # Filtra apenas artists posicionaveis
+    positionable = [m for m in moveables if isinstance(m, PositionableArtist)]
+    if not positionable:
+        return
 
     # Salva posicoes originais (numerico) para connectors
-    original_positions = [_pos_to_numeric(*m.get_position()) for m in moveables]
+    original_positions = [_pos_to_numeric(*m.get_position()) for m in positionable]
 
     # Obstaculos: registrados explicitamente + patches auto-detectados
     fixed = _collect_obstacles(ax, moveables)
 
     if fixed:
-        _resolve_against_fixed(moveables, fixed, renderer, ax, collision)
+        _resolve_against_fixed(positionable, fixed, renderer, ax, collision)
 
-    if len(moveables) > 1:
-        _resolve_between_moveables(moveables, renderer, ax, collision)
+    if len(positionable) > 1:
+        _resolve_between_moveables(positionable, renderer, ax, collision)
 
-    _add_connectors(ax, moveables, original_positions, renderer, collision, config)
+    _add_connectors(ax, positionable, original_positions, renderer, collision, config)
 
 
 def _resolve_against_fixed(
-    moveables: list[Artist],
+    moveables: Sequence[PositionableArtist],
     fixed: list[Artist],
     renderer: RendererBase,
     ax: Axes,
@@ -104,8 +119,11 @@ def _resolve_against_fixed(
 
                 resolved = False
                 delta = _best_displacement(
-                    mov_bbox, fix_bbox, collision.movement,
-                    collision.obstacle_padding_px, axes_bbox,
+                    mov_bbox,
+                    fix_bbox,
+                    collision.movement,
+                    collision.obstacle_padding_px,
+                    axes_bbox,
                 )
                 if delta is None:
                     stuck = True
@@ -171,7 +189,7 @@ def _best_displacement(
 
 
 def _resolve_between_moveables(
-    moveables: list[Artist],
+    moveables: Sequence[PositionableArtist],
     renderer: RendererBase,
     ax: Axes,
     collision: CollisionConfig,
@@ -229,7 +247,7 @@ def _resolve_between_moveables(
 
 def _add_connectors(
     ax: Axes,
-    moveables: list[Artist],
+    moveables: Sequence[PositionableArtist],
     original_positions: list[tuple[float, float]],
     renderer: RendererBase,
     collision: CollisionConfig,
@@ -244,9 +262,7 @@ def _add_connectors(
         curr_x, curr_y = _pos_to_numeric(*label.get_position())
         orig_px = ax.transData.transform((orig_x, orig_y))
         curr_px = ax.transData.transform((curr_x, curr_y))
-        dist_px = sqrt(
-            (orig_px[0] - curr_px[0]) ** 2 + (orig_px[1] - curr_px[1]) ** 2
-        )
+        dist_px = sqrt((orig_px[0] - curr_px[0]) ** 2 + (orig_px[1] - curr_px[1]) ** 2)
 
         if dist_px > collision.connector_threshold_px:
             ax.plot(
@@ -274,12 +290,12 @@ def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Artist]:
     sem necessidade de registro manual em cada tipo de chart.
     """
     moveable_ids = {id(m) for m in moveables}
-    passive_ids = {id(p) for p in getattr(ax, "_charting_passive", [])}
+    passive_ids = {id(p) for p in _passive.get(ax, [])}
     seen: set[int] = set()
     obstacles: list[Artist] = []
 
     # 1. Obstaculos registrados explicitamente (reference lines, etc.)
-    for obs in getattr(ax, "_charting_obstacles", []):
+    for obs in _obstacles.get(ax, []):
         oid = id(obs)
         if oid not in seen:
             obstacles.append(obs)
@@ -297,7 +313,9 @@ def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Artist]:
 
 
 def _get_padded_bbox(
-    artist: Artist, renderer: RendererBase, padding_px: float
+    artist: Artist | PositionableArtist,
+    renderer: RendererBase,
+    padding_px: float,
 ) -> Bbox:
     """Bbox expandido com padding fixo. Seguro para elementos de 0px."""
     bbox = artist.get_window_extent(renderer)
@@ -314,17 +332,19 @@ def _get_padded_bbox(
     )
 
 
-def _pos_to_numeric(x, y) -> tuple[float, float]:
+def _pos_to_numeric(x: object, y: object) -> tuple[float, float]:
     """Converte posicao data-space para numerico (datas -> mdates float)."""
-    if not isinstance(x, Number):
+    if not isinstance(x, (int, float)):
         try:
             x = mdates.date2num(x)
         except (TypeError, ValueError, AttributeError):
-            x = float(x)
-    return float(x), float(y)
+            x = float(x)  # type: ignore[arg-type]
+    return float(x), float(y)  # type: ignore[arg-type]
 
 
-def _shift_label(label: Artist, dx_px: float, dy_px: float, ax: Axes) -> None:
+def _shift_label(
+    label: PositionableArtist, dx_px: float, dy_px: float, ax: Axes
+) -> None:
     """Move label por delta em pixels, convertendo para data coords."""
     num_x, num_y = _pos_to_numeric(*label.get_position())
     curr_px = ax.transData.transform((num_x, num_y))
