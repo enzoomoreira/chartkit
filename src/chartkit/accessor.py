@@ -22,17 +22,23 @@ class ChartingAccessor:
     def __init__(self, pandas_obj: pd.DataFrame) -> None:
         self._obj = pandas_obj
 
-    def yoy(self, periods: int | None = None) -> TransformAccessor:
+    def yoy(
+        self, periods: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
         """Variacao percentual anual (Year-over-Year)."""
-        return TransformAccessor(self._obj).yoy(periods)
+        return TransformAccessor(self._obj).yoy(periods, freq)
 
-    def mom(self, periods: int | None = None) -> TransformAccessor:
+    def mom(
+        self, periods: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
         """Variacao percentual mensal (Month-over-Month)."""
-        return TransformAccessor(self._obj).mom(periods)
+        return TransformAccessor(self._obj).mom(periods, freq)
 
-    def accum_12m(self) -> TransformAccessor:
-        """Variacao acumulada em 12 meses (produto composto)."""
-        return TransformAccessor(self._obj).accum_12m()
+    def accum(
+        self, window: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
+        """Variacao acumulada via produto composto em janela movel."""
+        return TransformAccessor(self._obj).accum(window, freq)
 
     def diff(self, periods: int = 1) -> TransformAccessor:
         """Diferenca absoluta entre periodos."""
@@ -48,9 +54,19 @@ class ChartingAccessor:
         """Anualiza taxa diaria via juros compostos."""
         return TransformAccessor(self._obj).annualize_daily(trading_days)
 
-    def compound_rolling(self, window: int | None = None) -> TransformAccessor:
+    def compound_rolling(
+        self, window: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
         """Retorno composto em janela movel."""
-        return TransformAccessor(self._obj).compound_rolling(window)
+        return TransformAccessor(self._obj).compound_rolling(window, freq)
+
+    def drawdown(self) -> TransformAccessor:
+        """Distancia percentual do pico historico."""
+        return TransformAccessor(self._obj).drawdown()
+
+    def zscore(self, window: int | None = None) -> TransformAccessor:
+        """Padronizacao estatistica (z-score)."""
+        return TransformAccessor(self._obj).zscore(window)
 
     def to_month_end(self) -> TransformAccessor:
         """Normaliza indice temporal para fim do mes."""
@@ -67,6 +83,7 @@ class ChartingAccessor:
         highlight_last: bool = False,
         save_path: str | None = None,
         metrics: str | list[str] | None = None,
+        fill_between: tuple[str, str] | None = None,
         **kwargs,
     ) -> PlotResult:
         """Cria grafico padronizado. Ver ``ChartingPlotter.plot()`` para docs completas."""
@@ -81,5 +98,6 @@ class ChartingAccessor:
             highlight_last=highlight_last,
             save_path=save_path,
             metrics=metrics,
+            fill_between=fill_between,
             **kwargs,
         )

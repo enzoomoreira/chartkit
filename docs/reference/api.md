@@ -19,6 +19,7 @@ def plot(
     highlight_last: bool = False,
     save_path: str | None = None,
     metrics: str | list[str] | None = None,
+    fill_between: tuple[str, str] | None = None,
     **kwargs,
 ) -> PlotResult
 ```
@@ -29,13 +30,14 @@ def plot(
 |-----------|------|---------|-----------|
 | `x` | `str \| None` | `None` | Coluna para eixo X. Se `None`, usa o index |
 | `y` | `str \| list[str] \| None` | `None` | Coluna(s) para eixo Y. Se `None`, usa colunas numericas |
-| `kind` | `str` | `"line"` | Tipo de grafico registrado no `ChartRegistry` (ex: `"line"`, `"bar"`) |
+| `kind` | `str` | `"line"` | Tipo de grafico registrado no `ChartRegistry` (ex: `"line"`, `"bar"`, `"stacked_bar"`) |
 | `title` | `str \| None` | `None` | Titulo do grafico |
 | `units` | `str \| None` | `None` | Formatacao do eixo Y (ver tabela abaixo) |
 | `source` | `str \| None` | `None` | Fonte dos dados para rodape |
 | `highlight_last` | `bool` | `False` | Destaca ultimo valor |
 | `save_path` | `str \| None` | `None` | Caminho para salvar |
 | `metrics` | `str \| list[str] \| None` | `None` | Metrica(s) a aplicar (string ou lista) |
+| `fill_between` | `tuple[str, str] \| None` | `None` | Tupla `(col1, col2)` para sombrear area entre duas colunas |
 | `**kwargs` | - | - | Parametros chart-specific (ex: `y_origin='auto'`) e extras matplotlib |
 
 #### Metricas Disponiveis
@@ -47,6 +49,9 @@ def plot(
 | `"ma:N"` | Media movel de N periodos | `metrics=["ma:12"]` |
 | `"hline:V"` | Linha horizontal no valor V | `metrics=["hline:3.0"]` |
 | `"band:L:U"` | Banda sombreada entre L e U | `metrics=["band:1.5:4.5"]` |
+| `"target:V"` | Linha de meta no valor V | `metrics=["target:1000"]` |
+| `"std_band:W:N"` | Banda de N desvios padrao com janela W | `metrics=["std_band:20:2"]` |
+| `"vband:D1:D2"` | Banda vertical entre datas D1 e D2 | `metrics=["vband:2020-03-01:2020-06-30"]` |
 
 ---
 
@@ -94,13 +99,15 @@ Accessor encadeavel para transformacoes. Cada metodo retorna novo `TransformAcce
 
 | Metodo | Assinatura | Descricao |
 |--------|------------|-----------|
-| `yoy()` | `yoy(periods: int \| None = None) -> TransformAccessor` | Variacao percentual anual (default: `config.transforms.yoy_periods`) |
-| `mom()` | `mom(periods: int \| None = None) -> TransformAccessor` | Variacao percentual mensal (default: `config.transforms.mom_periods`) |
-| `accum_12m()` | `accum_12m() -> TransformAccessor` | Variacao acumulada em 12 meses |
+| `yoy()` | `yoy(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Variacao percentual anual (auto-detect de frequencia) |
+| `mom()` | `mom(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Variacao percentual mensal (auto-detect de frequencia) |
+| `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Acumulado via produto composto em janela movel |
 | `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Diferenca absoluta entre periodos |
 | `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normaliza serie (default: `config.transforms.normalize_base`) |
+| `drawdown()` | `drawdown() -> TransformAccessor` | Distancia percentual do pico historico |
+| `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Padronizacao estatistica (global ou rolling) |
 | `annualize_daily()` | `annualize_daily(trading_days: int \| None = None) -> TransformAccessor` | Anualiza taxa diaria (default: `config.transforms.trading_days_per_year`) |
-| `compound_rolling()` | `compound_rolling(window: int \| None = None) -> TransformAccessor` | Retorno composto (default: `config.transforms.rolling_window`) |
+| `compound_rolling()` | `compound_rolling(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Retorno composto (auto-detect de frequencia) |
 | `to_month_end()` | `to_month_end() -> TransformAccessor` | Normaliza indice para fim do mes |
 | `plot()` | `plot(**kwargs) -> PlotResult` | Finaliza cadeia e plota |
 | `df` | `@property -> pd.DataFrame` | Acesso ao DataFrame transformado |
@@ -171,6 +178,7 @@ def plot(
     highlight_last: bool = False,
     save_path: str | None = None,
     metrics: str | list[str] | None = None,
+    fill_between: tuple[str, str] | None = None,
     **kwargs,
 ) -> PlotResult
 
@@ -393,8 +401,6 @@ class ChartingConfig(BaseSettings):
 
 | Campo | Tipo | Default |
 |-------|------|---------|
-| `mom_periods` | `int` | `1` |
-| `yoy_periods` | `int` | `12` |
 | `trading_days_per_year` | `int` | `252` |
 | `normalize_base` | `int` | `100` |
 | `rolling_window` | `int` | `12` |
@@ -438,6 +444,20 @@ class ChartingConfig(BaseSettings):
 
 ---
 
+## Exceptions
+
+| Classe | Base | Descricao |
+|--------|------|-----------|
+| `ChartKitError` | `Exception` | Excecao base da biblioteca |
+| `TransformError` | `ChartKitError` | Erro de validacao ou execucao em transforms |
+
+`TransformError` e levantado quando:
+- `drawdown()` recebe dados com valores nao-positivos
+- Auto-deteccao de frequencia falha e nenhum `periods=`/`freq=` foi fornecido
+- Parametros mutuamente exclusivos (`periods` e `freq`) sao passados simultaneamente
+
+---
+
 ## Exports do Modulo
 
 ```python
@@ -468,12 +488,18 @@ from chartkit import (
     MetricRegistry,
     theme,
 
+    # Exceptions
+    ChartKitError,
+    TransformError,
+
     # Transforms (funcoes standalone)
     yoy,
     mom,
-    accum_12m,
+    accum,
     diff,
     normalize,
+    drawdown,
+    zscore,
     annualize_daily,
     compound_rolling,
     to_month_end,

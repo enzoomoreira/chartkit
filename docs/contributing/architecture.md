@@ -132,11 +132,12 @@ src/chartkit/
 ├── metrics/              # Sistema de metricas declarativas
 │   ├── __init__.py       # Exports, registra metricas builtin
 │   ├── registry.py       # MetricRegistry - registro e aplicacao
-│   └── builtin.py        # Metricas padrao (ath, atl, ma, hline, band)
+│   └── builtin.py        # Metricas padrao (ath, atl, ma, hline, band, target, std_band, vband)
 │
 ├── transforms/           # Transformacoes temporais
-│   ├── __init__.py       # Facade: yoy, mom, accum_12m, etc.
+│   ├── __init__.py       # Facade: yoy, mom, accum, drawdown, zscore, etc.
 │   ├── temporal.py       # Implementacoes das funcoes de transformacao
+│   ├── _validation.py    # Validacao, coercao e resolucao de frequencia
 │   └── accessor.py       # TransformAccessor para encadeamento
 │
 └── _internal/            # Utilitarios privados
@@ -194,7 +195,7 @@ src/chartkit/
 
 | Modulo | Responsabilidade |
 |--------|-----------------|
-| `temporal.py` | Funcoes puras de transformacao (yoy, mom, accum_12m, etc.) |
+| `temporal.py` | Funcoes puras de transformacao (yoy, mom, accum, drawdown, zscore, etc.) |
 | `accessor.py` | TransformAccessor para encadeamento de transforms |
 
 ---

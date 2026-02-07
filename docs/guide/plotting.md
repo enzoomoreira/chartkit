@@ -102,6 +102,48 @@ Use `y_origin='zero'` quando a magnitude absoluta for importante. Use `y_origin=
 
 ---
 
+## Grafico de Barras Empilhadas
+
+Use `kind='stacked_bar'` para criar graficos de barras empilhadas. Ideal para mostrar a composicao de um total ao longo do tempo.
+
+### Barras Empilhadas Basicas
+
+```python
+df = pd.DataFrame({
+    'produto_a': [100, 120, 130, 140],
+    'produto_b': [80, 90, 85, 95],
+    'produto_c': [50, 60, 55, 70],
+}, index=pd.date_range('2024-01', periods=4, freq='QE'))
+
+df.chartkit.plot(kind='stacked_bar', title="Receita por Produto")
+```
+
+Cada coluna do DataFrame se torna uma camada da barra, usando cores da paleta configurada. A legenda e gerada automaticamente para DataFrames com multiplas colunas, e a largura das barras e ajustada automaticamente pela frequencia dos dados.
+
+---
+
+## Area Entre Series (fill_between)
+
+O parametro `fill_between` sombreia a area entre duas colunas do DataFrame. Util para visualizar spreads, intervalos de confianca ou diferencas entre series.
+
+```python
+df = pd.DataFrame({
+    'selic': [13.75, 13.25, 12.75, 12.25, 11.75, 11.25],
+    'ipca': [5.5, 5.2, 4.8, 4.5, 4.2, 3.9],
+}, index=pd.date_range('2024-01', periods=6, freq='ME'))
+
+# Sombreia area entre Selic e IPCA
+df.chartkit.plot(
+    title="Spread Selic - IPCA",
+    units='%',
+    fill_between=('selic', 'ipca')
+)
+```
+
+O parametro recebe uma tupla com os nomes de duas colunas: `(col1, col2)`.
+
+---
+
 ## Formatacao do Eixo Y
 
 O parametro `units` controla como os valores do eixo Y sao formatados. O chartkit oferece varios formatadores pre-definidos.

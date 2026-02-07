@@ -11,6 +11,9 @@ def register_builtin_metrics() -> None:
         add_band,
         add_hline,
         add_moving_average,
+        add_std_band,
+        add_target_line,
+        add_vband,
     )
 
     @MetricRegistry.register("ath")
@@ -30,7 +33,19 @@ def register_builtin_metrics() -> None:
         add_hline(ax, value=value, **kwargs)
 
     @MetricRegistry.register("band", param_names=["lower", "upper"], uses_series=False)
-    def metric_band(
-        ax, x_data, y_data, lower: float, upper: float, **kwargs
-    ) -> None:
+    def metric_band(ax, x_data, y_data, lower: float, upper: float, **kwargs) -> None:
         add_band(ax, lower=lower, upper=upper, **kwargs)
+
+    @MetricRegistry.register("target", param_names=["value"], uses_series=False)
+    def metric_target(ax, x_data, y_data, value: float, **kwargs) -> None:
+        add_target_line(ax, value=value, **kwargs)
+
+    @MetricRegistry.register("std_band", param_names=["window", "num_std"])
+    def metric_std_band(
+        ax, x_data, y_data, window: int, num_std: float = 2.0, **kwargs
+    ) -> None:
+        add_std_band(ax, x_data, y_data, window=window, num_std=num_std, **kwargs)
+
+    @MetricRegistry.register("vband", param_names=["start", "end"], uses_series=False)
+    def metric_vband(ax, x_data, y_data, start: str, end: str, **kwargs) -> None:
+        add_vband(ax, start=start, end=end, **kwargs)

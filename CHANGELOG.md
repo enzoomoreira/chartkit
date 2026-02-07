@@ -1,5 +1,49 @@
 # Project Changelog
 
+## [2026-02-07 04:27]
+### Added
+- **Transforms: `drawdown()`**: Distancia percentual do pico historico via `(data / cummax - 1) * 100`
+  - Guarda contra dados nao-positivos (zero ou negativos) com `TransformError` explicito
+- **Transforms: `zscore()`**: Padronizacao estatistica com suporte a z-score global e rolling (janela movel)
+  - Permite comparar series com unidades diferentes no mesmo grafico
+- **Transforms: `accum()`**: Substitui `accum_12m()` com janela configuravel e auto-detect de frequencia
+  - Usa `np.nanprod` com `raw=True` para performance e tolerancia a NaN
+- **Frequency auto-detection**: Transforms `mom`, `yoy`, `accum`, `compound_rolling` agora detectam a frequencia dos dados automaticamente via `pd.infer_freq`
+  - Novo parametro `freq=` como alternativa a `periods=`/`window=` (mutuamente exclusivos)
+  - Mapeamento completo: D, B, W, M, Q, Y (incluindo aliases amigaveis e freq codes ancorados)
+- **Validation layer (`transforms/_validation.py`)**: Modulo interno de validacao, coercao e resolucao de frequencia
+  - Coercao automatica: dict, list, ndarray convertidos para DataFrame/Series
+  - Validacao numerica com filtragem de colunas non-numeric e warning
+  - Sanitizacao de resultado: inf/-inf substituidos por NaN
+  - Pydantic models para validacao de parametros escalares (`_PctChangeParams`, `_RollingParams`, etc.)
+- **Exception hierarchy (`exceptions.py`)**: `ChartKitError` (base) e `TransformError` para erros de validacao/execucao
+- **Chart type: `stacked_bar`**: Grafico de barras empilhadas via `plot(kind='stacked_bar')`
+  - Cores da paleta por camada, largura automatica por frequencia, legenda automatica para multi-serie
+- **Overlay: `add_fill_between()`**: Area sombreada entre duas series (spreads, intervalos de confianca)
+  - Parametro `fill_between=(col1, col2)` no `plot()` para uso direto
+- **Overlay: `add_std_band()`**: Banda de desvio padrao (Bollinger Bands) com media movel central opcional
+  - Metrica declarativa: `metrics=['std_band:20:2']` (janela 20, 2 desvios padrao)
+- **Overlay: `add_vband()`**: Banda vertical sombreada entre duas datas (recessoes, crises, periodos)
+  - Metrica declarativa: `metrics=['vband:2020-03-01:2020-06-30']`
+- **Overlay: `add_target_line()`**: Linha horizontal de meta com estilo diferenciado (cor secondary, dash-dot)
+  - Label automatico com valor formatado: "Meta: R$ 1.000,00"
+  - Metrica declarativa: `metrics=['target:1000']`
+
+### Changed
+- **Transforms reescritos com contrato unificado**: Todas as funcoes agora aceitam DataFrame, Series, dict, list ou ndarray
+  - Validacao e coercao centralizadas via `_validation.py`
+  - Protecao contra inf em todos os resultados via `sanitize_result()`
+- **`mom()` e `yoy()` sem defaults hardcoded**: Periods resolvidos via auto-detect em vez de config `mom_periods`/`yoy_periods`
+- **`compound_rolling()` com auto-detect de frequencia**: Novo parametro `freq=` alem de `window=`
+- **`normalize()` robusto**: Usa primeiro valor nao-NaN como referencia, `base_date` com busca nearest, validacao de base zero/NaN por coluna
+- **`to_month_end()` com validacao de index**: Raises `TypeError` se index nao for DatetimeIndex
+- **`ChartingAccessor` e `TransformAccessor` atualizados**: Novos parametros `freq=` propagados, novos metodos `drawdown()` e `zscore()`
+- **`ChartingAccessor.plot()` aceita `fill_between`**: Parametro propagado para `ChartingPlotter.plot()`
+
+### Removed
+- **`accum_12m()`**: Substituido por `accum()` com janela configuravel
+- **Config `mom_periods` e `yoy_periods`**: Removidos de `TransformsConfig` e `charting.example.toml` (substituidos por auto-detect)
+
 ## [2026-02-07 03:05]
 ### Added
 - **`_logging.py` modulo dedicado**: `configure_logging()` extraido de `__init__.py` para modulo proprio

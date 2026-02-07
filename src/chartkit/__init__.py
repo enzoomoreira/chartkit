@@ -10,6 +10,7 @@ from ._logging import configure_logging
 from .accessor import ChartingAccessor
 from .charts import ChartRegistry
 from .engine import ChartingPlotter
+from .exceptions import ChartKitError, TransformError
 from .metrics import MetricRegistry
 from .result import PlotResult
 from .settings import (
@@ -24,14 +25,16 @@ from .settings import (
 from .styling.theme import theme
 from .transforms import TransformAccessor
 from .transforms import (
-    accum_12m,
+    accum,
     annualize_daily,
     compound_rolling,
     diff,
+    drawdown,
     mom,
     normalize,
     to_month_end,
     yoy,
+    zscore,
 )
 
 
@@ -69,13 +72,18 @@ __all__ = [
     "TransformAccessor",
     "MetricRegistry",
     "theme",
+    # Exceptions
+    "ChartKitError",
+    "TransformError",
     # Transforms
     "yoy",
     "mom",
-    "accum_12m",
+    "accum",
     "diff",
     "normalize",
     "annualize_daily",
     "compound_rolling",
+    "drawdown",
+    "zscore",
     "to_month_end",
 ]

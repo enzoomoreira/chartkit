@@ -5,14 +5,16 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 from .temporal import (
-    accum_12m,
+    accum,
     annualize_daily,
     compound_rolling,
     diff,
+    drawdown,
     mom,
     normalize,
     to_month_end,
     yoy,
+    zscore,
 )
 
 if TYPE_CHECKING:
@@ -33,17 +35,23 @@ class TransformAccessor:
     def __init__(self, df: pd.DataFrame) -> None:
         self._df = df
 
-    def yoy(self, periods: int | None = None) -> TransformAccessor:
+    def yoy(
+        self, periods: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
         """Variacao percentual anual (Year-over-Year)."""
-        return TransformAccessor(yoy(self._df, periods))
+        return TransformAccessor(yoy(self._df, periods, freq))
 
-    def mom(self, periods: int | None = None) -> TransformAccessor:
+    def mom(
+        self, periods: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
         """Variacao percentual mensal (Month-over-Month)."""
-        return TransformAccessor(mom(self._df, periods))
+        return TransformAccessor(mom(self._df, periods, freq))
 
-    def accum_12m(self) -> TransformAccessor:
-        """Variacao acumulada em 12 meses (produto composto)."""
-        return TransformAccessor(accum_12m(self._df))
+    def accum(
+        self, window: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
+        """Variacao acumulada via produto composto em janela movel."""
+        return TransformAccessor(accum(self._df, window, freq))
 
     def diff(self, periods: int = 1) -> TransformAccessor:
         """Diferenca absoluta entre periodos."""
@@ -59,9 +67,19 @@ class TransformAccessor:
         """Anualiza taxa diaria via juros compostos."""
         return TransformAccessor(annualize_daily(self._df, trading_days))
 
-    def compound_rolling(self, window: int | None = None) -> TransformAccessor:
+    def compound_rolling(
+        self, window: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
         """Retorno composto em janela movel."""
-        return TransformAccessor(compound_rolling(self._df, window))
+        return TransformAccessor(compound_rolling(self._df, window, freq))
+
+    def drawdown(self) -> TransformAccessor:
+        """Distancia percentual do pico historico."""
+        return TransformAccessor(drawdown(self._df))
+
+    def zscore(self, window: int | None = None) -> TransformAccessor:
+        """Padronizacao estatistica (z-score)."""
+        return TransformAccessor(zscore(self._df, window))
 
     def to_month_end(self) -> TransformAccessor:
         """Normaliza indice temporal para fim do mes."""

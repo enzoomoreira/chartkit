@@ -138,11 +138,9 @@ connector_style = "-"            # Estilo da linha guia
 # Transforms - Parametros de transformacao de dados
 # -----------------------------------------------------------------------------
 [transforms]
-mom_periods = 1              # Periodos para MoM
-yoy_periods = 12             # Periodos para YoY (12 = mensal)
 trading_days_per_year = 252  # Dias uteis no ano
 normalize_base = 100         # Base para normalizacao
-rolling_window = 12          # Janela para rolling
+rolling_window = 12          # Janela para compound_rolling (default)
 
 # -----------------------------------------------------------------------------
 # Formatadores - Formatacao de texto

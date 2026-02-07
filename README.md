@@ -37,10 +37,11 @@ df.chartkit.yoy().plot(title="Variacao YoY").save("grafico.png").show()
 ## Funcionalidades
 
 - **Pandas Accessor**: Use `df.chartkit.plot()` diretamente em qualquer DataFrame
-- **Graficos**: Linhas e barras com estilo profissional
+- **Graficos**: Linhas, barras e barras empilhadas com estilo profissional
 - **Formatadores**: BRL, USD, BRL_compact, USD_compact, %, pontos, notacao humana (1k, 1M)
-- **Metricas Declarativas**: Sistema flexivel via `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5']`
-- **Transforms Encadeados**: `df.chartkit.yoy().mom().plot()` com method chaining
+- **Metricas Declarativas**: `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5', 'target:1000', 'std_band:20:2', 'vband:2020-03:2020-06']`
+- **Transforms Encadeados**: `df.chartkit.yoy().drawdown().plot()` com method chaining e auto-deteccao de frequencia
+- **Overlays**: Area entre series (`fill_between`), bandas de desvio padrao, bandas verticais
 - **ChartRegistry**: Sistema plugavel de chart types via decorator
 - **Configuracao TOML + Env Vars**: Personalize via arquivo TOML ou variaveis de ambiente (`CHARTKIT_*`)
 

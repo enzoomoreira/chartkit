@@ -159,8 +159,6 @@ class CollisionConfig(BaseModel):
 
 
 class TransformsConfig(BaseModel):
-    mom_periods: int = 1
-    yoy_periods: int = 12
     trading_days_per_year: int = 252
     normalize_base: int = 100
     rolling_window: int = 12

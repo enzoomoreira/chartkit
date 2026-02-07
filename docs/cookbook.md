@@ -20,8 +20,8 @@ ipca_mensal = pd.DataFrame({
 }, index=pd.date_range('2023-01', periods=18, freq='ME'))
 
 # Transforma IPCA mensal em acumulado 12 meses
-# A funcao accum_12m aplica a formula: (Produto(1 + x/100) - 1) * 100
-ipca_12m = ipca_mensal.chartkit.accum_12m()
+# A funcao accum aplica a formula: (Produto(1 + x/100) - 1) * 100
+ipca_12m = ipca_mensal.chartkit.accum()
 
 # Plota com banda de meta (3% centro, tolerancia de 1.5 p.p.)
 ipca_12m.plot(
@@ -291,7 +291,7 @@ ipca_12m.chartkit.plot(
 ```python
 import pandas as pd
 import chartkit
-from chartkit import accum_12m, normalize
+from chartkit import accum, normalize
 
 # Dados de IPCA mensal
 ipca_mensal = pd.DataFrame({
@@ -304,7 +304,7 @@ ipca_mensal = pd.DataFrame({
 # Pipeline completo: IPCA mensal -> acumulado 12m -> plot com metricas
 (ipca_mensal
     .chartkit
-    .accum_12m()  # Transforma em acumulado 12 meses
+    .accum()  # Transforma em acumulado 12 meses
     .plot(
         title="IPCA Acumulado 12m - Analise Completa",
         units='%',

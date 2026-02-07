@@ -12,6 +12,7 @@ from ._internal import resolve_collisions
 from .charts import ChartRegistry
 from .decorations import add_footer
 from .metrics import MetricRegistry
+from .overlays import add_fill_between
 from .result import PlotResult
 from .settings import get_charts_path, get_config
 from .styling import (
@@ -54,6 +55,7 @@ class ChartingPlotter:
         highlight_last: bool = False,
         save_path: str | None = None,
         metrics: str | list[str] | None = None,
+        fill_between: tuple[str, str] | None = None,
         **kwargs,
     ) -> PlotResult:
         """Gera grafico padronizado.
@@ -63,6 +65,8 @@ class ChartingPlotter:
                 ``'human'``, ``'points'``, ``'BRL_compact'``, ``'USD_compact'``).
             metrics: Metrica(s) declarativas. Ver ``chartkit.metrics`` para
                 sintaxe completa (ex: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``).
+            fill_between: Tupla ``(col1, col2)`` para sombrear area entre
+                duas colunas do DataFrame.
             **kwargs: Parametros chart-specific (ex: ``y_origin='auto'`` para barras)
                 e parametros matplotlib passados diretamente ao renderer.
         """
@@ -96,6 +100,11 @@ class ChartingPlotter:
             if isinstance(metrics, str):
                 metrics = [metrics]
             MetricRegistry.apply(ax, x_data, y_data, metrics)
+
+        # 5b. Fill between
+        if fill_between is not None:
+            col1, col2 = fill_between
+            add_fill_between(ax, x_data, self.df[col1], self.df[col2])
 
         # 6. Collision resolution
         resolve_collisions(ax)

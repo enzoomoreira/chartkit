@@ -50,7 +50,9 @@ def add_ath_line(
     """Adiciona linha horizontal no All-Time High (valor maximo)."""
     config = get_config()
     _add_extreme_line(
-        ax, y_data, extreme="max",
+        ax,
+        y_data,
+        extreme="max",
         default_color=theme.colors.positive,
         default_label=config.labels.ath,
         **kwargs,
@@ -65,7 +67,9 @@ def add_atl_line(
     """Adiciona linha horizontal no All-Time Low (valor minimo)."""
     config = get_config()
     _add_extreme_line(
-        ax, y_data, extreme="min",
+        ax,
+        y_data,
+        extreme="min",
         default_color=theme.colors.negative,
         default_label=config.labels.atl,
         **kwargs,
@@ -89,6 +93,39 @@ def add_hline(
         linestyle=linestyle if linestyle is not None else config.lines.reference_style,
         linewidth=linewidth if linewidth is not None else config.lines.overlay_width,
         label=label,
+        zorder=config.layout.zorder.reference_lines,
+    )
+    register_fixed(ax, line)
+
+
+def add_target_line(
+    ax: Axes,
+    value: float,
+    color: str | None = None,
+    linestyle: str | None = None,
+    label: str | None = None,
+    linewidth: float | None = None,
+) -> None:
+    """Adiciona linha horizontal de meta/target com estilo diferenciado.
+
+    Semanticamente distinta de ``add_hline``: usa cor propria (secondary),
+    dash pattern alternado e label com prefixo "Meta:" por padrao.
+    """
+    config = get_config()
+
+    y_fmt = ax.yaxis.get_major_formatter()
+    formatted_value = y_fmt(value, None)
+    if not formatted_value:
+        formatted_value = f"{value:g}"
+
+    default_label = f"Meta: {formatted_value}"
+
+    line = ax.axhline(
+        y=value,
+        color=color if color is not None else theme.colors.secondary,
+        linestyle=linestyle if linestyle is not None else "-.",
+        linewidth=linewidth if linewidth is not None else config.lines.overlay_width,
+        label=label if label is not None else default_label,
         zorder=config.layout.zorder.reference_lines,
     )
     register_fixed(ax, line)
