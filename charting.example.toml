@@ -62,7 +62,7 @@ positive = "#00464D"     # Valores positivos (ATH)
 negative = "#8B0000"     # Valores negativos (ATL)
 
 [fonts]
-# Caminho para fonte .ttf/.otf (relativo a assets_path ou absoluto)
+# Caminho para fonte .ttf/.otf (relativo a paths.assets_dir ou absoluto)
 # Vazio = usa fallback do sistema
 file = ""
 fallback = "sans-serif"
@@ -112,8 +112,6 @@ dpi = 300              # Resolucao para exportacao
 # colors.moving_average = "#888888"
 
 # --- Fontes ------------------------------------------------------------------
-
-# fonts.assets_path = ""  # Caminho base para assets (vazio = auto-discovery)
 
 # [fonts.sizes]
 # default = 11

@@ -317,7 +317,6 @@ class ChartingConfig(BaseSettings):
 |-------|------|---------|
 | `file` | `str` | `""` |
 | `fallback` | `str` | `"sans-serif"` |
-| `assets_path` | `str` | `""` |
 | `sizes` | `FontSizesConfig` | (ver abaixo) |
 
 #### FontSizesConfig

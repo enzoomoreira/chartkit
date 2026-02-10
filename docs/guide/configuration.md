@@ -47,9 +47,8 @@ negative = "#CC0000"
 moving_average = "#888888"
 
 [fonts]
-file = "fonts/MeuFont.ttf"  # Relativo a assets_path ou absoluto
+file = "fonts/MeuFont.ttf"  # Relativo a paths.assets_dir ou absoluto
 fallback = "sans-serif"
-assets_path = ""  # Vazio = auto-discovery
 
 [fonts.sizes]
 default = 11

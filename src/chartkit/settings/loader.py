@@ -143,9 +143,8 @@ class ConfigLoader:
         if self._assets_path is not None:
             return self._assets_path
         config = self.get_config()
-        for val in [config.fonts.assets_path, config.paths.assets_dir]:
-            if val:
-                return self._resolve_relative(Path(val))
+        if config.paths.assets_dir:
+            return self._resolve_relative(Path(config.paths.assets_dir))
         return (find_project_root() or Path.cwd()) / "assets"
 
     @property

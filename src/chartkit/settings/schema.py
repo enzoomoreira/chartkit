@@ -81,7 +81,6 @@ class FontSizesConfig(BaseModel):
 class FontsConfig(BaseModel):
     file: str = ""
     fallback: str = "sans-serif"
-    assets_path: str = ""
     sizes: FontSizesConfig = Field(default_factory=FontSizesConfig)
 
 

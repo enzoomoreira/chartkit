@@ -1,5 +1,13 @@
 # Project Changelog
 
+## [2026-02-10 04:01]
+### Changed
+- **`charting.example.toml` reorganizado por nivel de necessidade**: Parametros separados em 3 secoes -- Essencial (branding, locale), Identidade Visual (cores, fonte), e Ajuste Fino (todo o resto comentado como referencia)
+- **Resolucao de `assets_path` consolidada em `PathsConfig`**: Campo duplicado `FontsConfig.assets_path` removido, resolucao agora segue o mesmo padrao de `outputs_path` (`configure() > paths.assets_dir > project_root/assets`)
+
+### Removed
+- **`FontsConfig.assets_path`**: Campo redundante com `PathsConfig.assets_dir` -- ambos apontavam para o mesmo diretorio, quebrando o padrao de resolucao de paths do projeto
+
 ## [2026-02-10 03:43]
 ### Changed
 - **`highlight` agora suporta modos `last`, `max`, `min`**: Parametro aceita `bool`, string ou lista de modos (ex: `highlight=['max', 'min']`). `True` continua funcionando como atalho para `'last'`
