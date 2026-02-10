@@ -47,7 +47,11 @@ def add_std_band(
 
     band_color = color if color is not None else theme.colors.grid
     band_alpha = alpha if alpha is not None else config.bands.alpha
-    band_label = label if label is not None else f"BB({window}, {num_std})"
+    band_label = (
+        label
+        if label is not None
+        else config.labels.std_band_format.format(window=window, num_std=num_std)
+    )
 
     patch = ax.fill_between(
         x,
@@ -66,7 +70,7 @@ def add_std_band(
             ma,
             color=band_color,
             linewidth=config.lines.overlay_width,
-            linestyle="--",
+            linestyle=config.lines.reference_style,
             zorder=config.layout.zorder.moving_average,
         )
         register_passive(ax, lines[0])

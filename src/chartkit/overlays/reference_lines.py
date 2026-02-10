@@ -135,12 +135,12 @@ def add_target_line(
     if not formatted_value:
         formatted_value = f"{value:g}"
 
-    default_label = f"Meta: {formatted_value}"
+    default_label = config.labels.target_format.format(value=formatted_value)
 
     line = ax.axhline(
         y=value,
         color=color if color is not None else theme.colors.secondary,
-        linestyle=linestyle if linestyle is not None else "-.",
+        linestyle=linestyle if linestyle is not None else config.lines.target_style,
         linewidth=linewidth if linewidth is not None else config.lines.overlay_width,
         label=label if label is not None else default_label,
         zorder=config.layout.zorder.reference_lines,

@@ -270,7 +270,7 @@ def _add_connectors(
                 [orig_y, curr_y],
                 color=config.colors.grid,
                 alpha=collision.connector_alpha,
-                lw=1,
+                lw=collision.connector_width,
                 linestyle=collision.connector_style,
                 zorder=config.layout.zorder.reference_lines,
             )

@@ -17,6 +17,7 @@ __all__ = [
     "FontsConfig",
     "FooterConfig",
     "TitleConfig",
+    "SpinesConfig",
     "ZOrderConfig",
     "LayoutConfig",
     "LegendConfig",
@@ -94,6 +95,15 @@ class TitleConfig(BaseModel):
     weight: str = "bold"
 
 
+class SpinesConfig(BaseModel):
+    """Controle de visibilidade das bordas do grafico."""
+
+    top: bool = False
+    right: bool = False
+    left: bool = True
+    bottom: bool = True
+
+
 class ZOrderConfig(BaseModel):
     """Ordem de camadas: bands(0) < reference_lines(1) < moving_average(2) < data(3) < markers(5)."""
 
@@ -107,6 +117,9 @@ class ZOrderConfig(BaseModel):
 class LayoutConfig(BaseModel):
     figsize: tuple[float, float] = (10.0, 6.0)
     dpi: int = 300
+    base_style: str = "seaborn-v0_8-white"
+    grid: bool = False
+    spines: SpinesConfig = Field(default_factory=SpinesConfig)
     footer: FooterConfig = Field(default_factory=FooterConfig)
     title: TitleConfig = Field(default_factory=TitleConfig)
     zorder: ZOrderConfig = Field(default_factory=ZOrderConfig)
@@ -122,6 +135,7 @@ class LinesConfig(BaseModel):
     main_width: float = 2.0
     overlay_width: float = 1.5
     reference_style: str = "--"
+    target_style: str = "-."
     moving_avg_min_periods: int = 1
 
 
@@ -135,6 +149,7 @@ class BarsConfig(BaseModel):
     width_monthly: int = 20
     width_annual: int = 300
     auto_margin: float = 0.1
+    warning_threshold: int = 500
     frequency_detection: FrequencyDetectionConfig = Field(
         default_factory=FrequencyDetectionConfig
     )
@@ -146,6 +161,7 @@ class BandsConfig(BaseModel):
 
 class MarkersConfig(BaseModel):
     scatter_size: int = 30
+    font_weight: str = "bold"
 
 
 class CollisionConfig(BaseModel):
@@ -156,6 +172,7 @@ class CollisionConfig(BaseModel):
     connector_threshold_px: float = 30.0
     connector_alpha: float = 0.6
     connector_style: str = "-"
+    connector_width: float = 1.0
 
 
 class TransformsConfig(BaseModel):
@@ -183,6 +200,8 @@ class LabelsConfig(BaseModel):
     atl: str = "ATL"
     avg: str = "AVG"
     moving_average_format: str = "MM{window}"
+    target_format: str = "Meta: {value}"
+    std_band_format: str = "BB({window}, {num_std})"
 
 
 class PathsConfig(BaseModel):

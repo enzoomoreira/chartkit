@@ -88,6 +88,14 @@ fallback = "sans-serif"
 [layout]
 figsize = [10.0, 6.0]  # Largura x Altura em polegadas
 dpi = 300              # Resolucao para exportacao
+# base_style = "seaborn-v0_8-white"  # Estilo base matplotlib
+# grid = false                        # Mostrar grid no grafico
+
+# [layout.spines]
+# top = false      # Borda superior
+# right = false    # Borda direita
+# left = true      # Borda esquerda
+# bottom = true    # Borda inferior
 
 # [layout.footer]
 # y = 0.01        # Posicao Y do rodape (0-1)
@@ -125,6 +133,7 @@ dpi = 300              # Resolucao para exportacao
 # main_width = 2.0              # Espessura da linha principal
 # overlay_width = 1.5           # Espessura de overlays (MM, ATH, etc)
 # reference_style = "--"        # Estilo de linhas de referencia
+# target_style = "-."            # Estilo de linhas de meta (target)
 # moving_avg_min_periods = 1
 
 # --- Legenda -----------------------------------------------------------------
@@ -141,6 +150,7 @@ dpi = 300              # Resolucao para exportacao
 # width_monthly = 20
 # width_annual = 300
 # auto_margin = 0.1
+# warning_threshold = 500         # Aviso quando chart tem muitos pontos
 
 # [bars.frequency_detection]
 # monthly_threshold = 25   # Dias entre pontos para considerar mensal
@@ -153,6 +163,7 @@ dpi = 300              # Resolucao para exportacao
 
 # [markers]
 # scatter_size = 30
+# font_weight = "bold"            # Peso da fonte dos labels de destaque
 
 # --- Colisao de labels -------------------------------------------------------
 
@@ -164,6 +175,7 @@ dpi = 300              # Resolucao para exportacao
 # connector_threshold_px = 30.0
 # connector_alpha = 0.6
 # connector_style = "-"
+# connector_width = 1.0           # Espessura dos conectores
 
 # --- Transforms --------------------------------------------------------------
 
@@ -183,6 +195,8 @@ dpi = 300              # Resolucao para exportacao
 # atl = "ATL"
 # avg = "AVG"
 # moving_average_format = "MM{window}"
+# target_format = "Meta: {value}"                # Template para label de meta
+# std_band_format = "BB({window}, {num_std})"    # Template para Bollinger Bands
 
 # --- Paths -------------------------------------------------------------------
 

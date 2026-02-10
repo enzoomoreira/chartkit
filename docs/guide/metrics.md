@@ -282,8 +282,16 @@ df.chartkit.plot(units='BRL', metrics=['target:1000'])
 
 ### Caracteristicas Visuais
 
-A linha de meta usa cor `secondary` e estilo dash-dot (`-.`), distinguindo-se visualmente
-das linhas de referencia padrao (ATH, ATL, hline) que usam tracejado.
+| Propriedade | Valor | Configuracao TOML |
+|-------------|-------|-------------------|
+| Cor | Secondary | `colors.secondary` |
+| Estilo | Dash-dot (-.) | `lines.target_style` |
+| Espessura | 1.5 | `lines.overlay_width` |
+| Label | "Meta: {value}" | `labels.target_format` |
+| zorder | 1 | Nivel de linhas de referencia |
+
+A linha de meta usa cor `secondary` e estilo dash-dot (`-.`) por default, distinguindo-se
+visualmente das linhas de referencia padrao (ATH, ATL, hline) que usam tracejado.
 
 ---
 
@@ -301,6 +309,15 @@ df.chartkit.plot(metrics=['std_band:20:2'])
 
 - `'std_band:20:2'` - Janela 20 periodos, 2 desvios padrao
 - `'std_band:12:1.5'` - Janela 12 periodos, 1.5 desvios padrao
+
+### Caracteristicas Visuais
+
+| Propriedade | Valor | Configuracao TOML |
+|-------------|-------|-------------------|
+| Cor da banda | Grid (lightgray) | `colors.grid` |
+| Estilo da linha central | Tracejado (--) | `lines.reference_style` |
+| Espessura | 1.5 | `lines.overlay_width` |
+| Label | "BB({window}, {num_std})" | `labels.std_band_format` |
 
 ### Exemplo
 

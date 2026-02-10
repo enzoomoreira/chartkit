@@ -59,6 +59,14 @@ axis_label = 11
 [layout]
 figsize = [12.0, 8.0]
 dpi = 150
+base_style = "seaborn-v0_8-white"  # Estilo base matplotlib
+grid = false                        # Mostrar grid no grafico
+
+[layout.spines]
+top = false      # Borda superior
+right = false    # Borda direita
+left = true      # Borda esquerda
+bottom = true    # Borda inferior
 
 [layout.footer]
 x = 0.01
@@ -73,11 +81,13 @@ weight = "bold"
 main_width = 2.0
 overlay_width = 1.5
 reference_style = "--"
+target_style = "-."
 
 [bars]
 width_default = 0.8
 width_monthly = 20
 width_annual = 300
+warning_threshold = 500
 
 [formatters.locale]
 decimal = ","
@@ -89,6 +99,8 @@ ath = "ATH"
 atl = "ATL"
 avg = "AVG"
 moving_average_format = "MM{window}"
+target_format = "Meta: {value}"
+std_band_format = "BB({window}, {num_std})"
 
 [legend]
 loc = "best"

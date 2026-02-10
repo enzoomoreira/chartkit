@@ -46,7 +46,7 @@ def plot_stacked_bar(
     if isinstance(y_data, pd.Series):
         y_data = y_data.to_frame()
 
-    if len(y_data) > 500:
+    if len(y_data) > bars.warning_threshold:
         logger.warning(
             "Stacked bar com {} pontos pode ficar ilegivel. Considere kind='line'.",
             len(y_data),

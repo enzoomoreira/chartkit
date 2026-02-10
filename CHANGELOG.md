@@ -1,5 +1,21 @@
 # Project Changelog
 
+## [2026-02-10 04:33]
+### Changed
+- **Valores hardcoded extraidos para config**: Parametros que antes viviam diretamente no codigo agora sao configuraveis via TOML/env vars:
+  - `base_style` e `grid` no layout (matplotlib style e visibilidade do grid)
+  - `spines` (top/right/left/bottom) como sub-config de layout
+  - `target_style` em lines (estilo da linha de meta, default `"-."`)
+  - `warning_threshold` em bars (limiar de pontos para aviso de legibilidade)
+  - `font_weight` em markers (peso da fonte dos labels de destaque)
+  - `connector_width` em collision (espessura dos conectores)
+  - `target_format` e `std_band_format` em labels (templates de formatacao)
+- **`std_band` usa `reference_style` da config**: Linha central do Bollinger Band agora respeita `lines.reference_style` em vez de `"--"` hardcoded
+
+### Added
+- **`SpinesConfig`**: Novo sub-model para controle granular de visibilidade das bordas do grafico
+- **Novas opcoes no `charting.example.toml`**: Todas as novas configs documentadas como referencia comentada
+
 ## [2026-02-10 04:01]
 ### Changed
 - **`charting.example.toml` reorganizado por nivel de necessidade**: Parametros separados em 3 secoes -- Essencial (branding, locale), Identidade Visual (cores, fonte), e Ajuste Fino (todo o resto comentado como referencia)

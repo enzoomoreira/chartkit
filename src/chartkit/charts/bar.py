@@ -43,7 +43,7 @@ def plot_bar(
     multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
 
     if multi_col:
-        if len(y_data) > 500:
+        if len(y_data) > bars.warning_threshold:
             logger.warning(
                 "Bar chart com {} pontos pode ficar ilegivel. Considere kind='line'.",
                 len(y_data),
@@ -53,7 +53,7 @@ def plot_bar(
     else:
         vals = y_data.iloc[:, 0] if isinstance(y_data, pd.DataFrame) else y_data
 
-        if len(vals) > 500:
+        if len(vals) > bars.warning_threshold:
             logger.warning(
                 "Bar chart com {} pontos pode ficar ilegivel. Considere kind='line'.",
                 len(vals),

@@ -220,6 +220,7 @@ max_iterations = 50             # Limite de iteracoes push-apart
 connector_threshold_px = 30.0   # Distancia minima para desenhar connector (px)
 connector_alpha = 0.6           # Transparencia da linha connector
 connector_style = "-"           # Estilo da linha connector ("-", "--", ":", "-.")
+connector_width = 1.0           # Espessura da linha connector
 ```
 
 Ou via `configure()`:
@@ -244,6 +245,7 @@ configure(collision={
 | `connector_threshold_px` | `30.0` | Distancia minima (px) de deslocamento para desenhar linha guia |
 | `connector_alpha` | `0.6` | Transparencia da linha guia (0.0 = invisivel, 1.0 = opaco) |
 | `connector_style` | `"-"` | Estilo matplotlib da linha guia |
+| `connector_width` | `1.0` | Espessura da linha guia em pontos |
 
 ---
 

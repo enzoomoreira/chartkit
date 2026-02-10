@@ -34,7 +34,7 @@ class ChartingTheme:
     def apply(self) -> "ChartingTheme":
         """Aplica o tema globalmente nos rcParams do matplotlib."""
         config = get_config()
-        plt.style.use("seaborn-v0_8-white")
+        plt.style.use(config.layout.base_style)
 
         rc_params = {
             # Fontes
@@ -48,16 +48,16 @@ class ChartingTheme:
             "xtick.color": config.colors.text,
             "ytick.color": config.colors.text,
             "axes.edgecolor": config.colors.text,
-            # Grid desabilitado (apenas axis lines)
-            "axes.grid": False,
+            # Grid
+            "axes.grid": config.layout.grid,
             # Layout
             "figure.figsize": config.layout.figsize,
             "figure.facecolor": config.colors.background,
             "axes.facecolor": config.colors.background,
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-            "axes.spines.left": True,
-            "axes.spines.bottom": True,
+            "axes.spines.top": config.layout.spines.top,
+            "axes.spines.right": config.layout.spines.right,
+            "axes.spines.left": config.layout.spines.left,
+            "axes.spines.bottom": config.layout.spines.bottom,
         }
 
         plt.rcParams.update(rc_params)

@@ -111,7 +111,7 @@ def _render_point(
         va=va,
         color=color,
         fontproperties=theme.font,
-        fontweight="bold",
+        fontweight=config.markers.font_weight,
         zorder=config.layout.zorder.markers,
     )
 
