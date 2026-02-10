@@ -72,8 +72,8 @@ class ChartingPlotter:
             source: Fonte dos dados exibida no rodape. Sobrescreve
                 ``branding.default_source`` do config quando fornecido.
             highlight: Destaca o ultimo ponto de dados no grafico.
-            metrics: Metrica(s) declarativas. Ver ``chartkit.metrics`` para
-                sintaxe completa (ex: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``).
+            metrics: Metrica(s) declarativas. Use ``|`` para label customizado
+                na legenda (ex: ``'ath|Maximo'``, ``'ma:12@col|Media 12M'``).
             fill_between: Tupla ``(col1, col2)`` para sombrear area entre
                 duas colunas do DataFrame.
             legend: Controle da legenda. ``None`` = auto (mostra quando ha

@@ -2,7 +2,7 @@
 
 Sintaxe: ``metrics=['ath', 'ma:12', 'band:1.5:4.5', 'ath@revenue']``
 
-Metricas built-in: ath, atl, ma:N, hline:V, band:L:U.
+Use ``|`` para label customizado na legenda: ``'ath|Maximo'``, ``'ma:12@col|Media 12M'``.
 Use ``@coluna`` para selecionar coluna alvo em DataFrames multi-serie.
 """
 

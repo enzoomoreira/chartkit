@@ -3,7 +3,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
-from ..overlays.markers import highlight_last
+from ..overlays.markers import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
 from ._helpers import detect_bar_width
@@ -80,4 +80,4 @@ def plot_stacked_bar(
     if highlight:
         total = y_data.sum(axis=1)
         color = user_color if user_color is not None else theme.colors.primary
-        highlight_last(ax, total, style="bar", color=color, x=x)
+        add_highlight(ax, total, style="bar", color=color, x=x)

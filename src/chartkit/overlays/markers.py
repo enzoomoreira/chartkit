@@ -30,7 +30,7 @@ HIGHLIGHT_STYLES: dict[str, HighlightStyle] = {
 }
 
 
-def highlight_last(
+def add_highlight(
     ax: Axes,
     series: pd.Series,
     style: str | HighlightStyle = "line",

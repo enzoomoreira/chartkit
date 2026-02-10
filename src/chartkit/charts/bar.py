@@ -2,7 +2,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
-from ..overlays.markers import highlight_last
+from ..overlays.markers import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
 from ._helpers import detect_bar_width
@@ -67,4 +67,4 @@ def plot_bar(
 
     if highlight and not multi_col:
         color = kwargs.get("color", theme.colors.primary)
-        highlight_last(ax, vals, style="bar", color=color, x=x)
+        add_highlight(ax, vals, style="bar", color=color, x=x)

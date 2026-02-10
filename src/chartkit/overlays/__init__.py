@@ -2,7 +2,7 @@
 
 from .bands import add_band
 from .fill_between import add_fill_between
-from .markers import HIGHLIGHT_STYLES, HighlightStyle, highlight_last
+from .markers import HIGHLIGHT_STYLES, HighlightStyle, add_highlight
 from .moving_average import add_moving_average
 from .reference_lines import (
     add_ath_line,
@@ -25,7 +25,7 @@ __all__ = [
     "add_std_band",
     "add_vband",
     "add_fill_between",
-    "highlight_last",
+    "add_highlight",
     "HighlightStyle",
     "HIGHLIGHT_STYLES",
 ]

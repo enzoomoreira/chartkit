@@ -3,7 +3,7 @@ from typing import cast
 import pandas as pd
 from matplotlib.axes import Axes
 
-from ..overlays.markers import highlight_last
+from ..overlays.markers import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
 from .registry import ChartRegistry
@@ -54,4 +54,4 @@ def plot_line(
         plot_lines.append(line)
 
         if highlight:
-            highlight_last(ax, cast(pd.Series, y_data[col]), style="line", color=c)
+            add_highlight(ax, cast(pd.Series, y_data[col]), style="line", color=c)

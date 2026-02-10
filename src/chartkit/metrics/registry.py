@@ -13,12 +13,13 @@ from matplotlib.axes import Axes
 class MetricSpec:
     """Especificacao parseada de uma metrica.
 
-    Sintaxe de string: ``nome:param1:param2@coluna``
+    Sintaxe de string: ``nome:param1:param2@coluna|label``
     """
 
     name: str
     params: dict[str, Any] = field(default_factory=dict)
     series: str | None = None
+    label: str | None = None
 
 
 class MetricRegistry:
@@ -53,14 +54,20 @@ class MetricRegistry:
     def parse(cls, spec: str | MetricSpec) -> MetricSpec:
         """Converte string spec em MetricSpec.
 
-        Formatos: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``, ``'ath@revenue'``.
-        ``rsplit('@', 1)`` preserva ``:`` no nome da coluna.
+        Formatos: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``, ``'ath@revenue'``,
+        ``'ath|Maximo'``, ``'ma:12@revenue|Media 12M'``.
+        ``|`` separa label customizado; ``@`` seleciona coluna; ``:`` separa params.
 
         Raises:
             ValueError: Metrica nao registrada ou series vazio apos ``@``.
         """
         if isinstance(spec, MetricSpec):
             return spec
+
+        label: str | None = None
+        if "|" in spec:
+            spec, label = spec.split("|", 1)
+            label = label.strip() or None
 
         series: str | None = None
         if "@" in spec:
@@ -100,7 +107,7 @@ class MetricRegistry:
                 except ValueError:
                     params[param_names[i]] = value
 
-        return MetricSpec(name, params, series)
+        return MetricSpec(name, params, series, label)
 
     @classmethod
     def apply(
@@ -117,6 +124,8 @@ class MetricRegistry:
             kwargs = parsed.params.copy()
             if parsed.series is not None and uses_series:
                 kwargs["series"] = parsed.series
+            if parsed.label is not None:
+                kwargs["label"] = parsed.label
             func(ax, x_data, y_data, **kwargs)
 
     @classmethod
