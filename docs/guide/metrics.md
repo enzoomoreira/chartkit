@@ -14,6 +14,7 @@ Sistema declarativo de metricas para adicionar elementos visuais sobre os dados 
 | Media Movel | `'ma:N'` | Linha de media movel de N periodos |
 | ATH | `'ath'` | Linha no maximo historico (All-Time High) |
 | ATL | `'atl'` | Linha no minimo historico (All-Time Low) |
+| Media | `'avg'` | Linha horizontal na media (mean) dos dados |
 | Linha Horizontal | `'hline:V'` | Linha horizontal no valor V |
 | Banda | `'band:L:U'` | Area sombreada entre L e U |
 | Meta | `'target:V'` | Linha horizontal de meta no valor V |
@@ -140,6 +141,40 @@ df.chartkit.plot(
     title="IPCA com Extremos",
     units='%',
     metrics=['ath', 'atl']
+)
+```
+
+---
+
+## Media (avg)
+
+Linha horizontal na media (mean) dos dados. Usa a cor `colors.grid` e estilo tracejado.
+
+```python
+df.chartkit.plot(title="Grafico com Media", metrics=['avg'])
+```
+
+| Propriedade | Valor | Configuracao TOML |
+|-------------|-------|-------------------|
+| Cor | Grid (lightgray) | `colors.grid` |
+| Label | "AVG" | `labels.avg` |
+| Estilo | Tracejado (--) | `lines.reference_style` |
+| zorder | 1 | Nivel de linhas de referencia |
+
+### Exemplo
+
+```python
+import pandas as pd
+import chartkit
+
+df = pd.DataFrame({
+    'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0]
+}, index=pd.date_range('2024-01', periods=10, freq='ME'))
+
+df.chartkit.plot(
+    title="IPCA com Media",
+    units='%',
+    metrics=['avg', 'ath', 'atl']
 )
 ```
 
@@ -430,6 +465,36 @@ automaticamente, pois sao registradas com `uses_series=False`.
 # hline ignora @coluna silenciosamente
 df.chartkit.plot(metrics=['hline:3.0', 'ath@revenue'])
 ```
+
+---
+
+## Labels Customizados (sintaxe |)
+
+Por padrao, cada metrica usa um label pre-definido (ex: "ATH", "MM12"). Para customizar
+o nome exibido na legenda, use a sintaxe `|` ao final da especificacao:
+
+```python
+# Label customizado simples
+df.chartkit.plot(metrics=['ath|Maximo Historico'])
+
+# Com parametros
+df.chartkit.plot(metrics=['ma:12|Media 12 Meses'])
+
+# Combinando com @coluna
+df.chartkit.plot(metrics=['ma:12@revenue|Media 12M'])
+
+# Com caracteres especiais no label
+df.chartkit.plot(metrics=['hline:100|Meta: Q1'])
+```
+
+### Sintaxe
+
+- `'metrica|label'` - Label customizado simples
+- `'metrica:param|label'` - Com parametros
+- `'metrica:param@coluna|label'` - Com parametros e coluna
+- Sem `|`: usa o label default da metrica
+
+O `|` e extraido antes do `@` e `:`, permitindo caracteres especiais no label.
 
 ---
 

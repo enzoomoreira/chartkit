@@ -28,7 +28,13 @@ df = pd.DataFrame({
 df.chartkit.plot(title="Meu Primeiro Grafico")
 ```
 
-O import do `chartkit` registra automaticamente o accessor `.chartkit` em todos os DataFrames.
+O import do `chartkit` registra automaticamente o accessor `.chartkit` em todos os DataFrames e Series.
+
+```python
+# Funciona tanto com DataFrame quanto com Series
+df.chartkit.plot(title="DataFrame")
+df["valor"].chartkit.plot(title="Series")
+```
 
 ### Adicionando Formatacao
 

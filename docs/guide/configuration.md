@@ -28,6 +28,7 @@ Crie um arquivo `.charting.toml` ou `charting.toml` na raiz do seu projeto:
 
 [branding]
 company_name = "Minha Empresa"
+default_source = ""  # Fonte padrao quando source=None no plot()
 footer_format = "Fonte: {source}, {company_name}"
 footer_format_no_source = "{company_name}"
 
@@ -87,7 +88,13 @@ babel_locale = "pt_BR"
 [labels]
 ath = "ATH"
 atl = "ATL"
+avg = "AVG"
 moving_average_format = "MM{window}"
+
+[legend]
+loc = "best"
+alpha = 0.9
+frameon = true
 
 [paths]
 charts_subdir = "charts"

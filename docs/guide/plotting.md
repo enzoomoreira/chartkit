@@ -225,6 +225,8 @@ df.chartkit.plot(
 )
 ```
 
+Quando `source` nao e fornecido, o chartkit usa `branding.default_source` da configuracao como fallback. Se ambos estiverem vazios, o rodape exibe apenas o `company_name`.
+
 O texto do rodape segue o formato configurado em `branding.footer_format`. O padrao e:
 
 ```
@@ -256,13 +258,13 @@ configure(branding={
 
 ## Destacar Ultimo Valor
 
-O parametro `highlight_last=True` adiciona um marcador e label no ultimo ponto de cada serie:
+O parametro `highlight=True` adiciona um marcador e label no ultimo ponto de cada serie:
 
 ```python
 df.chartkit.plot(
     title="Taxa de Juros",
     units='%',
-    highlight_last=True
+    highlight=True
 )
 ```
 
@@ -286,7 +288,7 @@ df.chartkit.plot(
     title="Taxa Selic",
     units='%',
     source='BCB',
-    highlight_last=True
+    highlight=True
 )
 ```
 
@@ -376,7 +378,7 @@ selic.chartkit.plot(
     title="Taxa Selic",
     units='%',
     source='Banco Central do Brasil',
-    highlight_last=True
+    highlight=True
 ).save('selic.png')
 
 # Variacao do Dolar
@@ -388,7 +390,7 @@ dolar.chartkit.plot(
     title="Cotacao do Dolar",
     units='BRL',
     source='BCB',
-    highlight_last=True
+    highlight=True
 ).save('dolar.png')
 ```
 
@@ -408,7 +410,7 @@ df.chartkit.plot(
     title="Comparativo de Investimentos (Base 100)",
     units='points',
     source='Bloomberg',
-    highlight_last=True
+    highlight=True
 ).save('comparativo.png')
 ```
 

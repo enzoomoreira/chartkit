@@ -1,5 +1,43 @@
 # Project Changelog
 
+## [2026-02-10 02:56]
+### Changed
+- **`highlight_last` renomeado para `highlight`**: Parametro de destaque do ultimo valor simplificado em `plot()`
+- **`save_path` removido de `plot()`**: Salvar graficos agora e exclusivamente via `PlotResult.save()`
+- **Parametros keyword-only**: `plot()` agora exige keyword args apos `x`/`y` (separador `*`)
+- **Tipos Literal para `kind` e `units`**: Novos type aliases `ChartKind` e `UnitFormat` com autocomplete e validacao estatica
+  - `ChartKind = Literal["line", "bar", "stacked_bar"]`
+  - `UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]`
+- **`source` com fallback para `branding.default_source`**: Quando `source=None`, footer usa `default_source` da config
+
+### Added
+- **`branding.default_source`**: Novo campo de configuracao para fonte padrao no rodape
+- **`ChartKind` e `UnitFormat` exportados**: Disponiveis via `from chartkit import ChartKind, UnitFormat`
+
+## [2026-02-10 02:25]
+### Added
+- **Labels customizaveis em metricas**: Sintaxe `|` para definir nome na legenda (ex: `'ath|Maximo'`, `'ma:12@col|Media 12M'`, `'hline:100|Meta: Q1'`)
+  - Parse seguro: `|` extraido antes de `@` e `:`, permitindo caracteres especiais no label
+  - `MetricSpec.label` flui automaticamente via `**kwargs` ate os overlays do matplotlib
+
+## [2026-02-09 02:19]
+### Added
+- **Metrica `avg`**: Linha horizontal na media (mean) dos dados via `metrics=['avg']`
+  - Usa cor `colors.grid` e label configuravel via `labels.avg`
+- **Parametro `legend` em `plot()`**: Controle explicito da legenda (`None` = auto, `True` = forca, `False` = suprime)
+- **Suporte a `pd.Series` no accessor**: `df["col"].chartkit.plot()` funciona diretamente (Series convertida para DataFrame internamente)
+- **`LegendConfig` top-level**: Nova secao `[legend]` na config com campos `loc`, `alpha`, `frameon`
+
+### Changed
+- **Legend system unificado**: Legenda movida de per-chart (line.py, stacked_bar.py) para `engine._apply_legend()`
+  - Auto-detecta quando mostrar (2+ artists rotulados) em vez de depender de cada chart type
+- **`LegendConfig` movido de `lines.legend` para `legend`**: Secao top-level no config e TOML
+- **`detect_bar_width()` extraido para `charts/_helpers.py`**: Logica de largura automatica compartilhada entre `bar.py` e `stacked_bar.py`
+- **`_add_extreme_line` renomeado para `_add_stat_line`**: Funcao interna generalizada para suportar `max`, `min` e `mean`
+
+### Removed
+- **Legenda per-chart em `line.py` e `stacked_bar.py`**: Substituida pelo sistema unificado no engine
+
 ## [2026-02-07 04:27]
 ### Added
 - **Transforms: `drawdown()`**: Distancia percentual do pico historico via `(data / cummax - 1) * 100`

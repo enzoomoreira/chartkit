@@ -35,7 +35,7 @@ metricas e highlights:
 # Labels e linhas sao registrados automaticamente
 df.chartkit.plot(
     metrics=["ath", "atl", "hline:3.0", "band:1.5:4.5"],
-    highlight_last=True,
+    highlight=True,
 )
 ```
 
@@ -190,9 +190,9 @@ def metric_target(ax, x_data, y_data, value: float, **kwargs):
     register_moveable(ax, text)
 
 # Uso:
-df.chartkit.plot(metrics=["target:100", "ath"], highlight_last=True)
+df.chartkit.plot(metrics=["target:100", "ath"], highlight=True)
 # A engine resolve colisoes entre o label "Meta: 100", o label do
-# highlight_last, a linha ATH e a linha de meta automaticamente.
+# highlight, a linha ATH e a linha de meta automaticamente.
 ```
 
 Se sua metrica cria uma area de fundo que nao deve ser obstaculo:

@@ -62,7 +62,7 @@ dados.chartkit.plot(
     title="Selic vs IPCA 12m",
     units='%',
     source='BCB/IBGE',
-    highlight_last=True
+    highlight=True
 ).save('selic_vs_ipca.png')
 
 # Opcional: calcular e plotar o juro real
@@ -105,7 +105,7 @@ indices_norm.chartkit.plot(
     title="Ibovespa vs S&P 500 (Base 100)",
     units='points',
     source='B3/NYSE',
-    highlight_last=True
+    highlight=True
 ).save('indices_base100.png')
 
 # Alternativa: normalizar a partir de uma data especifica
@@ -146,7 +146,7 @@ cdi_anual.chartkit.plot(
     title="CDI Anualizado",
     units='%',
     source='CETIP',
-    highlight_last=True,
+    highlight=True,
     metrics=['ath', 'atl']  # Mostra maximo e minimo do periodo
 ).save('cdi_anualizado.png')
 ```
@@ -179,7 +179,7 @@ producao_yoy.chartkit.plot(
     units='%',
     source='IBGE',
     metrics=['ath', 'atl'],  # All-Time High e All-Time Low
-    highlight_last=True
+    highlight=True
 ).save('producao_yoy.png')
 
 # Para dados trimestrais, usar periods=4
@@ -221,7 +221,7 @@ varejo.chartkit.plot(
     units='points',
     source='IBGE',
     metrics=['ma:12'],  # Media movel de 12 meses
-    highlight_last=True
+    highlight=True
 ).save('varejo_mm12.png')
 
 # Combinando media movel com ATH/ATL
@@ -261,7 +261,7 @@ ipca_12m.chartkit.plot(
     title="IPCA 12m vs Meta de Inflacao",
     units='%',
     source='IBGE',
-    highlight_last=True,
+    highlight=True,
     metrics=[
         'hline:3.0',      # Meta central (linha pontilhada)
         'band:1.5:4.5',   # Banda de tolerancia (area sombreada)
@@ -309,7 +309,7 @@ ipca_mensal = pd.DataFrame({
         title="IPCA Acumulado 12m - Analise Completa",
         units='%',
         source='IBGE',
-        highlight_last=True,
+        highlight=True,
         metrics=[
             'ma:6',           # Media movel 6 meses
             'ath',            # Maximo historico

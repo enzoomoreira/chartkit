@@ -21,17 +21,17 @@ df = pd.DataFrame({
     'taxa': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Grafico de linha com formatacao percentual
+# Grafico de linha
 df.chartkit.plot(title="Taxa de Juros", units='%', source='BCB')
 
 # Grafico de barras
-df.chartkit.plot(kind='bar', title="Variacao Mensal", units='%', highlight_last=True)
+df.chartkit.mom().plot(kind='bar', title="Variacao Mensal", units='%', highlight=['last'])
 
 # Grafico com metricas (ATH, media movel, etc)
-df.chartkit.plot(title="Analise", metrics=['ath', 'atl', 'ma:12'])
+df.chartkit.plot(title="Análise", metrics=['ath|Máxima', 'atl|Mínima', 'ma:12|Média Móvel'])
 
 # Encadeamento completo
-df.chartkit.yoy().plot(title="Variacao YoY").save("grafico.png").show()
+df.chartkit.mom().plot(title="Variacao MoM").show()
 ```
 
 ## Funcionalidades

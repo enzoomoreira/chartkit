@@ -49,7 +49,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
 
 1. **DataFrame**: Dados de entrada (pandas DataFrame com DatetimeIndex)
 
-2. **ChartingAccessor**: Registrado via `@pd.api.extensions.register_dataframe_accessor("chartkit")`. Funciona como ponto de entrada para todas as operacoes.
+2. **ChartingAccessor**: Registrado via `@pd.api.extensions.register_dataframe_accessor("chartkit")` e `@pd.api.extensions.register_series_accessor("chartkit")`. Funciona como ponto de entrada para todas as operacoes. Series sao convertidas para DataFrame internamente.
 
 3. **TransformAccessor** (opcional): Quando o usuario chama transforms como `.yoy()`, `.mom()`, etc., um TransformAccessor e retornado. Cada transform retorna um novo TransformAccessor, permitindo encadeamento.
 
@@ -59,6 +59,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Aplica formatadores de eixo
    - Despacha via `ChartRegistry.get(kind)` para o chart type registrado
    - Aplica metricas via `MetricRegistry.apply()`
+   - Aplica legenda via `_apply_legend()` (auto-detecta com 2+ artists)
    - Resolve colisoes de labels
    - Adiciona decoracoes (footer)
 
@@ -81,11 +82,11 @@ flowchart TD
     D3 --> D4["4. _apply_y_formatter()"]
     D4 --> D5["5. ChartRegistry.get(kind)()"]
     D5 --> D6["6. MetricRegistry.apply()"]
-    D6 --> D7["7. resolve_collisions()"]
-    D7 --> D8["8. _apply_title()"]
-    D8 --> D9["9. _apply_decorations()"]
-    D9 --> D10["10. save() (opcional)"]
-    D10 --> E["PlotResult"]
+    D6 --> D6b["7. _apply_legend()"]
+    D6b --> D7["8. resolve_collisions()"]
+    D7 --> D8["9. _apply_title()"]
+    D8 --> D9["10. _apply_decorations()"]
+    D9 --> E["PlotResult"]
 ```
 
 ---
@@ -96,9 +97,10 @@ flowchart TD
 src/chartkit/
 ├── __init__.py           # Entry point, exports publicos, __getattr__ lazy paths
 ├── _logging.py           # Logging setup (loguru disable + configure_logging)
-├── accessor.py           # Pandas DataFrame accessor (.chartkit)
+├── accessor.py           # Pandas DataFrame/Series accessor (.chartkit)
 ├── engine.py             # ChartingPlotter - orquestrador principal
 ├── result.py             # PlotResult - resultado encadeavel
+├── exceptions.py         # ChartKitError (base) e TransformError
 │
 ├── settings/             # Sistema de configuracao (pydantic-settings)
 │   ├── __init__.py       # Exports: configure, get_config, ChartingConfig
@@ -115,15 +117,20 @@ src/chartkit/
 ├── charts/               # Tipos de graficos plugaveis
 │   ├── __init__.py       # Imports disparam registro automatico
 │   ├── registry.py       # ChartRegistry + ChartFunc Protocol
+│   ├── _helpers.py       # Utilitarios compartilhados (detect_bar_width)
 │   ├── line.py           # Grafico de linhas (@ChartRegistry.register("line"))
-│   └── bar.py            # Grafico de barras (@ChartRegistry.register("bar"))
+│   ├── bar.py            # Grafico de barras (@ChartRegistry.register("bar"))
+│   └── stacked_bar.py    # Barras empilhadas (@ChartRegistry.register("stacked_bar"))
 │
 ├── overlays/             # Elementos visuais secundarios
 │   ├── __init__.py       # Facade
 │   ├── moving_average.py # Media movel
-│   ├── reference_lines.py# ATH, ATL, hlines
+│   ├── reference_lines.py# ATH, ATL, AVG, hlines, target
 │   ├── bands.py          # Bandas sombreadas
-│   └── markers.py        # HighlightStyle + highlight_last unificado
+│   ├── fill_between.py   # Area entre duas series
+│   ├── std_band.py       # Banda de desvio padrao (Bollinger Band)
+│   ├── vband.py          # Banda vertical entre datas
+│   └── markers.py        # HighlightStyle + add_highlight unificado
 │
 ├── decorations/          # Decoracoes visuais
 │   ├── __init__.py       # Facade: add_footer
@@ -154,7 +161,7 @@ src/chartkit/
 | Modulo | Responsabilidade |
 |--------|-----------------|
 | `_logging.py` | Setup de loguru (`logger.disable`) + `configure_logging()` |
-| `accessor.py` | Registra `.chartkit` em DataFrames; delega para TransformAccessor ou ChartingPlotter |
+| `accessor.py` | Registra `.chartkit` em DataFrames e Series; delega para TransformAccessor ou ChartingPlotter |
 | `engine.py` | Orquestra criacao de graficos; gerencia Figure/Axes; aplica componentes |
 | `result.py` | Encapsula resultado; permite encadeamento com `.save()` e `.show()` |
 
@@ -179,9 +186,11 @@ src/chartkit/
 | Modulo | Responsabilidade |
 |--------|-----------------|
 | `charts/registry.py` | ChartRegistry: decorator + dict + get/available |
+| `charts/_helpers.py` | Utilitarios compartilhados (detect_bar_width) |
 | `charts/line.py` | Renderiza grafico de linhas (registrado via @ChartRegistry.register) |
 | `charts/bar.py` | Renderiza grafico de barras (registrado via @ChartRegistry.register) |
-| `overlays/*` | Adiciona elementos secundarios (MA, ATH/ATL, bandas, markers) |
+| `charts/stacked_bar.py` | Renderiza barras empilhadas (registrado via @ChartRegistry.register) |
+| `overlays/*` | Adiciona elementos secundarios (MA, ATH/ATL/AVG, bandas, markers, fill_between, std_band, vband) |
 | `decorations/footer.py` | Adiciona rodape com branding e fonte |
 
 ### Metrics
@@ -189,7 +198,7 @@ src/chartkit/
 | Modulo | Responsabilidade |
 |--------|-----------------|
 | `registry.py` | MetricRegistry para registrar e aplicar metricas |
-| `builtin.py` | Registra metricas padrao como wrappers dos overlays |
+| `builtin.py` | Registra metricas padrao como wrappers dos overlays (ath, atl, avg, ma, hline, band, target, std_band, vband) |
 
 ### Transforms
 

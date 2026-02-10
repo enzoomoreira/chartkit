@@ -291,7 +291,7 @@ Nao e necessario modificar `engine.py`. O dispatch e automatico:
 ```python
 # engine.py (ja existente)
 chart_fn = ChartRegistry.get(kind)
-chart_fn(ax, x_data, y_data, highlight=highlight_last, **kwargs)
+chart_fn(ax, x_data, y_data, highlight=highlight, **kwargs)
 ```
 
 Uso:

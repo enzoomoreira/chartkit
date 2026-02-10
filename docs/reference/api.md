@@ -12,14 +12,15 @@ Referencia tecnica completa do chartkit.
 def plot(
     x: str | None = None,
     y: str | list[str] | None = None,
-    kind: str = "line",
+    *,
+    kind: ChartKind = "line",
     title: str | None = None,
-    units: str | None = None,
+    units: UnitFormat | None = None,
     source: str | None = None,
-    highlight_last: bool = False,
-    save_path: str | None = None,
+    highlight: bool = False,
     metrics: str | list[str] | None = None,
     fill_between: tuple[str, str] | None = None,
+    legend: bool | None = None,
     **kwargs,
 ) -> PlotResult
 ```
@@ -30,14 +31,14 @@ def plot(
 |-----------|------|---------|-----------|
 | `x` | `str \| None` | `None` | Coluna para eixo X. Se `None`, usa o index |
 | `y` | `str \| list[str] \| None` | `None` | Coluna(s) para eixo Y. Se `None`, usa colunas numericas |
-| `kind` | `str` | `"line"` | Tipo de grafico registrado no `ChartRegistry` (ex: `"line"`, `"bar"`, `"stacked_bar"`) |
+| `kind` | `ChartKind` | `"line"` | Tipo de grafico registrado no `ChartRegistry` (ex: `"line"`, `"bar"`, `"stacked_bar"`) |
 | `title` | `str \| None` | `None` | Titulo do grafico |
-| `units` | `str \| None` | `None` | Formatacao do eixo Y (ver tabela abaixo) |
-| `source` | `str \| None` | `None` | Fonte dos dados para rodape |
-| `highlight_last` | `bool` | `False` | Destaca ultimo valor |
-| `save_path` | `str \| None` | `None` | Caminho para salvar |
+| `units` | `UnitFormat \| None` | `None` | Formatacao do eixo Y (ver tabela abaixo) |
+| `source` | `str \| None` | `None` | Fonte dos dados para rodape. Quando `None`, usa `branding.default_source` como fallback |
+| `highlight` | `bool` | `False` | Destaca ultimo valor de cada serie |
 | `metrics` | `str \| list[str] \| None` | `None` | Metrica(s) a aplicar (string ou lista) |
 | `fill_between` | `tuple[str, str] \| None` | `None` | Tupla `(col1, col2)` para sombrear area entre duas colunas |
+| `legend` | `bool \| None` | `None` | Controle da legenda. `None` = auto (mostra com 2+ artists), `True` = forca, `False` = suprime |
 | `**kwargs` | - | - | Parametros chart-specific (ex: `y_origin='auto'`) e extras matplotlib |
 
 #### Metricas Disponiveis
@@ -51,7 +52,17 @@ def plot(
 | `"band:L:U"` | Banda sombreada entre L e U | `metrics=["band:1.5:4.5"]` |
 | `"target:V"` | Linha de meta no valor V | `metrics=["target:1000"]` |
 | `"std_band:W:N"` | Banda de N desvios padrao com janela W | `metrics=["std_band:20:2"]` |
+| `"avg"` | Linha horizontal na media dos dados | `metrics=["avg"]` |
 | `"vband:D1:D2"` | Banda vertical entre datas D1 e D2 | `metrics=["vband:2020-03-01:2020-06-30"]` |
+
+Metricas suportam label customizado via sintaxe `|`: `'ath|Maximo'`, `'ma:12@col|Media 12M'`, `'hline:100|Meta: Q1'`.
+
+#### Tipos
+
+```python
+ChartKind = Literal["line", "bar", "stacked_bar"]
+UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
+```
 
 ---
 
@@ -171,14 +182,15 @@ class ChartingPlotter:
 def plot(
     x: str | None = None,
     y: str | list[str] | None = None,
-    kind: str = "line",
+    *,
+    kind: ChartKind = "line",
     title: str | None = None,
-    units: str | None = None,
+    units: UnitFormat | None = None,
     source: str | None = None,
-    highlight_last: bool = False,
-    save_path: str | None = None,
+    highlight: bool = False,
     metrics: str | list[str] | None = None,
     fill_between: tuple[str, str] | None = None,
+    legend: bool | None = None,
     **kwargs,
 ) -> PlotResult
 
@@ -257,8 +269,17 @@ class ChartingConfig(BaseSettings):
     transforms: TransformsConfig
     formatters: FormattersConfig
     labels: LabelsConfig
+    legend: LegendConfig
     paths: PathsConfig
 ```
+
+#### LegendConfig
+
+| Campo | Tipo | Default |
+|-------|------|---------|
+| `loc` | `str` | `"best"` |
+| `alpha` | `float` | `0.9` |
+| `frameon` | `bool` | `True` |
 
 ### Sub-configuracoes
 
@@ -267,6 +288,7 @@ class ChartingConfig(BaseSettings):
 | Campo | Tipo | Default |
 |-------|------|---------|
 | `company_name` | `str` | `""` |
+| `default_source` | `str` | `""` |
 | `footer_format` | `str` | `"Fonte: {source}, {company_name}"` |
 | `footer_format_no_source` | `str` | `"{company_name}"` |
 
@@ -347,14 +369,6 @@ class ChartingConfig(BaseSettings):
 | `overlay_width` | `float` | `1.5` |
 | `reference_style` | `str` | `"--"` |
 | `moving_avg_min_periods` | `int` | `1` |
-| `legend` | `LegendConfig` | (ver abaixo) |
-
-#### LegendConfig
-
-| Campo | Tipo | Default |
-|-------|------|---------|
-| `alpha` | `float` | `0.9` |
-| `frameon` | `bool` | `True` |
 
 #### BarsConfig
 
@@ -432,6 +446,7 @@ class ChartingConfig(BaseSettings):
 |-------|------|---------|
 | `ath` | `str` | `"ATH"` |
 | `atl` | `str` | `"ATL"` |
+| `avg` | `str` | `"AVG"` |
 | `moving_average_format` | `str` | `"MM{window}"` |
 
 #### PathsConfig
@@ -478,6 +493,10 @@ from chartkit import (
     register_fixed,
     register_moveable,
     register_passive,
+
+    # Types
+    ChartKind,
+    UnitFormat,
 
     # Classes principais
     ChartingAccessor,
