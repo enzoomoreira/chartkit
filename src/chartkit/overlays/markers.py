@@ -67,6 +67,11 @@ def add_highlight(
         color = theme.colors.primary
 
     if isinstance(style, str):
+        if style not in HIGHLIGHT_STYLES:
+            available = ", ".join(sorted(HIGHLIGHT_STYLES))
+            raise ValueError(
+                f"Highlight style '{style}' nao suportado. Disponiveis: {available}"
+            )
         style = HIGHLIGHT_STYLES[style]
 
     # Resolve posicao X

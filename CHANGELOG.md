@@ -1,5 +1,12 @@
 # Project Changelog
 
+## [2026-02-10 03:33]
+### Added
+- **Validacao runtime de parametros do `plot()`**: `highlight`, `units` e `legend` validados via Pydantic `StrictBool`/`Literal` antes de qualquer side effect
+  - Valores truthy nao-bool (ex: `highlight="banana"`, `legend=1`) agora geram `ValueError` claro
+- **Validacao de `y_origin` em bar/stacked_bar**: Type hint `Literal["zero", "auto"]` + check runtime com mensagem descritiva
+- **Validacao de `style` em `add_highlight()`**: Mensagem de erro explicita com estilos disponiveis em vez de `KeyError` crua
+
 ## [2026-02-10 02:56]
 ### Changed
 - **`highlight_last` renomeado para `highlight`**: Parametro de destaque do ultimo valor simplificado em `plot()`

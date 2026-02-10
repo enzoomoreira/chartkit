@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
@@ -15,7 +17,7 @@ def plot_bar(
     x: pd.Index | pd.Series,
     y_data: pd.Series | pd.DataFrame,
     highlight: bool = False,
-    y_origin: str = "zero",
+    y_origin: Literal["zero", "auto"] = "zero",
     **kwargs,
 ) -> None:
     """Plota grafico de barras com largura automatica baseada na frequencia.
@@ -24,6 +26,9 @@ def plot_bar(
         y_origin: ``'zero'`` inclui zero no eixo Y (default),
             ``'auto'`` ajusta limites para focar nos dados com margem.
     """
+    if y_origin not in ("zero", "auto"):
+        raise ValueError(f"y_origin deve ser 'zero' ou 'auto', recebeu: {y_origin!r}")
+
     config = get_config()
     bars = config.bars
 

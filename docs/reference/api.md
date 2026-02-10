@@ -471,6 +471,12 @@ class ChartingConfig(BaseSettings):
 - Auto-deteccao de frequencia falha e nenhum `periods=`/`freq=` foi fornecido
 - Parametros mutuamente exclusivos (`periods` e `freq`) sao passados simultaneamente
 
+`ValueError` e levantado quando:
+- `plot()` recebe tipo incorreto em `highlight` ou `legend` (ex: string, int, lista em vez de bool)
+- `plot()` recebe valor invalido em `units` (ex: `"EUR"` em vez de `"BRL"`)
+- `y_origin` recebe valor fora de `"zero"` / `"auto"` em graficos de barras
+- `add_highlight()` recebe `style` nao registrado em `HIGHLIGHT_STYLES`
+
 ---
 
 ## Exports do Modulo

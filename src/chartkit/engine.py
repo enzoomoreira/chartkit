@@ -7,6 +7,7 @@ from typing import Literal, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from pydantic import BaseModel, StrictBool
 
 from ._internal import resolve_collisions
 from .charts import ChartRegistry
@@ -36,6 +37,12 @@ _FORMATTERS = {
     "human": human_readable_formatter,
     "points": points_formatter,
 }
+
+
+class _PlotParams(BaseModel):
+    highlight: StrictBool = False
+    units: UnitFormat | None = None
+    legend: StrictBool | None = None
 
 
 class ChartingPlotter:
@@ -81,6 +88,7 @@ class ChartingPlotter:
             **kwargs: Parametros chart-specific (ex: ``y_origin='auto'`` para barras)
                 e parametros matplotlib passados diretamente ao renderer.
         """
+        self._validate_params(highlight=highlight, units=units, legend=legend)
         config = get_config()
 
         # 1. Style
@@ -129,8 +137,26 @@ class ChartingPlotter:
 
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
 
+    @staticmethod
+    def _validate_params(
+        highlight: bool, units: UnitFormat | None, legend: bool | None
+    ) -> None:
+        from pydantic import ValidationError
+
+        try:
+            _PlotParams(highlight=highlight, units=units, legend=legend)
+        except ValidationError as exc:
+            errors = exc.errors()
+            msgs = [
+                f"  {e['loc'][0]}: {e['msg']}" if e.get("loc") else f"  {e['msg']}"
+                for e in errors
+            ]
+            raise ValueError(
+                "Parametros de plot invalidos:\n" + "\n".join(msgs)
+            ) from exc
+
     def _apply_y_formatter(self, ax, units: UnitFormat | None) -> None:
-        if units and units in _FORMATTERS:
+        if units:
             ax.yaxis.set_major_formatter(_FORMATTERS[units]())
 
     def _apply_title(self, ax, title: str | None) -> None:
