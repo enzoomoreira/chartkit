@@ -1,11 +1,11 @@
-from typing import cast
-
 import pandas as pd
+from loguru import logger
 from matplotlib.axes import Axes
 
 from ..overlays.markers import highlight_last
 from ..settings import get_config
 from ..styling.theme import theme
+from ._helpers import detect_bar_width
 from .registry import ChartRegistry
 
 
@@ -30,32 +30,32 @@ def plot_bar(
     if "color" not in kwargs:
         kwargs["color"] = theme.colors.primary
 
-    # Largura inteligente baseada na frequencia dos dados
-    width = bars.width_default
-    if pd.api.types.is_datetime64_any_dtype(x):
-        if len(x) > 1:
-            span = cast(pd.Timestamp, x.max()) - cast(pd.Timestamp, x.min())
-            avg_diff = span / (len(x) - 1)
-            if avg_diff.days > bars.frequency_detection.annual_threshold:
-                width = bars.width_annual
-            elif avg_diff.days > bars.frequency_detection.monthly_threshold:
-                width = bars.width_monthly
+    multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
 
-    if isinstance(y_data, pd.DataFrame):
-        if y_data.shape[1] > 1:
-            y_data.plot(kind="bar", ax=ax, width=bars.width_default, **kwargs)
-            return
-        else:
-            vals = y_data.iloc[:, 0]
+    if multi_col:
+        if len(y_data) > 500:
+            logger.warning(
+                "Bar chart com {} pontos pode ficar ilegivel. Considere kind='line'.",
+                len(y_data),
+            )
+        # pandas .plot(kind="bar") usa eixo categorico; width e relativo (0-1)
+        y_data.plot(kind="bar", ax=ax, width=bars.width_default, **kwargs)
     else:
-        vals = y_data
+        vals = y_data.iloc[:, 0] if isinstance(y_data, pd.DataFrame) else y_data
 
-    ax.bar(x, vals, width=width, zorder=config.layout.zorder.data, **kwargs)
+        if len(vals) > 500:
+            logger.warning(
+                "Bar chart com {} pontos pode ficar ilegivel. Considere kind='line'.",
+                len(vals),
+            )
+
+        width = detect_bar_width(x, bars)
+        ax.bar(x, vals, width=width, zorder=config.layout.zorder.data, **kwargs)
 
     if y_origin == "auto":
-        vals_clean = vals.dropna()
-        if not vals_clean.empty:
-            ymin, ymax = vals_clean.min(), vals_clean.max()
+        all_vals = y_data.stack().dropna() if multi_col else vals.dropna()
+        if not all_vals.empty:
+            ymin, ymax = all_vals.min(), all_vals.max()
             margin = (ymax - ymin) * bars.auto_margin
             ax.set_ylim(ymin - margin, ymax + margin)
     else:
@@ -65,6 +65,6 @@ def plot_bar(
         elif ymax < 0:
             ax.set_ylim(ymin, 0)
 
-    if highlight:
+    if highlight and not multi_col:
         color = kwargs.get("color", theme.colors.primary)
         highlight_last(ax, vals, style="bar", color=color, x=x)

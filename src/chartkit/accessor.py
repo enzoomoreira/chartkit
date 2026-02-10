@@ -12,15 +12,19 @@ if TYPE_CHECKING:
 
 
 @pd.api.extensions.register_dataframe_accessor("chartkit")
+@pd.api.extensions.register_series_accessor("chartkit")
 class ChartingAccessor:
     """Pandas accessor para plotagem e transforms encadeados.
 
     Registrado automaticamente ao importar chartkit.
+    Aceita DataFrame e Series (Series e convertida para DataFrame internamente).
     Transforms retornam ``TransformAccessor``; ``.plot()`` retorna ``PlotResult``.
     """
 
-    def __init__(self, pandas_obj: pd.DataFrame) -> None:
-        self._obj = pandas_obj
+    def __init__(self, pandas_obj: pd.DataFrame | pd.Series) -> None:
+        self._obj = (
+            pandas_obj.to_frame() if isinstance(pandas_obj, pd.Series) else pandas_obj
+        )
 
     def yoy(
         self, periods: int | None = None, freq: str | None = None
@@ -84,6 +88,7 @@ class ChartingAccessor:
         save_path: str | None = None,
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
+        legend: bool | None = None,
         **kwargs,
     ) -> PlotResult:
         """Cria grafico padronizado. Ver ``ChartingPlotter.plot()`` para docs completas."""
@@ -99,5 +104,6 @@ class ChartingAccessor:
             save_path=save_path,
             metrics=metrics,
             fill_between=fill_between,
+            legend=legend,
             **kwargs,
         )

@@ -113,6 +113,7 @@ class LayoutConfig(BaseModel):
 
 
 class LegendConfig(BaseModel):
+    loc: str = "best"
     alpha: float = 0.9
     frameon: bool = True
 
@@ -122,7 +123,6 @@ class LinesConfig(BaseModel):
     overlay_width: float = 1.5
     reference_style: str = "--"
     moving_avg_min_periods: int = 1
-    legend: LegendConfig = Field(default_factory=LegendConfig)
 
 
 class FrequencyDetectionConfig(BaseModel):
@@ -182,6 +182,7 @@ class FormattersConfig(BaseModel):
 class LabelsConfig(BaseModel):
     ath: str = "ATH"
     atl: str = "ATL"
+    avg: str = "AVG"
     moving_average_format: str = "MM{window}"
 
 
@@ -235,6 +236,7 @@ class ChartingConfig(BaseSettings):
     transforms: TransformsConfig = Field(default_factory=TransformsConfig)
     formatters: FormattersConfig = Field(default_factory=FormattersConfig)
     labels: LabelsConfig = Field(default_factory=LabelsConfig)
+    legend: LegendConfig = Field(default_factory=LegendConfig)
     paths: PathsConfig = Field(default_factory=PathsConfig)
 
     @classmethod

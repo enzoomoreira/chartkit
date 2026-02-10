@@ -1,12 +1,12 @@
-from typing import cast
-
 import numpy as np
 import pandas as pd
+from loguru import logger
 from matplotlib.axes import Axes
 
 from ..overlays.markers import highlight_last
 from ..settings import get_config
 from ..styling.theme import theme
+from ._helpers import detect_bar_width
 from .registry import ChartRegistry
 
 __all__ = ["plot_stacked_bar"]
@@ -36,19 +36,15 @@ def plot_stacked_bar(
     if isinstance(y_data, pd.Series):
         y_data = y_data.to_frame()
 
-    # Largura inteligente baseada na frequencia dos dados
-    width = bars.width_default
-    if pd.api.types.is_datetime64_any_dtype(x):
-        if len(x) > 1:
-            span = cast(pd.Timestamp, x.max()) - cast(pd.Timestamp, x.min())
-            avg_diff = span / (len(x) - 1)
-            if avg_diff.days > bars.frequency_detection.annual_threshold:
-                width = bars.width_annual
-            elif avg_diff.days > bars.frequency_detection.monthly_threshold:
-                width = bars.width_monthly
+    if len(y_data) > 500:
+        logger.warning(
+            "Stacked bar com {} pontos pode ficar ilegivel. Considere kind='line'.",
+            len(y_data),
+        )
 
     user_color = kwargs.pop("color", None)
     colors = theme.colors.cycle()
+    width = detect_bar_width(x, bars)
 
     bottom = np.zeros(len(y_data))
     for i, col in enumerate(y_data.columns):
@@ -66,13 +62,6 @@ def plot_stacked_bar(
             **kwargs,
         )
         bottom = bottom + vals.values
-
-    if y_data.shape[1] > 1:
-        ax.legend(
-            loc="best",
-            frameon=config.lines.legend.frameon,
-            framealpha=config.lines.legend.alpha,
-        )
 
     if y_origin == "auto":
         total = y_data.sum(axis=1)

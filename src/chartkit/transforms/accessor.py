@@ -22,18 +22,19 @@ if TYPE_CHECKING:
 
 
 class TransformAccessor:
-    """Accessor encadeavel para transforms sobre DataFrames.
+    """Accessor encadeavel para transforms sobre DataFrames e Series.
 
     Cada metodo retorna um novo TransformAccessor, permitindo encadeamento.
     Finalize com ``.plot()`` para gerar o grafico ou ``.df`` para obter os dados.
+    Series sao convertidas para DataFrame internamente.
 
     Example:
         >>> df.chartkit.yoy().mom().plot(title="Taxa")
         >>> transformed = df.chartkit.normalize().df
     """
 
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df
+    def __init__(self, df: pd.DataFrame | pd.Series) -> None:
+        self._df = df.to_frame() if isinstance(df, pd.Series) else df
 
     def yoy(
         self, periods: int | None = None, freq: str | None = None

@@ -8,6 +8,7 @@ def register_builtin_metrics() -> None:
     from ..overlays import (
         add_ath_line,
         add_atl_line,
+        add_avg_line,
         add_band,
         add_hline,
         add_moving_average,
@@ -23,6 +24,10 @@ def register_builtin_metrics() -> None:
     @MetricRegistry.register("atl")
     def metric_atl(ax, x_data, y_data, **kwargs) -> None:
         add_atl_line(ax, y_data, **kwargs)
+
+    @MetricRegistry.register("avg")
+    def metric_avg(ax, x_data, y_data, **kwargs) -> None:
+        add_avg_line(ax, y_data, **kwargs)
 
     @MetricRegistry.register("ma", param_names=["window"])
     def metric_ma(ax, x_data, y_data, window: int, **kwargs) -> None:

@@ -93,7 +93,11 @@ overlay_width = 1.5           # Espessura de overlays (MM, ATH, etc)
 reference_style = "--"        # Estilo de linhas de referencia
 moving_avg_min_periods = 1    # Periodos minimos para calculo da media movel
 
-[lines.legend]
+# -----------------------------------------------------------------------------
+# Legenda - Configuracao visual da legenda
+# -----------------------------------------------------------------------------
+[legend]
+loc = "best"     # Posicionamento: "best", "upper right", "lower left", etc.
 alpha = 0.9      # Transparencia do fundo da legenda
 frameon = true   # Mostrar borda da legenda
 
@@ -159,6 +163,7 @@ suffixes = ["", "k", "M", "B", "T"]  # Sufixos para notacao compacta
 [labels]
 ath = "ATH"                       # All-Time High
 atl = "ATL"                       # All-Time Low
+avg = "AVG"                       # Media (Average)
 moving_average_format = "MM{window}"  # Formato da legenda de MM
 
 # -----------------------------------------------------------------------------

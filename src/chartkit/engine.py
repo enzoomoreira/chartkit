@@ -56,6 +56,7 @@ class ChartingPlotter:
         save_path: str | None = None,
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
+        legend: bool | None = None,
         **kwargs,
     ) -> PlotResult:
         """Gera grafico padronizado.
@@ -67,6 +68,8 @@ class ChartingPlotter:
                 sintaxe completa (ex: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``).
             fill_between: Tupla ``(col1, col2)`` para sombrear area entre
                 duas colunas do DataFrame.
+            legend: Controle da legenda. ``None`` = auto (mostra quando ha
+                2+ artists rotulados), ``True`` = forca, ``False`` = suprime.
             **kwargs: Parametros chart-specific (ex: ``y_origin='auto'`` para barras)
                 e parametros matplotlib passados diretamente ao renderer.
         """
@@ -106,14 +109,17 @@ class ChartingPlotter:
             col1, col2 = fill_between
             add_fill_between(ax, x_data, self.df[col1], self.df[col2])
 
-        # 6. Collision resolution
+        # 6. Legend
+        self._apply_legend(ax, legend)
+
+        # 7. Collision resolution
         resolve_collisions(ax)
 
-        # 7. Decorations
+        # 8. Decorations
         self._apply_title(ax, title)
         self._apply_decorations(fig, source)
 
-        # 8. Output
+        # 9. Output
         if save_path:
             self.save(save_path)
 
@@ -134,6 +140,22 @@ class ChartingPlotter:
                 size=config.fonts.sizes.title,
                 color=theme.colors.text,
                 weight=config.layout.title.weight,
+            )
+
+    def _apply_legend(self, ax, legend: bool | None) -> None:
+        _, labels = ax.get_legend_handles_labels()
+
+        if legend is None:
+            show = len(labels) > 1
+        else:
+            show = legend
+
+        if show and labels:
+            config = get_config()
+            ax.legend(
+                loc=config.legend.loc,
+                frameon=config.legend.frameon,
+                framealpha=config.legend.alpha,
             )
 
     def _apply_decorations(self, fig, source: str | None) -> None:

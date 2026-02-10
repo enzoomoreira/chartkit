@@ -55,10 +55,3 @@ def plot_line(
 
         if highlight:
             highlight_last(ax, cast(pd.Series, y_data[col]), style="line", color=c)
-
-    if y_data.shape[1] > 1:
-        ax.legend(
-            loc="best",
-            frameon=lines.legend.frameon,
-            framealpha=lines.legend.alpha,
-        )

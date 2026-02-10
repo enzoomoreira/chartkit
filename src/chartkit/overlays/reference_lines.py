@@ -8,10 +8,10 @@ from ..settings import get_config
 from ..styling.theme import theme
 
 
-def _add_extreme_line(
+def _add_stat_line(
     ax: Axes,
     y_data: pd.Series | pd.DataFrame,
-    extreme: str,
+    stat: str,
     default_color: str,
     default_label: str,
     color: str | None = None,
@@ -20,14 +20,14 @@ def _add_extreme_line(
     linewidth: float | None = None,
     series: str | None = None,
 ) -> None:
-    """Adiciona linha horizontal no extremo (max ou min) dos dados."""
+    """Adiciona linha horizontal em estatistica (max, min, mean) dos dados."""
     config = get_config()
 
     if isinstance(y_data, pd.DataFrame):
         col = series if series is not None else y_data.columns[0]
         y_data = y_data[col]
 
-    value = getattr(y_data, extreme)()
+    value = getattr(y_data, stat)()
     if pd.isna(value):
         return
 
@@ -49,10 +49,10 @@ def add_ath_line(
 ) -> None:
     """Adiciona linha horizontal no All-Time High (valor maximo)."""
     config = get_config()
-    _add_extreme_line(
+    _add_stat_line(
         ax,
         y_data,
-        extreme="max",
+        stat="max",
         default_color=theme.colors.positive,
         default_label=config.labels.ath,
         **kwargs,
@@ -66,12 +66,29 @@ def add_atl_line(
 ) -> None:
     """Adiciona linha horizontal no All-Time Low (valor minimo)."""
     config = get_config()
-    _add_extreme_line(
+    _add_stat_line(
         ax,
         y_data,
-        extreme="min",
+        stat="min",
         default_color=theme.colors.negative,
         default_label=config.labels.atl,
+        **kwargs,
+    )
+
+
+def add_avg_line(
+    ax: Axes,
+    y_data: pd.Series | pd.DataFrame,
+    **kwargs: Any,
+) -> None:
+    """Adiciona linha horizontal na media (mean) dos dados."""
+    config = get_config()
+    _add_stat_line(
+        ax,
+        y_data,
+        stat="mean",
+        default_color=theme.colors.grid,
+        default_label=config.labels.avg,
         **kwargs,
     )
 
