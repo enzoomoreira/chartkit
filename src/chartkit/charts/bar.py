@@ -1,4 +1,6 @@
-from typing import Literal
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal
 
 import pandas as pd
 from loguru import logger
@@ -10,13 +12,16 @@ from ..styling.theme import theme
 from ._helpers import detect_bar_width
 from .registry import ChartRegistry
 
+if TYPE_CHECKING:
+    from ..overlays.markers import HighlightMode
+
 
 @ChartRegistry.register("bar")
 def plot_bar(
     ax: Axes,
     x: pd.Index | pd.Series,
     y_data: pd.Series | pd.DataFrame,
-    highlight: bool = False,
+    highlight: list[HighlightMode] | None = None,
     y_origin: Literal["zero", "auto"] = "zero",
     **kwargs,
 ) -> None:
@@ -72,4 +77,4 @@ def plot_bar(
 
     if highlight and not multi_col:
         color = kwargs.get("color", theme.colors.primary)
-        add_highlight(ax, vals, style="bar", color=color, x=x)
+        add_highlight(ax, vals, style="bar", color=color, x=x, modes=highlight)

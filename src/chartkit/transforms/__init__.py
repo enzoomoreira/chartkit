@@ -3,7 +3,7 @@
 from .accessor import TransformAccessor
 from .temporal import (
     accum,
-    annualize_daily,
+    annualize,
     compound_rolling,
     diff,
     drawdown,
@@ -21,7 +21,7 @@ __all__ = [
     "accum",
     "diff",
     "normalize",
-    "annualize_daily",
+    "annualize",
     "compound_rolling",
     "drawdown",
     "zscore",

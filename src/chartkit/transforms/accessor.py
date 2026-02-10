@@ -6,7 +6,7 @@ import pandas as pd
 
 from .temporal import (
     accum,
-    annualize_daily,
+    annualize,
     compound_rolling,
     diff,
     drawdown,
@@ -64,9 +64,11 @@ class TransformAccessor:
         """Normaliza serie para um valor base em uma data especifica."""
         return TransformAccessor(normalize(self._df, base, base_date))
 
-    def annualize_daily(self, trading_days: int | None = None) -> TransformAccessor:
-        """Anualiza taxa diaria via juros compostos."""
-        return TransformAccessor(annualize_daily(self._df, trading_days))
+    def annualize(
+        self, periods: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
+        """Anualiza taxa periodica via juros compostos."""
+        return TransformAccessor(annualize(self._df, periods, freq))
 
     def compound_rolling(
         self, window: int | None = None, freq: str | None = None

@@ -16,7 +16,6 @@ __all__ = [
     "_PctChangeParams",
     "_RollingParams",
     "_NormalizeParams",
-    "_AnnualizeParams",
 ]
 
 import numpy as np
@@ -46,7 +45,7 @@ FreqLiteral = Literal[
     "annual",
 ]
 
-TransformName = Literal["mom", "yoy", "accum", "rolling"]
+TransformName = Literal["mom", "yoy", "accum", "rolling", "annualize"]
 
 # ---------------------------------------------------------------------------
 # Constantes de mapeamento freq -> periods
@@ -72,15 +71,15 @@ FREQ_ALIASES: dict[str, str] = {
 # Mapeamento de freq code normalizado -> periods por tipo de transform.
 # Os codes aqui sao os retornados por pd.infer_freq() ou normalizados via FREQ_ALIASES.
 FREQ_PERIODS_MAP: dict[str, dict[TransformName, int]] = {
-    "D": {"mom": 30, "yoy": 365, "accum": 365, "rolling": 365},
-    "B": {"mom": 21, "yoy": 252, "accum": 252, "rolling": 252},
-    "W": {"mom": 4, "yoy": 52, "accum": 52, "rolling": 52},
-    "ME": {"mom": 1, "yoy": 12, "accum": 12, "rolling": 12},
-    "MS": {"mom": 1, "yoy": 12, "accum": 12, "rolling": 12},
-    "QE": {"mom": 1, "yoy": 4, "accum": 4, "rolling": 4},
-    "QS": {"mom": 1, "yoy": 4, "accum": 4, "rolling": 4},
-    "YE": {"mom": 1, "yoy": 1, "accum": 1, "rolling": 1},
-    "YS": {"mom": 1, "yoy": 1, "accum": 1, "rolling": 1},
+    "D": {"mom": 30, "yoy": 365, "accum": 365, "rolling": 365, "annualize": 365},
+    "B": {"mom": 21, "yoy": 252, "accum": 252, "rolling": 252, "annualize": 252},
+    "W": {"mom": 4, "yoy": 52, "accum": 52, "rolling": 52, "annualize": 52},
+    "ME": {"mom": 1, "yoy": 12, "accum": 12, "rolling": 12, "annualize": 12},
+    "MS": {"mom": 1, "yoy": 12, "accum": 12, "rolling": 12, "annualize": 12},
+    "QE": {"mom": 1, "yoy": 4, "accum": 4, "rolling": 4, "annualize": 4},
+    "QS": {"mom": 1, "yoy": 4, "accum": 4, "rolling": 4, "annualize": 4},
+    "YE": {"mom": 1, "yoy": 1, "accum": 1, "rolling": 1, "annualize": 1},
+    "YS": {"mom": 1, "yoy": 1, "accum": 1, "rolling": 1, "annualize": 1},
 }
 
 # Prefixos de freq codes ancorados que pd.infer_freq() pode retornar.
@@ -94,7 +93,7 @@ _ANCHORED_PREFIXES = ("W-", "QE-", "QS-", "BQE-", "BQS-", "YE-", "YS-", "BYE-", 
 
 
 class _PctChangeParams(BaseModel):
-    """Validacao para mom/yoy."""
+    """Validacao para mom/yoy/annualize."""
 
     periods: PositiveInt | None = None
     freq: FreqLiteral | None = None
@@ -124,12 +123,6 @@ class _NormalizeParams(BaseModel):
 
     base: PositiveInt | None = None
     base_date: str | None = None
-
-
-class _AnnualizeParams(BaseModel):
-    """Validacao para annualize_daily."""
-
-    trading_days: PositiveInt | None = None
 
 
 # ---------------------------------------------------------------------------

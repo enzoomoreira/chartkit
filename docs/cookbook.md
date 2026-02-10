@@ -127,7 +127,7 @@ indices_norm_2024.chartkit.plot(
 ```python
 import pandas as pd
 import chartkit
-from chartkit import annualize_daily
+from chartkit import annualize
 
 # Dados de CDI diario (taxa % ao dia)
 # Nota: valores tipicos de CDI diario sao muito pequenos (~0.04% ao dia)
@@ -138,8 +138,9 @@ cdi_diario = pd.DataFrame({
 }, index=pd.date_range('2024-06-01', periods=15, freq='B'))  # B = business days
 
 # Anualiza usando a formula de juros compostos
-# Formula: ((1 + taxa_diaria/100) ^ 252 - 1) * 100
-cdi_anual = annualize_daily(cdi_diario, trading_days=252)
+# Formula: ((1 + taxa/100) ^ periodos_por_ano - 1) * 100
+# Auto-detect: dados com freq='B' (business days) -> 252 periodos
+cdi_anual = annualize(cdi_diario)
 
 # Plota CDI anualizado
 cdi_anual.chartkit.plot(

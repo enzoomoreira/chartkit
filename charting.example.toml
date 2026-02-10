@@ -16,170 +16,179 @@
 # Valores nao especificados usarao os defaults.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# Branding - Personalizacao de marca
-# -----------------------------------------------------------------------------
+
+# /////////////////////////////////////////////////////////////////////////////
+#
+#   ESSENCIAL - Configure antes de usar
+#
+#   Sem isso os graficos ficam genericos, sem identidade.
+#
+# /////////////////////////////////////////////////////////////////////////////
+
 [branding]
 company_name = "Sua Empresa"
-# Fonte de dados exibida no rodape (ex: "IBGE", "BCB", "Bloomberg")
-# Configuravel via configure(branding={"default_source": "IBGE"}) ou env CHARTKIT_BRANDING__DEFAULT_SOURCE
-default_source = ""
-footer_format = "Fonte: {source}, {company_name}"
-footer_format_no_source = "{company_name}"
 
-# -----------------------------------------------------------------------------
-# Cores - Paleta de cores para graficos
-# -----------------------------------------------------------------------------
+# Fonte de dados exibida no rodape (ex: "IBGE", "BCB", "Bloomberg")
+# Tambem configuravel por grafico via plot(source="IBGE")
+default_source = ""
+
+[formatters.locale]
+decimal = ","           # Separador decimal
+thousands = "."         # Separador de milhares
+babel_locale = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.)
+
+
+# /////////////////////////////////////////////////////////////////////////////
+#
+#   IDENTIDADE VISUAL - Recomendado para manter consistencia de marca
+#
+#   Os defaults funcionam bem, mas se sua empresa tem
+#   paleta de cores ou fonte propria, configure aqui.
+#
+# /////////////////////////////////////////////////////////////////////////////
+
 [colors]
-# Cores principais (usadas para multiplas series)
-primary = "#00464D"      # Cor principal
-secondary = "#006B6B"    # Segunda serie
-tertiary = "#008B8B"     # Terceira serie
-quaternary = "#20B2AA"   # Quarta serie
-quinary = "#5F9EA0"      # Quinta serie
-senary = "#2E8B57"       # Sexta serie
+# Cores principais (usadas em ordem para multiplas series)
+primary = "#00464D"
+secondary = "#006B6B"
+tertiary = "#008B8B"
+quaternary = "#20B2AA"
+quinary = "#5F9EA0"
+senary = "#2E8B57"
 
 # Cores semanticas
-text = "#00464D"         # Cor do texto
-grid = "lightgray"       # Cor de elementos neutros (hline, bands, connectors)
-background = "white"     # Cor de fundo
+text = "#00464D"         # Cor do texto (titulos, labels)
 positive = "#00464D"     # Valores positivos (ATH)
 negative = "#8B0000"     # Valores negativos (ATL)
-moving_average = "#888888"  # Linha de media movel
 
-# -----------------------------------------------------------------------------
-# Fontes - Configuracao de tipografia
-# -----------------------------------------------------------------------------
 [fonts]
-# Caminho relativo ao assets_path ou caminho absoluto (vazio = usa fallback)
+# Caminho para fonte .ttf/.otf (relativo a assets_path ou absoluto)
+# Vazio = usa fallback do sistema
 file = ""
 fallback = "sans-serif"
-# Caminho base para assets (vazio = auto-discovery do projeto host)
-# Pode ser relativo ao project root ou absoluto
-assets_path = ""
 
-[fonts.sizes]
-default = 11       # Tamanho padrao
-title = 18         # Titulo do grafico
-footer = 9         # Rodape
-axis_label = 11    # Labels dos eixos
 
-# -----------------------------------------------------------------------------
-# Layout - Dimensoes e posicionamento
-# -----------------------------------------------------------------------------
+# /////////////////////////////////////////////////////////////////////////////
+#
+#   AJUSTE FINO - Defaults sensiveis, mude apenas se necessario
+#
+#   A maioria dos usuarios nunca precisa tocar nessas secoes.
+#   Estao aqui como referencia caso queira personalizar algum detalhe.
+#
+# /////////////////////////////////////////////////////////////////////////////
+
+# --- Branding avancado -------------------------------------------------------
+
+# Templates do rodape (variaveis disponiveis: {source}, {company_name})
+# branding.footer_format = "Fonte: {source}, {company_name}"
+# branding.footer_format_no_source = "{company_name}"
+
+# --- Layout ------------------------------------------------------------------
+
 [layout]
 figsize = [10.0, 6.0]  # Largura x Altura em polegadas
 dpi = 300              # Resolucao para exportacao
 
-[layout.footer]
-y = 0.01        # Posicao Y (0-1, coordenadas de figura)
-color = "gray"  # Cor do texto
+# [layout.footer]
+# y = 0.01        # Posicao Y do rodape (0-1)
+# color = "gray"
 
-[layout.title]
-padding = 20     # Espacamento em pixels
-weight = "bold"  # Peso da fonte
+# [layout.title]
+# padding = 20     # Espacamento em pixels
+# weight = "bold"
 
-[layout.zorder]
-# Ordem de camadas do grafico (menor = mais atras)
-bands = 0              # Bandas sombreadas
-reference_lines = 1    # Linhas de referencia (ATH, ATL, hline)
-moving_average = 2     # Media movel
-data = 3               # Serie de dados principal
-markers = 5            # Marcadores de ponto (ATH, ATL)
+# [layout.zorder]
+# Ordem de camadas (menor = mais atras)
+# bands = 0
+# reference_lines = 1
+# moving_average = 2
+# data = 3
+# markers = 5
 
-# -----------------------------------------------------------------------------
-# Linhas - Configuracao de linhas de grafico
-# -----------------------------------------------------------------------------
-[lines]
-main_width = 2.0              # Espessura da linha principal
-overlay_width = 1.5           # Espessura de overlays (MM, ATH, etc)
-reference_style = "--"        # Estilo de linhas de referencia
-moving_avg_min_periods = 1    # Periodos minimos para calculo da media movel
+# --- Cores secundarias -------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Legenda - Configuracao visual da legenda
-# -----------------------------------------------------------------------------
-[legend]
-loc = "best"     # Posicionamento: "best", "upper right", "lower left", etc.
-alpha = 0.9      # Transparencia do fundo da legenda
-frameon = true   # Mostrar borda da legenda
+# colors.grid = "lightgray"
+# colors.background = "white"
+# colors.moving_average = "#888888"
 
-# -----------------------------------------------------------------------------
-# Barras - Configuracao de graficos de barra
-# -----------------------------------------------------------------------------
-[bars]
-width_default = 0.8   # Largura padrao
-width_monthly = 20    # Largura para dados mensais
-width_annual = 300    # Largura para dados anuais
-auto_margin = 0.1     # Margem automatica nos eixos
+# --- Fontes ------------------------------------------------------------------
 
-[bars.frequency_detection]
-monthly_threshold = 25   # Dias entre pontos para considerar mensal
-annual_threshold = 300   # Dias entre pontos para considerar anual
+# fonts.assets_path = ""  # Caminho base para assets (vazio = auto-discovery)
 
-# -----------------------------------------------------------------------------
-# Bandas - Areas sombreadas
-# -----------------------------------------------------------------------------
-[bands]
-alpha = 0.15  # Transparencia das bandas
+# [fonts.sizes]
+# default = 11
+# title = 18
+# footer = 9
+# axis_label = 11
 
-# -----------------------------------------------------------------------------
-# Marcadores - Labels de destaque
-# -----------------------------------------------------------------------------
-[markers]
-scatter_size = 30     # Tamanho do marcador circular
+# --- Linhas ------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Colisao - Deteccao de sobreposicao de labels
-# -----------------------------------------------------------------------------
-[collision]
-movement = "y"                   # Eixo de movimentacao ("y" ou "x")
-obstacle_padding_px = 8.0        # Padding ao redor de obstaculos em pixels
-label_padding_px = 4.0           # Padding entre labels em pixels
-max_iterations = 50              # Iteracoes maximas do solver
-connector_threshold_px = 30.0    # Distancia para adicionar linha guia
-connector_alpha = 0.6            # Transparencia da linha guia
-connector_style = "-"            # Estilo da linha guia
+# [lines]
+# main_width = 2.0              # Espessura da linha principal
+# overlay_width = 1.5           # Espessura de overlays (MM, ATH, etc)
+# reference_style = "--"        # Estilo de linhas de referencia
+# moving_avg_min_periods = 1
 
-# -----------------------------------------------------------------------------
-# Transforms - Parametros de transformacao de dados
-# -----------------------------------------------------------------------------
-[transforms]
-trading_days_per_year = 252  # Dias uteis no ano
-normalize_base = 100         # Base para normalizacao
-rolling_window = 12          # Janela para compound_rolling (default)
+# --- Legenda -----------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Formatadores - Formatacao de texto
-# -----------------------------------------------------------------------------
-[formatters.locale]
-decimal = ","         # Separador decimal
-thousands = "."       # Separador de milhares
-babel_locale = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.)
+# [legend]
+# loc = "best"     # "best", "upper right", "lower left", etc.
+# alpha = 0.9
+# frameon = true
 
-[formatters.magnitude]
-suffixes = ["", "k", "M", "B", "T"]  # Sufixos para notacao compacta
+# --- Barras ------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Labels - Rotulos padrao
-# -----------------------------------------------------------------------------
-[labels]
-ath = "ATH"                       # All-Time High
-atl = "ATL"                       # All-Time Low
-avg = "AVG"                       # Media (Average)
-moving_average_format = "MM{window}"  # Formato da legenda de MM
+# [bars]
+# width_default = 0.8
+# width_monthly = 20
+# width_annual = 300
+# auto_margin = 0.1
 
-# -----------------------------------------------------------------------------
-# Paths - Caminhos e diretorios
-# -----------------------------------------------------------------------------
-[paths]
-charts_subdir = "charts"           # Subdiretorio para graficos dentro de outputs
+# [bars.frequency_detection]
+# monthly_threshold = 25   # Dias entre pontos para considerar mensal
+# annual_threshold = 300
 
-# Diretorio de outputs (vazio = auto-discovery do projeto host)
-# Pode ser relativo ao project root ou absoluto
-outputs_dir = ""
+# --- Bandas e marcadores -----------------------------------------------------
 
-# Diretorio de assets (vazio = auto-discovery do projeto host)
-# Alternativa a [fonts].assets_path para configuracao centralizada
-# Pode ser relativo ao project root ou absoluto
-assets_dir = ""
+# [bands]
+# alpha = 0.15
+
+# [markers]
+# scatter_size = 30
+
+# --- Colisao de labels -------------------------------------------------------
+
+# [collision]
+# movement = "y"
+# obstacle_padding_px = 8.0
+# label_padding_px = 4.0
+# max_iterations = 50
+# connector_threshold_px = 30.0
+# connector_alpha = 0.6
+# connector_style = "-"
+
+# --- Transforms --------------------------------------------------------------
+
+# [transforms]
+# normalize_base = 100
+# rolling_window = 12
+
+# --- Formatadores -------------------------------------------------------------
+
+# [formatters.magnitude]
+# suffixes = ["", "k", "M", "B", "T"]
+
+# --- Labels ------------------------------------------------------------------
+
+# [labels]
+# ath = "ATH"
+# atl = "ATL"
+# avg = "AVG"
+# moving_average_format = "MM{window}"
+
+# --- Paths -------------------------------------------------------------------
+
+# [paths]
+# charts_subdir = "charts"
+# outputs_dir = ""   # Vazio = auto-discovery
+# assets_dir = ""    # Vazio = auto-discovery

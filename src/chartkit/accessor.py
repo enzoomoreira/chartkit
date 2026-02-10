@@ -8,7 +8,7 @@ from .engine import ChartingPlotter
 from .transforms.accessor import TransformAccessor
 
 if TYPE_CHECKING:
-    from .engine import ChartKind, UnitFormat
+    from .engine import ChartKind, HighlightInput, UnitFormat
     from .result import PlotResult
 
 
@@ -55,9 +55,11 @@ class ChartingAccessor:
         """Normaliza serie para um valor base em uma data especifica."""
         return TransformAccessor(self._obj).normalize(base, base_date)
 
-    def annualize_daily(self, trading_days: int | None = None) -> TransformAccessor:
-        """Anualiza taxa diaria via juros compostos."""
-        return TransformAccessor(self._obj).annualize_daily(trading_days)
+    def annualize(
+        self, periods: int | None = None, freq: str | None = None
+    ) -> TransformAccessor:
+        """Anualiza taxa periodica via juros compostos."""
+        return TransformAccessor(self._obj).annualize(periods, freq)
 
     def compound_rolling(
         self, window: int | None = None, freq: str | None = None
@@ -86,7 +88,7 @@ class ChartingAccessor:
         title: str | None = None,
         units: UnitFormat | None = None,
         source: str | None = None,
-        highlight: bool = False,
+        highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,

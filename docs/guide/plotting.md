@@ -256,23 +256,29 @@ configure(branding={
 
 ---
 
-## Destacar Ultimo Valor
+## Destacar Valores (highlight)
 
-O parametro `highlight=True` adiciona um marcador e label no ultimo ponto de cada serie:
+O parametro `highlight` adiciona marcadores e labels em pontos especificos de cada serie. Aceita `bool`, string ou lista de modos:
+
+| Valor | Comportamento |
+|-------|---------------|
+| `True` / `'last'` | Destaca o ultimo valor de cada serie |
+| `'max'` | Destaca o valor maximo de cada serie |
+| `'min'` | Destaca o valor minimo de cada serie |
+| `['max', 'min']` | Combina multiplos modos |
+| `False` | Sem destaque (default) |
 
 ```python
-df.chartkit.plot(
-    title="Taxa de Juros",
-    units='%',
-    highlight=True
-)
+# Destacar ultimo valor (equivalentes)
+df.chartkit.plot(title="Taxa de Juros", highlight=True)
+df.chartkit.plot(title="Taxa de Juros", highlight='last')
+
+# Destacar maximo e minimo
+df.chartkit.plot(title="Taxa de Juros", highlight=['max', 'min'])
+
+# Destacar todos: ultimo, maximo e minimo
+df.chartkit.plot(title="Taxa de Juros", highlight=['last', 'max', 'min'])
 ```
-
-Isso e util para:
-
-- Destacar o valor mais recente em series temporais
-- Facilitar a leitura do ultimo dado sem consultar a tabela
-- Apresentacoes e relatorios
 
 ### Exemplo Completo
 
@@ -288,7 +294,7 @@ df.chartkit.plot(
     title="Taxa Selic",
     units='%',
     source='BCB',
-    highlight=True
+    highlight=['last', 'max']
 )
 ```
 

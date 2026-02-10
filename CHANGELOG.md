@@ -1,5 +1,25 @@
 # Project Changelog
 
+## [2026-02-10 03:43]
+### Changed
+- **`highlight` agora suporta modos `last`, `max`, `min`**: Parametro aceita `bool`, string ou lista de modos (ex: `highlight=['max', 'min']`). `True` continua funcionando como atalho para `'last'`
+  - Novo tipo `HighlightInput = bool | HighlightMode | list[HighlightMode]` exportado na API publica
+  - Normalizacao e validacao centralizada em `_normalize_highlight()` no engine
+- **`annualize_daily` renomeado para `annualize`**: Funcao generalizada para qualquer frequencia temporal, nao apenas diaria
+  - Agora aceita `periods=` (override direto) ou `freq=` (resolve via `FREQ_PERIODS_MAP`) em vez de `trading_days=`
+  - Reutiliza `_PctChangeParams` + `resolve_periods()` em vez de validacao propria
+- **Highlight rendering refatorado**: `add_highlight()` agora itera sobre lista de modos, com deduplicacao por indice e posicionamento especifico por modo (max=acima, min=abaixo, last=estilo do chart type)
+
+### Fixed
+- **`_VALID_HIGHLIGHT_MODES` derivado do Literal**: Set agora usa `get_args(HighlightMode)` em vez de valores hardcoded, eliminando duplicacao e risco de dessincronizacao ao adicionar novos modos
+- **Mutable default `[]` em bar/stacked_bar**: Parametro `highlight` trocado de `list = []` (`# noqa: B006`) para `list | None = None` com normalizacao interna, seguindo padrao idiomatico Python
+- **Docstrings de `_PctChangeParams` e modulo `temporal.py`**: Atualizadas para refletir uso por `annualize` alem de `mom`/`yoy`
+
+### Removed
+- **`trading_days_per_year` removido da config**: Campo `TransformsConfig.trading_days_per_year` e `charting.example.toml` `[transforms].trading_days_per_year` eliminados -- resolucao de periodos agora e automatica via frequencia dos dados
+- **`_AnnualizeParams` removido**: Validacao de `annualize` agora usa `_PctChangeParams` existente
+- **`highlight` removido de `_PlotParams`**: Validacao do highlight movida para `_normalize_highlight()` com mensagens de erro especificas
+
 ## [2026-02-10 03:33]
 ### Added
 - **Validacao runtime de parametros do `plot()`**: `highlight`, `units` e `legend` validados via Pydantic `StrictBool`/`Literal` antes de qualquer side effect

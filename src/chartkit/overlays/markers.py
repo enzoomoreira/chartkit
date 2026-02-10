@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -11,10 +11,19 @@ from .._internal.collision import register_moveable
 from ..settings import get_config
 from ..styling.theme import theme
 
+HighlightMode = Literal["last", "max", "min"]
+
+__all__ = [
+    "HighlightMode",
+    "HighlightStyle",
+    "HIGHLIGHT_STYLES",
+    "add_highlight",
+]
+
 
 @dataclass(frozen=True)
 class HighlightStyle:
-    """Estrategia de posicionamento para highlight de ultimo valor."""
+    """Estrategia de posicionamento para highlight por chart type."""
 
     ha: str
     va: str | None  # None = auto-detect pelo sinal do valor
@@ -30,38 +39,115 @@ HIGHLIGHT_STYLES: dict[str, HighlightStyle] = {
 }
 
 
+def _resolve_target(
+    valid_series: pd.Series, mode: HighlightMode
+) -> tuple[Any, float] | None:
+    """Resolve o (indice, valor) alvo para um modo de highlight.
+
+    Retorna ``None`` se o valor nao for finito.
+    """
+    if mode == "last":
+        idx = valid_series.index[-1]
+        val = valid_series.iloc[-1]
+    elif mode == "max":
+        idx = valid_series.idxmax()
+        val = valid_series[idx]
+    else:  # min
+        idx = valid_series.idxmin()
+        val = valid_series[idx]
+
+    if not np.isfinite(val):
+        return None
+    return idx, float(val)
+
+
+def _render_point(
+    ax: Axes,
+    idx: Any,
+    val: float,
+    x: pd.Index | pd.Series | None,
+    ha: str,
+    va: str,
+    label_prefix: str,
+    show_scatter: bool,
+    color: str,
+) -> None:
+    """Renderiza scatter marker + text label para um ponto de highlight."""
+    config = get_config()
+
+    # Resolve posicao X
+    if x is not None and hasattr(x, "get_loc"):
+        try:
+            loc_idx = x.get_loc(idx)
+            x_val = x[loc_idx]
+        except KeyError:
+            x_val = idx
+    else:
+        x_val = idx
+
+    x_pos = cast(float, x_val)
+    y_pos = cast(float, val)
+
+    if show_scatter:
+        ax.scatter(
+            [x_pos],
+            [y_pos],
+            color=color,
+            s=config.markers.scatter_size,
+            zorder=config.layout.zorder.markers,
+        )
+
+    y_fmt = ax.yaxis.get_major_formatter()
+    label_text = y_fmt(val, None)
+
+    if not label_text:
+        label_text = f"{val:.2f}"
+
+    text = ax.text(
+        x_pos,
+        y_pos,
+        f"{label_prefix}{label_text}",
+        ha=ha,
+        va=va,
+        color=color,
+        fontproperties=theme.font,
+        fontweight="bold",
+        zorder=config.layout.zorder.markers,
+    )
+
+    register_moveable(ax, text)
+
+
 def add_highlight(
     ax: Axes,
     series: pd.Series,
     style: str | HighlightStyle = "line",
     color: str | None = None,
     x: pd.Index | pd.Series | None = None,
+    modes: list[HighlightMode] | None = None,
 ) -> None:
-    """Destaca o ultimo ponto valido com label formatado.
+    """Destaca pontos de dados com label formatado.
 
-    Ignora silenciosamente se a serie estiver vazia, toda NaN, ou com
-    ultimo valor infinito.
+    Suporta multiplos modos de selecao (last, max, min). Indices duplicados
+    sao renderizados apenas uma vez. Ignora silenciosamente series vazias,
+    toda NaN, ou com valores nao-finitos.
 
     Args:
         style: Nome de um style registrado em ``HIGHLIGHT_STYLES`` ou
             instancia de ``HighlightStyle``.
         x: Dados X explicitos. Necessario quando a posicao X requer
             resolucao (ex: bar charts com DatetimeIndex).
+        modes: Modos de highlight a aplicar. ``None`` = ``["last"]``.
     """
     if series.empty:
         return
-
-    config = get_config()
 
     valid_series = series.dropna()
     if valid_series.empty:
         return
 
-    last_idx = valid_series.index[-1]
-    last_val = valid_series.iloc[-1]
-
-    if not np.isfinite(last_val):
-        return
+    if modes is None:
+        modes = ["last"]
 
     if color is None:
         color = theme.colors.primary
@@ -74,50 +160,26 @@ def add_highlight(
             )
         style = HIGHLIGHT_STYLES[style]
 
-    # Resolve posicao X
-    if x is not None and hasattr(x, "get_loc"):
-        try:
-            loc_idx = x.get_loc(last_idx)
-            x_val = x[loc_idx]
-        except KeyError:
-            x_val = last_idx
-    else:
-        x_val = last_idx
+    seen_indices: set[object] = set()
 
-    x_pos = cast(float, x_val)
-    y_pos = cast(float, last_val)
+    for mode in modes:
+        target = _resolve_target(valid_series, mode)
+        if target is None:
+            continue
 
-    # Scatter marker
-    if style.show_scatter:
-        ax.scatter(
-            [x_pos],
-            [y_pos],
-            color=color,
-            s=config.markers.scatter_size,
-            zorder=config.layout.zorder.markers,
-        )
+        idx, val = target
+        if idx in seen_indices:
+            continue
+        seen_indices.add(idx)
 
-    # Label formatado
-    y_fmt = ax.yaxis.get_major_formatter()
-    label_text = y_fmt(last_val, None)
+        # Posicionamento: max/min usam centro acima/abaixo; last usa chart-type style
+        if mode in ("max", "min"):
+            ha = "center"
+            va = "bottom" if mode == "max" else "top"
+            prefix = ""
+        else:
+            ha = style.ha
+            prefix = style.label_prefix
+            va = style.va if style.va is not None else ("bottom" if val >= 0 else "top")
 
-    if not label_text:
-        label_text = f"{last_val:.2f}"
-
-    va = style.va
-    if va is None:
-        va = "bottom" if last_val >= 0 else "top"
-
-    text = ax.text(
-        x_pos,
-        y_pos,
-        f"{style.label_prefix}{label_text}",
-        ha=style.ha,
-        va=va,
-        color=color,
-        fontproperties=theme.font,
-        fontweight="bold",
-        zorder=config.layout.zorder.markers,
-    )
-
-    register_moveable(ax, text)
+        _render_point(ax, idx, val, x, ha, va, prefix, style.show_scatter, color)

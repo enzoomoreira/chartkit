@@ -1,4 +1,6 @@
-from typing import Literal
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
@@ -11,6 +13,9 @@ from ..styling.theme import theme
 from ._helpers import detect_bar_width
 from .registry import ChartRegistry
 
+if TYPE_CHECKING:
+    from ..overlays.markers import HighlightMode
+
 __all__ = ["plot_stacked_bar"]
 
 
@@ -19,7 +24,7 @@ def plot_stacked_bar(
     ax: Axes,
     x: pd.Index | pd.Series,
     y_data: pd.Series | pd.DataFrame,
-    highlight: bool = False,
+    highlight: list[HighlightMode] | None = None,
     y_origin: Literal["zero", "auto"] = "zero",
     **kwargs,
 ) -> None:
@@ -85,4 +90,4 @@ def plot_stacked_bar(
     if highlight:
         total = y_data.sum(axis=1)
         color = user_color if user_color is not None else theme.colors.primary
-        add_highlight(ax, total, style="bar", color=color, x=x)
+        add_highlight(ax, total, style="bar", color=color, x=x, modes=highlight)

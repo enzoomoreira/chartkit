@@ -64,7 +64,7 @@ df.chartkit.plot(title="Grafico").save("grafico.png")
 df.chartkit.yoy().plot(title="Variacao YoY", units='%')
 
 # Encadeamento multiplo
-df.chartkit.annualize_daily().plot(metrics=['ath']).save('chart.png')
+df.chartkit.annualize().plot(metrics=['ath']).save('chart.png')
 ```
 
 ### Adicionando Metricas

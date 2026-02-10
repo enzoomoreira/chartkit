@@ -1,4 +1,6 @@
-from typing import cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 import pandas as pd
 from matplotlib.axes import Axes
@@ -8,13 +10,16 @@ from ..settings import get_config
 from ..styling.theme import theme
 from .registry import ChartRegistry
 
+if TYPE_CHECKING:
+    from ..overlays.markers import HighlightMode
+
 
 @ChartRegistry.register("line")
 def plot_line(
     ax: Axes,
     x: pd.Index | pd.Series,
     y_data: pd.Series | pd.DataFrame,
-    highlight: bool,
+    highlight: list[HighlightMode],
     **kwargs,
 ) -> None:
     """Plota series temporais como grafico de linha.
@@ -54,4 +59,6 @@ def plot_line(
         plot_lines.append(line)
 
         if highlight:
-            add_highlight(ax, cast(pd.Series, y_data[col]), style="line", color=c)
+            add_highlight(
+                ax, cast(pd.Series, y_data[col]), style="line", color=c, modes=highlight
+            )

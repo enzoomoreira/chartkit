@@ -9,7 +9,8 @@ from ._internal import register_fixed, register_moveable, register_passive
 from ._logging import configure_logging
 from .accessor import ChartingAccessor
 from .charts import ChartRegistry
-from .engine import ChartingPlotter, ChartKind, UnitFormat
+from .engine import ChartingPlotter, ChartKind, HighlightInput, UnitFormat
+from .overlays.markers import HighlightMode
 from .exceptions import ChartKitError, TransformError
 from .metrics import MetricRegistry
 from .result import PlotResult
@@ -26,7 +27,7 @@ from .styling.theme import theme
 from .transforms import TransformAccessor
 from .transforms import (
     accum,
-    annualize_daily,
+    annualize,
     compound_rolling,
     diff,
     drawdown,
@@ -66,6 +67,8 @@ __all__ = [
     "register_passive",
     # Types
     "ChartKind",
+    "HighlightInput",
+    "HighlightMode",
     "UnitFormat",
     # Classes principais
     "ChartingAccessor",
@@ -84,7 +87,7 @@ __all__ = [
     "accum",
     "diff",
     "normalize",
-    "annualize_daily",
+    "annualize",
     "compound_rolling",
     "drawdown",
     "zscore",

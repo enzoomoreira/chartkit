@@ -17,7 +17,7 @@ def plot(
     title: str | None = None,
     units: UnitFormat | None = None,
     source: str | None = None,
-    highlight: bool = False,
+    highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
     fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
@@ -35,7 +35,7 @@ def plot(
 | `title` | `str \| None` | `None` | Titulo do grafico |
 | `units` | `UnitFormat \| None` | `None` | Formatacao do eixo Y (ver tabela abaixo) |
 | `source` | `str \| None` | `None` | Fonte dos dados para rodape. Quando `None`, usa `branding.default_source` como fallback |
-| `highlight` | `bool` | `False` | Destaca ultimo valor de cada serie |
+| `highlight` | `HighlightInput` | `False` | Modo(s) de destaque. `True` / `'last'` = ultimo valor; `'max'` / `'min'` = extremos. Aceita lista para combinar modos (ex: `['max', 'min']`) |
 | `metrics` | `str \| list[str] \| None` | `None` | Metrica(s) a aplicar (string ou lista) |
 | `fill_between` | `tuple[str, str] \| None` | `None` | Tupla `(col1, col2)` para sombrear area entre duas colunas |
 | `legend` | `bool \| None` | `None` | Controle da legenda. `None` = auto (mostra com 2+ artists), `True` = forca, `False` = suprime |
@@ -62,6 +62,8 @@ Metricas suportam label customizado via sintaxe `|`: `'ath|Maximo'`, `'ma:12@col
 ```python
 ChartKind = Literal["line", "bar", "stacked_bar"]
 UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
+HighlightMode = Literal["last", "max", "min"]
+HighlightInput = bool | HighlightMode | list[HighlightMode]
 ```
 
 ---
@@ -117,7 +119,7 @@ Accessor encadeavel para transformacoes. Cada metodo retorna novo `TransformAcce
 | `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normaliza serie (default: `config.transforms.normalize_base`) |
 | `drawdown()` | `drawdown() -> TransformAccessor` | Distancia percentual do pico historico |
 | `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Padronizacao estatistica (global ou rolling) |
-| `annualize_daily()` | `annualize_daily(trading_days: int \| None = None) -> TransformAccessor` | Anualiza taxa diaria (default: `config.transforms.trading_days_per_year`) |
+| `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Anualiza taxa periodica via juros compostos (auto-detect de frequencia) |
 | `compound_rolling()` | `compound_rolling(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Retorno composto (auto-detect de frequencia) |
 | `to_month_end()` | `to_month_end() -> TransformAccessor` | Normaliza indice para fim do mes |
 | `plot()` | `plot(**kwargs) -> PlotResult` | Finaliza cadeia e plota |
@@ -151,7 +153,7 @@ Sistema plugavel de chart types via decorator.
 from chartkit.charts.registry import ChartRegistry
 
 @ChartRegistry.register("scatter")
-def plot_scatter(ax, x, y_data, highlight=False, **kwargs):
+def plot_scatter(ax, x, y_data, highlight=None, **kwargs):
     ...
 ```
 
@@ -187,7 +189,7 @@ def plot(
     title: str | None = None,
     units: UnitFormat | None = None,
     source: str | None = None,
-    highlight: bool = False,
+    highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
     fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
@@ -415,7 +417,6 @@ class ChartingConfig(BaseSettings):
 
 | Campo | Tipo | Default |
 |-------|------|---------|
-| `trading_days_per_year` | `int` | `252` |
 | `normalize_base` | `int` | `100` |
 | `rolling_window` | `int` | `12` |
 
@@ -472,7 +473,7 @@ class ChartingConfig(BaseSettings):
 - Parametros mutuamente exclusivos (`periods` e `freq`) sao passados simultaneamente
 
 `ValueError` e levantado quando:
-- `plot()` recebe tipo incorreto em `highlight` ou `legend` (ex: string, int, lista em vez de bool)
+- `plot()` recebe modo invalido em `highlight` (ex: `"banana"` em vez de `"last"`, `"max"` ou `"min"`)
 - `plot()` recebe valor invalido em `units` (ex: `"EUR"` em vez de `"BRL"`)
 - `y_origin` recebe valor fora de `"zero"` / `"auto"` em graficos de barras
 - `add_highlight()` recebe `style` nao registrado em `HIGHLIGHT_STYLES`
@@ -502,6 +503,8 @@ from chartkit import (
 
     # Types
     ChartKind,
+    HighlightInput,
+    HighlightMode,
     UnitFormat,
 
     # Classes principais
@@ -525,7 +528,7 @@ from chartkit import (
     normalize,
     drawdown,
     zscore,
-    annualize_daily,
+    annualize,
     compound_rolling,
     to_month_end,
 )

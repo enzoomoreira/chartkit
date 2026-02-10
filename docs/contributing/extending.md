@@ -232,6 +232,10 @@ A funcao deve seguir o protocolo `ChartFunc`:
 ```python
 # Em src/chartkit/charts/scatter.py
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pandas as pd
 from matplotlib.axes import Axes
 
@@ -239,13 +243,16 @@ from ..settings import get_config
 from ..styling.theme import theme
 from .registry import ChartRegistry
 
+if TYPE_CHECKING:
+    from ..overlays.markers import HighlightMode
+
 
 @ChartRegistry.register("scatter")
 def plot_scatter(
     ax: Axes,
     x: pd.Index | pd.Series,
     y_data: pd.DataFrame | pd.Series,
-    highlight: bool = False,
+    highlight: list[HighlightMode] | None = None,
     size: int = 50,
     alpha: float = 0.7,
     **kwargs,

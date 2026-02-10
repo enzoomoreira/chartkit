@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 import pandas as pd
 from matplotlib.axes import Axes
+
+if TYPE_CHECKING:
+    from ..overlays.markers import HighlightMode
 
 __all__ = ["ChartFunc", "ChartRegistry"]
 
@@ -16,7 +19,7 @@ class ChartFunc(Protocol):
         ax: Axes,
         x: pd.Index | pd.Series,
         y_data: pd.Series | pd.DataFrame,
-        highlight: bool,
+        highlight: list[HighlightMode],
         **kwargs: Any,
     ) -> None: ...
 

@@ -13,7 +13,7 @@ Funcoes de transformacao para series temporais financeiras.
 | `normalize()` | Normaliza para base | Comparar escalas |
 | `drawdown()` | Distancia percentual do pico | Queda de ativos |
 | `zscore()` | Padronizacao estatistica | Comparar series |
-| `annualize_daily()` | Anualiza taxa diaria | CDI anual |
+| `annualize()` | Anualiza taxa periodica | CDI anual |
 | `compound_rolling()` | Retorno composto | Selic 12m |
 | `to_month_end()` | Normaliza para fim do mes | Alinhar series |
 
@@ -23,7 +23,7 @@ Funcoes de transformacao para series temporais financeiras.
 from chartkit import (
     yoy, mom, accum, diff, normalize,
     drawdown, zscore,
-    annualize_daily, compound_rolling, to_month_end,
+    annualize, compound_rolling, to_month_end,
 )
 ```
 
@@ -44,7 +44,7 @@ df.chartkit.yoy().plot(title="Variacao YoY")
 df.chartkit.yoy().mom().plot()
 
 # Com metricas e salvamento
-df.chartkit.annualize_daily().plot(metrics=['ath']).save('chart.png')
+df.chartkit.annualize().plot(metrics=['ath']).save('chart.png')
 
 # Acesso ao DataFrame transformado (sem plotar)
 df_transformed = df.chartkit.yoy().df
@@ -350,34 +350,41 @@ df.chartkit.zscore().plot(title="Ibovespa vs S&P 500 (Z-Score)")
 
 ## Transformacoes de Juros
 
-### annualize_daily() - Anualizar Taxa Diaria
+### annualize() - Anualizar Taxa Periodica
 
-Anualiza taxa diaria para taxa anual usando juros compostos.
+Anualiza taxa periodica para taxa anual usando juros compostos. O numero de periodos por ano e resolvido automaticamente pela frequencia dos dados (ex: 252 para diario, 12 para mensal). Suporta auto-deteccao de frequencia.
 
-**Formula:** `((1 + r_diaria) ^ dias_uteis - 1) * 100`
+**Formula:** `((1 + r/100) ^ periods_per_year - 1) * 100`
 
 ```python
-def annualize_daily(df, trading_days: int = 252) -> DataFrame | Series
+def annualize(df, periods: int | None = None, freq: str | None = None) -> DataFrame | Series
 ```
 
 | Parametro | Tipo | Default | Descricao |
 |-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Taxas diarias em % |
-| `trading_days` | int | 252 | Dias uteis no ano |
+| `df` | DataFrame \| Series | - | Taxas em % |
+| `periods` | int \| None | None | Periodos por ano para composicao. Mutuamente exclusivo com `freq` |
+| `freq` | str \| None | None | Frequencia dos dados (`'D'`, `'B'`, `'M'`, `'Q'`, etc.). Mutuamente exclusivo com `periods` |
 
 **Exemplo:**
 
 ```python
-from chartkit import annualize_daily
+from chartkit import annualize
 
-# CDI diario -> CDI anualizado
-cdi_anual = annualize_daily(cdi_diario)
+# CDI diario -> CDI anualizado (auto-detect: diario -> 252 periodos)
+cdi_anual = annualize(cdi_diario)
 
-# Usando 250 dias uteis
-cdi_anual = annualize_daily(cdi_diario, trading_days=250)
+# Frequencia explicita
+cdi_anual = annualize(cdi_diario, freq='B')  # Business days: 252 periodos
+
+# Periodos explicitos
+cdi_anual = annualize(cdi_diario, periods=252)
+
+# Taxa mensal -> anualizada (auto-detect: mensal -> 12 periodos)
+taxa_anual = annualize(taxa_mensal)
 
 # Via accessor
-cdi_diario.chartkit.annualize_daily().plot(
+cdi_diario.chartkit.annualize().plot(
     title="CDI Anualizado",
     units='%'
 )
@@ -495,7 +502,7 @@ Converter taxa diaria do CDI/Selic para equivalente anual:
 
 ```python
 # CDI diario (ex: 0.0398, 0.0399, ...)
-cdi.chartkit.annualize_daily().plot(
+cdi.chartkit.annualize().plot(
     title="CDI - Taxa Anual Equivalente",
     units='%'
 )
@@ -544,13 +551,13 @@ Multiplas transformacoes em sequencia:
 ```python
 # Taxa diaria -> anualizada -> variacao YoY
 cdi_diario.chartkit \
-    .annualize_daily() \
+    .annualize() \
     .yoy() \
     .plot(title="CDI Anualizado - Variacao YoY")
 
 # Acessar dados transformados sem plotar
 df_final = cdi_diario.chartkit \
-    .annualize_daily() \
+    .annualize() \
     .to_month_end() \
     .df
 

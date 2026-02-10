@@ -4,8 +4,8 @@ Todas as funcoes seguem o contrato:
 - Aceitam DataFrame, Series, dict, list ou ndarray (coercao automatica).
 - Validam que dados sao numericos (warning + filtragem para non-numeric).
 - Protegem contra inf (substituem por NaN no resultado).
-- Funcoes que dependem de frequencia (mom, yoy, accum, compound_rolling) resolvem
-  periods via auto-detect ou exigem freq=/periods= explicito.
+- Funcoes que dependem de frequencia (mom, yoy, accum, annualize, compound_rolling)
+  resolvem periods via auto-detect ou exigem freq=/periods= explicito.
 """
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ import pandas as pd
 from ..exceptions import TransformError
 from ..settings import get_config
 from ._validation import (
-    _AnnualizeParams,
     _NormalizeParams,
     _PctChangeParams,
     _RollingParams,
@@ -262,38 +261,43 @@ def normalize(
 
 
 # ---------------------------------------------------------------------------
-# annualize_daily -- anualizacao de taxa diaria
+# annualize -- anualizacao de taxa periodica
 # ---------------------------------------------------------------------------
 
 
 @overload
-def annualize_daily(
-    df: pd.DataFrame, trading_days: int | None = None
+def annualize(
+    df: pd.DataFrame, periods: int | None = None, freq: str | None = None
 ) -> pd.DataFrame: ...
 @overload
-def annualize_daily(df: pd.Series, trading_days: int | None = None) -> pd.Series: ...
-def annualize_daily(
+def annualize(
+    df: pd.Series, periods: int | None = None, freq: str | None = None
+) -> pd.Series: ...
+def annualize(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
-    trading_days: int | None = None,
+    periods: int | None = None,
+    freq: str | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Anualiza taxa diaria via juros compostos.
+    """Anualiza taxa periodica via juros compostos.
 
-    Formula: ``((1 + r/100) ^ dias_uteis - 1) * 100``
+    Formula: ``((1 + r/100) ^ periods_per_year - 1) * 100``
+
+    O numero de periodos por ano e resolvido automaticamente pela
+    frequencia dos dados (ex: 252 para diario, 12 para mensal).
+    Use ``periods=`` ou ``freq=`` para override.
 
     Args:
-        df: Dados de entrada (taxas diarias em percentual).
-        trading_days: Dias uteis no ano (default: config ``trading_days_per_year``).
+        df: Dados de entrada (taxas em percentual).
+        periods: Numero de periodos por ano para composicao.
+            Mutuamente exclusivo com ``freq``.
+        freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
+            Mutuamente exclusivo com ``periods``.
     """
-    params = validate_params(_AnnualizeParams, trading_days=trading_days)
+    params = validate_params(_PctChangeParams, periods=periods, freq=freq)
     data = validate_numeric(coerce_input(df))
-
-    days = (
-        params.trading_days
-        if params.trading_days is not None
-        else get_config().transforms.trading_days_per_year
-    )
+    resolved = resolve_periods(data, "annualize", params.periods, params.freq)
     rate_decimal = data / 100
-    annualized = (1 + rate_decimal) ** days - 1
+    annualized = (1 + rate_decimal) ** resolved - 1
     return sanitize_result(annualized * 100)
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, cast, get_args
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -13,7 +13,7 @@ from ._internal import resolve_collisions
 from .charts import ChartRegistry
 from .decorations import add_footer
 from .metrics import MetricRegistry
-from .overlays import add_fill_between
+from .overlays import HighlightMode, add_fill_between
 from .result import PlotResult
 from .settings import get_charts_path, get_config
 from .styling import (
@@ -27,6 +27,7 @@ from .styling import (
 
 ChartKind = Literal["line", "bar", "stacked_bar"]
 UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
+HighlightInput = bool | HighlightMode | list[HighlightMode]
 
 _FORMATTERS = {
     "BRL": lambda: currency_formatter("BRL"),
@@ -38,9 +39,31 @@ _FORMATTERS = {
     "points": points_formatter,
 }
 
+_VALID_HIGHLIGHT_MODES: set[str] = set(get_args(HighlightMode))
+
+
+def _normalize_highlight(highlight: HighlightInput) -> list[HighlightMode]:
+    if highlight is True:
+        return ["last"]
+    if highlight is False:
+        return []
+    if isinstance(highlight, str):
+        if highlight not in _VALID_HIGHLIGHT_MODES:
+            available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
+            raise ValueError(
+                f"Highlight mode '{highlight}' invalido. Disponiveis: {available}"
+            )
+        return [cast(HighlightMode, highlight)]
+    modes: list[HighlightMode] = []
+    for m in highlight:
+        if m not in _VALID_HIGHLIGHT_MODES:
+            available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
+            raise ValueError(f"Highlight mode '{m}' invalido. Disponiveis: {available}")
+        modes.append(cast(HighlightMode, m))
+    return modes
+
 
 class _PlotParams(BaseModel):
-    highlight: StrictBool = False
     units: UnitFormat | None = None
     legend: StrictBool | None = None
 
@@ -62,7 +85,7 @@ class ChartingPlotter:
         title: str | None = None,
         units: UnitFormat | None = None,
         source: str | None = None,
-        highlight: bool = False,
+        highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
@@ -78,7 +101,9 @@ class ChartingPlotter:
             units: Formatacao do eixo Y.
             source: Fonte dos dados exibida no rodape. Sobrescreve
                 ``branding.default_source`` do config quando fornecido.
-            highlight: Destaca o ultimo ponto de dados no grafico.
+            highlight: Modo(s) de destaque de pontos. ``True`` ou ``'last'``
+                destaca o ultimo ponto; ``'max'``/``'min'`` destaca
+                maximo/minimo. Aceita lista para combinar modos.
             metrics: Metrica(s) declarativas. Use ``|`` para label customizado
                 na legenda (ex: ``'ath|Maximo'``, ``'ma:12@col|Media 12M'``).
             fill_between: Tupla ``(col1, col2)`` para sombrear area entre
@@ -88,7 +113,8 @@ class ChartingPlotter:
             **kwargs: Parametros chart-specific (ex: ``y_origin='auto'`` para barras)
                 e parametros matplotlib passados diretamente ao renderer.
         """
-        self._validate_params(highlight=highlight, units=units, legend=legend)
+        highlight_modes = _normalize_highlight(highlight)
+        self._validate_params(units=units, legend=legend)
         config = get_config()
 
         # 1. Style
@@ -112,7 +138,7 @@ class ChartingPlotter:
 
         # 4. Plot
         chart_fn = ChartRegistry.get(kind)
-        chart_fn(ax, x_data, y_data, highlight=highlight, **kwargs)
+        chart_fn(ax, x_data, y_data, highlight=highlight_modes, **kwargs)
 
         # 5. Metrics
         if metrics:
@@ -138,13 +164,11 @@ class ChartingPlotter:
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
 
     @staticmethod
-    def _validate_params(
-        highlight: bool, units: UnitFormat | None, legend: bool | None
-    ) -> None:
+    def _validate_params(units: UnitFormat | None, legend: bool | None) -> None:
         from pydantic import ValidationError
 
         try:
-            _PlotParams(highlight=highlight, units=units, legend=legend)
+            _PlotParams(units=units, legend=legend)
         except ValidationError as exc:
             errors = exc.errors()
             msgs = [
