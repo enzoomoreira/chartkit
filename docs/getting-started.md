@@ -60,8 +60,8 @@ df.chartkit.plot(title="Grafico").save("grafico.png")
 ### Usando Transforms
 
 ```python
-# Calcular variacao ano-a-ano e plotar
-df.chartkit.yoy().plot(title="Variacao YoY", units='%')
+# Calcular variacao anual e plotar
+df.chartkit.variation(horizon='year').plot(title="Variacao Anual", units='%')
 
 # Encadeamento multiplo
 df.chartkit.annualize().plot(metrics=['ath']).save('chart.png')

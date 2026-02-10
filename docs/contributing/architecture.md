@@ -51,7 +51,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
 
 2. **ChartingAccessor**: Registrado via `@pd.api.extensions.register_dataframe_accessor("chartkit")` e `@pd.api.extensions.register_series_accessor("chartkit")`. Funciona como ponto de entrada para todas as operacoes. Series sao convertidas para DataFrame internamente.
 
-3. **TransformAccessor** (opcional): Quando o usuario chama transforms como `.yoy()`, `.mom()`, etc., um TransformAccessor e retornado. Cada transform retorna um novo TransformAccessor, permitindo encadeamento.
+3. **TransformAccessor** (opcional): Quando o usuario chama transforms como `.variation()`, `.accum()`, etc., um TransformAccessor e retornado. Cada transform retorna um novo TransformAccessor, permitindo encadeamento.
 
 4. **ChartingPlotter**: Motor principal que orquestra a criacao do grafico:
    - Aplica tema via `theme.apply()`
@@ -142,7 +142,7 @@ src/chartkit/
 │   └── builtin.py        # Metricas padrao (ath, atl, ma, hline, band, target, std_band, vband)
 │
 ├── transforms/           # Transformacoes temporais
-│   ├── __init__.py       # Facade: yoy, mom, accum, drawdown, zscore, etc.
+│   ├── __init__.py       # Facade: variation, accum, drawdown, zscore, etc.
 │   ├── temporal.py       # Implementacoes das funcoes de transformacao
 │   ├── _validation.py    # Validacao, coercao e resolucao de frequencia
 │   └── accessor.py       # TransformAccessor para encadeamento
@@ -204,7 +204,7 @@ src/chartkit/
 
 | Modulo | Responsabilidade |
 |--------|-----------------|
-| `temporal.py` | Funcoes puras de transformacao (yoy, mom, accum, drawdown, zscore, etc.) |
+| `temporal.py` | Funcoes puras de transformacao (variation, accum, drawdown, zscore, etc.) |
 | `accessor.py` | TransformAccessor para encadeamento de transforms |
 
 ---

@@ -6,24 +6,22 @@ Funcoes de transformacao para series temporais financeiras.
 
 | Funcao | Descricao | Uso tipico |
 |--------|-----------|------------|
-| `mom()` | Variacao mes contra mes | IPCA mensal |
-| `yoy()` | Variacao ano contra ano | Crescimento anual |
-| `accum()` | Acumulado em janela movel | IPCA 12m |
+| `variation()` | Variacao percentual por horizonte | IPCA mensal, crescimento anual |
+| `accum()` | Acumulado em janela movel | IPCA 12m, Selic 12m |
 | `diff()` | Diferenca absoluta | Variacao em p.p. |
 | `normalize()` | Normaliza para base | Comparar escalas |
 | `drawdown()` | Distancia percentual do pico | Queda de ativos |
 | `zscore()` | Padronizacao estatistica | Comparar series |
 | `annualize()` | Anualiza taxa periodica | CDI anual |
-| `compound_rolling()` | Retorno composto | Selic 12m |
 | `to_month_end()` | Normaliza para fim do mes | Alinhar series |
 
 ## Import
 
 ```python
 from chartkit import (
-    yoy, mom, accum, diff, normalize,
+    variation, accum, diff, normalize,
     drawdown, zscore,
-    annualize, compound_rolling, to_month_end,
+    annualize, to_month_end,
 )
 ```
 
@@ -38,16 +36,13 @@ import pandas as pd
 df = pd.read_csv('dados.csv', index_col=0, parse_dates=True)
 
 # Encadeamento simples
-df.chartkit.yoy().plot(title="Variacao YoY")
-
-# Multiplos transforms em cadeia
-df.chartkit.yoy().mom().plot()
+df.chartkit.variation(horizon='year').plot(title="Variacao Anual")
 
 # Com metricas e salvamento
 df.chartkit.annualize().plot(metrics=['ath']).save('chart.png')
 
 # Acesso ao DataFrame transformado (sem plotar)
-df_transformed = df.chartkit.yoy().df
+df_transformed = df.chartkit.variation(horizon='year').df
 ```
 
 O accessor retorna um `TransformAccessor` que permite encadear quantas transformacoes forem necessarias antes de finalizar com `.plot()` ou acessar o DataFrame via `.df`.
@@ -63,20 +58,20 @@ A coercao e feita internamente. Colunas nao-numericas sao filtradas com warning,
 
 ## Auto-Deteccao de Frequencia
 
-As funcoes `mom`, `yoy`, `accum` e `compound_rolling` detectam automaticamente a frequencia dos dados via `pd.infer_freq`, resolvendo o numero de periodos adequado (ex: 12 para dados mensais, 252 para diarios).
+As funcoes `variation`, `accum` e `annualize` detectam automaticamente a frequencia dos dados via `pd.infer_freq`, resolvendo o numero de periodos adequado (ex: 12 para dados mensais, 252 para diarios).
 
 Voce pode usar o parametro `freq=` como alternativa a `periods=`/`window=`:
 
 ```python
 # Auto-detect (usa pd.infer_freq)
-df_yoy = yoy(df)
+df_var = variation(df, horizon='year')
 
 # Frequencia explicita
-df_yoy = yoy(df, freq='M')    # Mensal: 12 periodos
-df_yoy = yoy(df, freq='Q')    # Trimestral: 4 periodos
+df_var = variation(df, horizon='year', freq='M')    # Mensal: 12 periodos
+df_var = variation(df, horizon='year', freq='Q')    # Trimestral: 4 periodos
 
 # Periodos explicitos (mutuamente exclusivo com freq)
-df_yoy = yoy(df, periods=4)   # Override direto
+df_var = variation(df, horizon='year', periods=4)   # Override direto
 ```
 
 Frequencias suportadas: `D`, `B`, `W`, `M`, `Q`, `Y` (incluindo aliases e freq codes ancorados do pandas).
@@ -85,85 +80,58 @@ Frequencias suportadas: `D`, `B`, `W`, `M`, `Q`, `Y` (incluindo aliases e freq c
 
 ## Transformacoes Basicas
 
-### mom() - Variacao Mensal
+### variation() - Variacao Percentual
 
-Calcula variacao percentual mes contra mes (Month-over-Month). A frequencia e detectada automaticamente; use `freq=` ou `periods=` para override.
+Calcula variacao percentual entre periodos com horizonte configuravel. O `horizon` determina o numero de periodos de comparacao com base na frequencia dos dados (ex: `'month'` em dados mensais -> 1 periodo, `'year'` em dados mensais -> 12 periodos).
 
 ```python
-def mom(df, periods: int | None = None, freq: str | None = None) -> DataFrame | Series
+def variation(df, horizon: str = "month", periods: int | None = None, freq: str | None = None) -> DataFrame | Series
 ```
 
 | Parametro | Tipo | Default | Descricao |
 |-----------|------|---------|-----------|
 | `df` | DataFrame \| Series | - | Dados de entrada |
-| `periods` | int \| None | None | Periodos para comparacao. Mutuamente exclusivo com `freq` |
+| `horizon` | str | `"month"` | Horizonte de comparacao: `'month'` ou `'year'` |
+| `periods` | int \| None | None | Override do numero de periodos. Mutuamente exclusivo com `freq` |
 | `freq` | str \| None | None | Frequencia dos dados (`'D'`, `'M'`, `'Q'`, etc.). Mutuamente exclusivo com `periods` |
 
 **Exemplo:**
 
 ```python
 import pandas as pd
-from chartkit import mom
+from chartkit import variation
 
 # Dados mensais
 df = pd.DataFrame({
     'valor': [100, 102, 101, 105]
 }, index=pd.date_range('2024-01', periods=4, freq='ME'))
 
-# Variacao mensal em % (auto-detect: dados mensais -> periods=1)
-df_mom = mom(df)
+# Variacao mensal (auto-detect: dados mensais -> periods=1)
+df_mom = variation(df)
 # Resultado: [NaN, 2.0, -0.98, 3.96]
 
-# Frequencia explicita
-df_mom = mom(df, freq='M')
+# Variacao anual (auto-detect: dados mensais -> periods=12)
+df_yoy = variation(df, horizon='year')
 
-# Via accessor
-df.chartkit.mom().plot(title="Variacao Mensal")
-```
-
----
-
-### yoy() - Variacao Anual
-
-Calcula variacao percentual ano contra ano (Year-over-Year). A frequencia e detectada automaticamente; use `freq=` ou `periods=` para override.
-
-```python
-def yoy(df, periods: int | None = None, freq: str | None = None) -> DataFrame | Series
-```
-
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Dados de entrada |
-| `periods` | int \| None | None | Periodos para comparacao. Mutuamente exclusivo com `freq` |
-| `freq` | str \| None | None | Frequencia dos dados (`'D'`, `'M'`, `'Q'`, etc.). Mutuamente exclusivo com `periods` |
-
-**Exemplo:**
-
-```python
-from chartkit import yoy
-
-# Dados mensais (auto-detect: mensal -> 12 periodos)
-df_yoy = yoy(df)
-
-# Dados trimestrais (auto-detect: trimestral -> 4 periodos)
-df_yoy = yoy(df_trimestral)
+# Dados trimestrais + horizonte anual (auto-detect: trimestral -> 4 periodos)
+df_yoy = variation(df_trimestral, horizon='year')
 
 # Frequencia explicita
-df_yoy = yoy(df, freq='Q')  # Trimestral: 4 periodos
+df_yoy = variation(df, horizon='year', freq='Q')  # Trimestral: 4 periodos
 
 # Periodos explicitos
-df_yoy = yoy(df, periods=4)
+df_yoy = variation(df, horizon='year', periods=4)
 
 # Via accessor
-df.chartkit.yoy().plot(title="Variacao Anual")
-df.chartkit.yoy(freq='Q').plot()  # Trimestral
+df.chartkit.variation(horizon='month').plot(title="Variacao Mensal")
+df.chartkit.variation(horizon='year').plot(title="Variacao Anual")
 ```
 
 ---
 
 ### accum() - Acumulado em Janela Movel
 
-Calcula variacao acumulada via produto composto em janela movel. A janela e resolvida automaticamente pela frequencia dos dados (ex: 12 para mensal, 252 para diario).
+Calcula variacao acumulada via produto composto em janela movel. A janela e resolvida pela seguinte precedencia: `window=` explicito > `freq=` explicito > auto-detect via `pd.infer_freq` > fallback para `config.transforms.accum_window` (default: 12).
 
 **Formula:** `(Produto(1 + x/100) - 1) * 100`
 
@@ -392,45 +360,6 @@ cdi_diario.chartkit.annualize().plot(
 
 ---
 
-### compound_rolling() - Retorno Composto
-
-Calcula retorno composto em janela movel. Multiplica os fatores (1 + taxa) ao longo da janela. Suporta auto-deteccao de frequencia.
-
-**Formula:** `Produto(1 + taxa/100) - 1`
-
-```python
-def compound_rolling(df, window: int | None = None, freq: str | None = None) -> DataFrame | Series
-```
-
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Taxas em % |
-| `window` | int \| None | None | Janela em periodos. Mutuamente exclusivo com `freq` |
-| `freq` | str \| None | None | Frequencia dos dados (`'D'`, `'M'`, `'Q'`, etc.). Mutuamente exclusivo com `window` |
-
-**Exemplo:**
-
-```python
-from chartkit import compound_rolling
-
-# Selic mensal -> Selic acumulada 12 meses (auto-detect)
-selic_12m = compound_rolling(selic_mensal)
-
-# Janela de 6 meses
-selic_6m = compound_rolling(selic_mensal, window=6)
-
-# Frequencia explicita
-selic_12m = compound_rolling(selic_mensal, freq='M')
-
-# Via accessor
-selic_mensal.chartkit.compound_rolling().plot(
-    title="Selic Acumulada 12 Meses",
-    units='%'
-)
-```
-
----
-
 ### to_month_end() - Normalizar para Fim do Mes
 
 Normaliza indice temporal para ultimo dia do mes. Util para alinhar series com frequencias diferentes antes de operacoes. Raises `TypeError` se o indice nao for `DatetimeIndex`.
@@ -513,14 +442,14 @@ cdi.chartkit.annualize().plot(
 Calcular spread entre taxa nominal e inflacao:
 
 ```python
-from chartkit import to_month_end, compound_rolling, accum
+from chartkit import to_month_end, accum
 
 # Alinhar frequencias
 selic = to_month_end(selic_mensal)
 ipca = to_month_end(ipca_mensal)
 
 # Calcular acumulados 12 meses
-selic_12m = compound_rolling(selic)
+selic_12m = accum(selic)
 ipca_12m = accum(ipca)
 
 # Spread (aproximacao simplificada)
@@ -531,14 +460,14 @@ juro_real.chartkit.plot(
 )
 ```
 
-### Variacao YoY com Destaque de Metricas
+### Variacao Anual com Destaque de Metricas
 
 Analisar variacao anual com metricas automaticas:
 
 ```python
 # PIB ou outro indicador economico
-pib.chartkit.yoy().plot(
-    title="Crescimento do PIB (YoY)",
+pib.chartkit.variation(horizon='year').plot(
+    title="Crescimento do PIB (Anual)",
     metrics=['ath', 'atl', 'last'],
     units='%'
 )
@@ -549,11 +478,11 @@ pib.chartkit.yoy().plot(
 Multiplas transformacoes em sequencia:
 
 ```python
-# Taxa diaria -> anualizada -> variacao YoY
+# Taxa diaria -> anualizada -> variacao anual
 cdi_diario.chartkit \
     .annualize() \
-    .yoy() \
-    .plot(title="CDI Anualizado - Variacao YoY")
+    .variation(horizon='year') \
+    .plot(title="CDI Anualizado - Variacao Anual")
 
 # Acessar dados transformados sem plotar
 df_final = cdi_diario.chartkit \

@@ -27,17 +27,14 @@ class ChartingAccessor:
             pandas_obj.to_frame() if isinstance(pandas_obj, pd.Series) else pandas_obj
         )
 
-    def yoy(
-        self, periods: int | None = None, freq: str | None = None
+    def variation(
+        self,
+        horizon: str = "month",
+        periods: int | None = None,
+        freq: str | None = None,
     ) -> TransformAccessor:
-        """Variacao percentual anual (Year-over-Year)."""
-        return TransformAccessor(self._obj).yoy(periods, freq)
-
-    def mom(
-        self, periods: int | None = None, freq: str | None = None
-    ) -> TransformAccessor:
-        """Variacao percentual mensal (Month-over-Month)."""
-        return TransformAccessor(self._obj).mom(periods, freq)
+        """Variacao percentual entre periodos."""
+        return TransformAccessor(self._obj).variation(horizon, periods, freq)
 
     def accum(
         self, window: int | None = None, freq: str | None = None
@@ -60,12 +57,6 @@ class ChartingAccessor:
     ) -> TransformAccessor:
         """Anualiza taxa periodica via juros compostos."""
         return TransformAccessor(self._obj).annualize(periods, freq)
-
-    def compound_rolling(
-        self, window: int | None = None, freq: str | None = None
-    ) -> TransformAccessor:
-        """Retorno composto em janela movel."""
-        return TransformAccessor(self._obj).compound_rolling(window, freq)
 
     def drawdown(self) -> TransformAccessor:
         """Distancia percentual do pico historico."""

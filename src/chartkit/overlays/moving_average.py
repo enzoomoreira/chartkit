@@ -21,6 +21,9 @@ def add_moving_average(
     Args:
         series: Coluna a usar se y_data for DataFrame (default: primeira).
     """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
+
     config = get_config()
 
     if isinstance(y_data, pd.DataFrame):

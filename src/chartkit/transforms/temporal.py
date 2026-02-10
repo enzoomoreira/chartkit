@@ -4,7 +4,7 @@ Todas as funcoes seguem o contrato:
 - Aceitam DataFrame, Series, dict, list ou ndarray (coercao automatica).
 - Validam que dados sao numericos (warning + filtragem para non-numeric).
 - Protegem contra inf (substituem por NaN no resultado).
-- Funcoes que dependem de frequencia (mom, yoy, accum, annualize, compound_rolling)
+- Funcoes que dependem de frequencia (variation, accum, annualize)
   resolvem periods via auto-detect ou exigem freq=/periods= explicito.
 """
 
@@ -30,72 +30,55 @@ from ._validation import (
 
 
 # ---------------------------------------------------------------------------
-# mom / yoy -- variacao percentual
+# variation -- variacao percentual por horizonte
 # ---------------------------------------------------------------------------
 
+_VALID_HORIZONS = {"month", "year"}
+
 
 @overload
-def mom(
-    df: pd.DataFrame, periods: int | None = None, freq: str | None = None
+def variation(
+    df: pd.DataFrame,
+    horizon: str = "month",
+    periods: int | None = None,
+    freq: str | None = None,
 ) -> pd.DataFrame: ...
 @overload
-def mom(
-    df: pd.Series, periods: int | None = None, freq: str | None = None
+def variation(
+    df: pd.Series,
+    horizon: str = "month",
+    periods: int | None = None,
+    freq: str | None = None,
 ) -> pd.Series: ...
-def mom(
+def variation(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
+    horizon: str = "month",
     periods: int | None = None,
     freq: str | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Variacao percentual mensal (Month-over-Month).
+    """Variacao percentual entre periodos.
 
-    Em dados mensais, ``periods=1`` compara com o mes anterior.
-    A frequencia e detectada automaticamente; use ``freq=`` ou ``periods=``
-    para override explicito.
+    Calcula a variacao percentual comparando cada ponto com um ponto anterior,
+    determinado pelo ``horizon``. O numero de periodos de comparacao e resolvido
+    automaticamente com base na frequencia dos dados.
 
     Args:
         df: Dados de entrada.
-        periods: Numero de periodos para comparacao.
+        horizon: Horizonte de comparacao (``'month'`` ou ``'year'``).
+            Em dados mensais, ``'month'`` compara com o mes anterior (periods=1)
+            e ``'year'`` compara com o mesmo mes do ano anterior (periods=12).
+        periods: Override explicito do numero de periodos.
             Mutuamente exclusivo com ``freq``.
         freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
             Mutuamente exclusivo com ``periods``.
     """
+    if horizon not in _VALID_HORIZONS:
+        raise TransformError(
+            f"Invalid horizon '{horizon}'. Use: {', '.join(sorted(_VALID_HORIZONS))}"
+        )
     params = validate_params(_PctChangeParams, periods=periods, freq=freq)
     data = validate_numeric(coerce_input(df))
-    resolved = resolve_periods(data, "mom", params.periods, params.freq)
-    result = data.pct_change(periods=resolved) * 100
-    return sanitize_result(result)
-
-
-@overload
-def yoy(
-    df: pd.DataFrame, periods: int | None = None, freq: str | None = None
-) -> pd.DataFrame: ...
-@overload
-def yoy(
-    df: pd.Series, periods: int | None = None, freq: str | None = None
-) -> pd.Series: ...
-def yoy(
-    df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
-    periods: int | None = None,
-    freq: str | None = None,
-) -> pd.DataFrame | pd.Series:
-    """Variacao percentual anual (Year-over-Year).
-
-    Em dados mensais, ``periods=12`` compara com o mesmo mes do ano anterior.
-    A frequencia e detectada automaticamente; use ``freq=`` ou ``periods=``
-    para override explicito.
-
-    Args:
-        df: Dados de entrada.
-        periods: Numero de periodos para comparacao.
-            Mutuamente exclusivo com ``freq``.
-        freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
-            Mutuamente exclusivo com ``periods``.
-    """
-    params = validate_params(_PctChangeParams, periods=periods, freq=freq)
-    data = validate_numeric(coerce_input(df))
-    resolved = resolve_periods(data, "yoy", params.periods, params.freq)
+    resolved = resolve_periods(data, horizon, params.periods, params.freq)
     result = data.pct_change(periods=resolved) * 100
     return sanitize_result(result)
 
@@ -122,9 +105,12 @@ def accum(
 
     Formula: ``(prod(1 + x/100) - 1) * 100`` sobre a janela.
 
-    A janela e resolvida automaticamente pela frequencia dos dados
-    (ex: 12 para mensal, 252 para diario). Use ``window=`` ou ``freq=``
-    para override.
+    A janela e resolvida pela seguinte precedencia:
+
+    1. ``window=`` explicito
+    2. ``freq=`` explicito (resolve via mapeamento)
+    3. Auto-detect via ``pd.infer_freq``
+    4. Fallback para ``config.transforms.accum_window``
 
     Args:
         df: Dados de entrada (taxas em percentual).
@@ -135,15 +121,21 @@ def accum(
     """
     params = validate_params(_RollingParams, window=window, freq=freq)
     data = validate_numeric(coerce_input(df))
-    resolved = resolve_periods(data, "accum", params.window, params.freq)
+
+    try:
+        resolved = resolve_periods(data, "accum", params.window, params.freq)
+    except TransformError:
+        if params.window is not None or params.freq is not None:
+            raise
+        resolved = get_config().transforms.accum_window
 
     factor = 1 + data / 100
 
-    def _nanprod(x: np.ndarray) -> float:
-        return float(np.nanprod(x))
+    def _prod(x: np.ndarray) -> float:
+        return float(np.prod(x))
 
     result = factor.rolling(resolved, min_periods=resolved).apply(  # type: ignore[union-attr]
-        _nanprod, raw=True
+        _prod, raw=True
     )
     result = (result - 1) * 100
     return sanitize_result(result)
@@ -299,62 +291,6 @@ def annualize(
     rate_decimal = data / 100
     annualized = (1 + rate_decimal) ** resolved - 1
     return sanitize_result(annualized * 100)
-
-
-# ---------------------------------------------------------------------------
-# compound_rolling -- retorno composto em janela movel
-# ---------------------------------------------------------------------------
-
-
-@overload
-def compound_rolling(
-    df: pd.DataFrame, window: int | None = None, freq: str | None = None
-) -> pd.DataFrame: ...
-@overload
-def compound_rolling(
-    df: pd.Series, window: int | None = None, freq: str | None = None
-) -> pd.Series: ...
-def compound_rolling(
-    df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
-    window: int | None = None,
-    freq: str | None = None,
-) -> pd.DataFrame | pd.Series:
-    """Retorno composto em janela movel.
-
-    Multiplica fatores ``(1 + taxa/100)`` ao longo da janela.
-
-    A janela e resolvida automaticamente pela frequencia dos dados.
-    Use ``window=`` ou ``freq=`` para override.
-
-    Args:
-        df: Dados de entrada (taxas em percentual).
-        window: Tamanho da janela em numero de periodos.
-            Mutuamente exclusivo com ``freq``.
-        freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
-            Mutuamente exclusivo com ``window``.
-    """
-    params = validate_params(_RollingParams, window=window, freq=freq)
-    data = validate_numeric(coerce_input(df))
-
-    # Se nenhum dos dois foi passado, tenta config default primeiro, depois auto-detect
-    if params.window is not None:
-        resolved = params.window
-    elif params.freq is not None:
-        resolved = resolve_periods(data, "rolling", None, params.freq)
-    else:
-        config_window = get_config().transforms.rolling_window
-        resolved = config_window
-
-    factor = 1 + (data / 100)
-
-    def _nanprod(x: np.ndarray) -> float:
-        return float(np.nanprod(x))
-
-    compounded = factor.rolling(resolved, min_periods=resolved).apply(  # type: ignore[union-attr]
-        _nanprod, raw=True
-    )
-    result = (compounded - 1) * 100
-    return sanitize_result(result)
 
 
 # ---------------------------------------------------------------------------

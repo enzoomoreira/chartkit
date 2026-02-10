@@ -2,7 +2,7 @@
 
 import chartkit
 df.chartkit.plot(metrics=['ath', 'ma:12'], units='%')
-df.chartkit.yoy().plot(title='YoY').save('chart.png')
+df.chartkit.variation(horizon='year').plot(title='Variacao Anual').save('chart.png')
 """
 
 from ._internal import register_fixed, register_moveable, register_passive
@@ -28,13 +28,11 @@ from .transforms import TransformAccessor
 from .transforms import (
     accum,
     annualize,
-    compound_rolling,
     diff,
     drawdown,
-    mom,
     normalize,
     to_month_end,
-    yoy,
+    variation,
     zscore,
 )
 
@@ -82,13 +80,11 @@ __all__ = [
     "ChartKitError",
     "TransformError",
     # Transforms
-    "yoy",
-    "mom",
+    "variation",
     "accum",
     "diff",
     "normalize",
     "annualize",
-    "compound_rolling",
     "drawdown",
     "zscore",
     "to_month_end",

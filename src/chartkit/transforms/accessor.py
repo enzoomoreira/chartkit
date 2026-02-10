@@ -7,13 +7,11 @@ import pandas as pd
 from .temporal import (
     accum,
     annualize,
-    compound_rolling,
     diff,
     drawdown,
-    mom,
     normalize,
     to_month_end,
-    yoy,
+    variation,
     zscore,
 )
 
@@ -29,24 +27,21 @@ class TransformAccessor:
     Series sao convertidas para DataFrame internamente.
 
     Example:
-        >>> df.chartkit.yoy().mom().plot(title="Taxa")
+        >>> df.chartkit.variation(horizon='year').plot(title="Variacao Anual")
         >>> transformed = df.chartkit.normalize().df
     """
 
     def __init__(self, df: pd.DataFrame | pd.Series) -> None:
         self._df = df.to_frame() if isinstance(df, pd.Series) else df
 
-    def yoy(
-        self, periods: int | None = None, freq: str | None = None
+    def variation(
+        self,
+        horizon: str = "month",
+        periods: int | None = None,
+        freq: str | None = None,
     ) -> TransformAccessor:
-        """Variacao percentual anual (Year-over-Year)."""
-        return TransformAccessor(yoy(self._df, periods, freq))
-
-    def mom(
-        self, periods: int | None = None, freq: str | None = None
-    ) -> TransformAccessor:
-        """Variacao percentual mensal (Month-over-Month)."""
-        return TransformAccessor(mom(self._df, periods, freq))
+        """Variacao percentual entre periodos."""
+        return TransformAccessor(variation(self._df, horizon, periods, freq))
 
     def accum(
         self, window: int | None = None, freq: str | None = None
@@ -69,12 +64,6 @@ class TransformAccessor:
     ) -> TransformAccessor:
         """Anualiza taxa periodica via juros compostos."""
         return TransformAccessor(annualize(self._df, periods, freq))
-
-    def compound_rolling(
-        self, window: int | None = None, freq: str | None = None
-    ) -> TransformAccessor:
-        """Retorno composto em janela movel."""
-        return TransformAccessor(compound_rolling(self._df, window, freq))
 
     def drawdown(self) -> TransformAccessor:
         """Distancia percentual do pico historico."""

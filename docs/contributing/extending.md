@@ -58,6 +58,7 @@ def funcao(ax, x_data, y_data, param1, param2, **kwargs):
 - Definidos em `param_names`, serao extraidos da string de especificacao
 - Formato da string: `'nome:valor1:valor2'`
 - Valores sao automaticamente convertidos para numeros se possivel
+- Parametros sem default na funcao sao tratados como obrigatorios; `parse()` levanta `ValueError` se ausentes
 
 **`uses_series`:**
 - Default `True`: a metrica recebe `series=col` via kwargs quando o usuario
@@ -214,7 +215,7 @@ df_novo = meu_transform(df)
 
 # Encadeado
 df.chartkit.meu_transform().plot()
-df.chartkit.meu_transform().yoy().plot()
+df.chartkit.meu_transform().variation(horizon='year').plot()
 ```
 
 ---

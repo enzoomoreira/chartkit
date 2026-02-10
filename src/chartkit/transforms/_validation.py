@@ -45,7 +45,7 @@ FreqLiteral = Literal[
     "annual",
 ]
 
-TransformName = Literal["mom", "yoy", "accum", "rolling", "annualize"]
+TransformName = Literal["month", "year", "accum", "annualize"]
 
 # ---------------------------------------------------------------------------
 # Constantes de mapeamento freq -> periods
@@ -71,15 +71,15 @@ FREQ_ALIASES: dict[str, str] = {
 # Mapeamento de freq code normalizado -> periods por tipo de transform.
 # Os codes aqui sao os retornados por pd.infer_freq() ou normalizados via FREQ_ALIASES.
 FREQ_PERIODS_MAP: dict[str, dict[TransformName, int]] = {
-    "D": {"mom": 30, "yoy": 365, "accum": 365, "rolling": 365, "annualize": 365},
-    "B": {"mom": 21, "yoy": 252, "accum": 252, "rolling": 252, "annualize": 252},
-    "W": {"mom": 4, "yoy": 52, "accum": 52, "rolling": 52, "annualize": 52},
-    "ME": {"mom": 1, "yoy": 12, "accum": 12, "rolling": 12, "annualize": 12},
-    "MS": {"mom": 1, "yoy": 12, "accum": 12, "rolling": 12, "annualize": 12},
-    "QE": {"mom": 1, "yoy": 4, "accum": 4, "rolling": 4, "annualize": 4},
-    "QS": {"mom": 1, "yoy": 4, "accum": 4, "rolling": 4, "annualize": 4},
-    "YE": {"mom": 1, "yoy": 1, "accum": 1, "rolling": 1, "annualize": 1},
-    "YS": {"mom": 1, "yoy": 1, "accum": 1, "rolling": 1, "annualize": 1},
+    "D": {"month": 30, "year": 365, "accum": 365, "annualize": 365},
+    "B": {"month": 21, "year": 252, "accum": 252, "annualize": 252},
+    "W": {"month": 4, "year": 52, "accum": 52, "annualize": 52},
+    "ME": {"month": 1, "year": 12, "accum": 12, "annualize": 12},
+    "MS": {"month": 1, "year": 12, "accum": 12, "annualize": 12},
+    "QE": {"month": 1, "year": 4, "accum": 4, "annualize": 4},
+    "QS": {"month": 1, "year": 4, "accum": 4, "annualize": 4},
+    "YE": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
+    "YS": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
 }
 
 # Prefixos de freq codes ancorados que pd.infer_freq() pode retornar.
@@ -93,7 +93,7 @@ _ANCHORED_PREFIXES = ("W-", "QE-", "QS-", "BQE-", "BQS-", "YE-", "YS-", "BYE-", 
 
 
 class _PctChangeParams(BaseModel):
-    """Validacao para mom/yoy/annualize."""
+    """Validacao para variation/annualize."""
 
     periods: PositiveInt | None = None
     freq: FreqLiteral | None = None
@@ -106,7 +106,7 @@ class _PctChangeParams(BaseModel):
 
 
 class _RollingParams(BaseModel):
-    """Validacao para accum / compound_rolling."""
+    """Validacao para accum."""
 
     window: PositiveInt | None = None
     freq: FreqLiteral | None = None
@@ -299,7 +299,7 @@ def resolve_periods(
 
     Args:
         df: Dados de input (usado para auto-detect).
-        transform: Nome do transform ('mom', 'yoy', 'accum', 'rolling').
+        transform: Nome do transform ('month', 'year', 'accum', 'annualize').
         periods: Periods explicito passado pelo usuario.
         freq: Frequencia explicita passada pelo usuario.
 

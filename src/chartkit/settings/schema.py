@@ -177,7 +177,7 @@ class CollisionConfig(BaseModel):
 
 class TransformsConfig(BaseModel):
     normalize_base: int = 100
-    rolling_window: int = 12
+    accum_window: int = 12
 
 
 class LocaleConfig(BaseModel):

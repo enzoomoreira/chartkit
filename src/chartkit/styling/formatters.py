@@ -1,5 +1,7 @@
 """Formatadores de eixo para matplotlib."""
 
+import math
+
 from babel.numbers import format_compact_currency as babel_format_compact_currency
 from babel.numbers import format_currency as babel_format_currency
 from matplotlib.ticker import FuncFormatter
@@ -12,7 +14,9 @@ def currency_formatter(currency: str = "BRL") -> FuncFormatter:
     config = get_config()
     locale = config.formatters.locale.babel_locale
 
-    def _format(x, pos):
+    def _format(x: float, pos: int | None) -> str:
+        if not math.isfinite(x):
+            return ""
         return babel_format_currency(
             x,
             currency,
@@ -34,7 +38,9 @@ def compact_currency_formatter(
     config = get_config()
     locale = config.formatters.locale.babel_locale
 
-    def _format(x, pos):
+    def _format(x: float, pos: int | None) -> str:
+        if not math.isfinite(x):
+            return ""
         if abs(x) < 1000:
             return babel_format_currency(x, currency, locale=locale)
 
@@ -53,9 +59,15 @@ def percent_formatter(decimals: int = 1) -> FuncFormatter:
     config = get_config()
     locale = config.formatters.locale
 
-    def _format(x, pos):
+    def _format(x: float, pos: int | None) -> str:
+        if not math.isfinite(x):
+            return ""
         formatted = f"{x:,.{decimals}f}%"
-        formatted = formatted.replace(",", "X").replace(".", locale.decimal).replace("X", locale.thousands)
+        formatted = (
+            formatted.replace(",", "X")
+            .replace(".", locale.decimal)
+            .replace("X", locale.thousands)
+        )
         return formatted
 
     return FuncFormatter(_format)
@@ -67,7 +79,9 @@ def human_readable_formatter(decimals: int = 1) -> FuncFormatter:
     suffixes = config.formatters.magnitude.suffixes
     locale = config.formatters.locale
 
-    def _format(x, pos):
+    def _format(x: float, pos: int | None) -> str:
+        if not math.isfinite(x):
+            return ""
         if x == 0:
             return "0"
 
@@ -91,7 +105,9 @@ def points_formatter(decimals: int = 0) -> FuncFormatter:
     config = get_config()
     locale = config.formatters.locale
 
-    def _format(x, pos):
+    def _format(x: float, pos: int | None) -> str:
+        if not math.isfinite(x):
+            return ""
         if x == 0:
             return "0"
 
@@ -100,7 +116,11 @@ def points_formatter(decimals: int = 0) -> FuncFormatter:
             return formatted.replace(",", locale.thousands)
         else:
             formatted = f"{x:,.{decimals}f}"
-            formatted = formatted.replace(",", "X").replace(".", locale.decimal).replace("X", locale.thousands)
+            formatted = (
+                formatted.replace(",", "X")
+                .replace(".", locale.decimal)
+                .replace("X", locale.thousands)
+            )
             return formatted
 
     return FuncFormatter(_format)

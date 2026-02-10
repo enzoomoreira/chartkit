@@ -154,14 +154,14 @@ cdi_anual.chartkit.plot(
 
 ---
 
-## Variacao YoY com Extremos
+## Variacao Anual com Extremos
 
 **Caso de uso:** Calcular variacao ano contra ano e destacar os valores extremos (ATH/ATL) para identificar picos e vales historicos.
 
 ```python
 import pandas as pd
 import chartkit
-from chartkit import yoy
+from chartkit import variation
 
 # Dados de producao industrial (indice, base 100)
 producao = pd.DataFrame({
@@ -171,31 +171,31 @@ producao = pd.DataFrame({
                  110.1, 108.5, 111.2, 112.5, 110.8, 114.2]
 }, index=pd.date_range('2022-01', periods=24, freq='ME'))
 
-# Calcula variacao ano contra ano (12 periodos para dados mensais)
-producao_yoy = yoy(producao, periods=12)
+# Calcula variacao anual (12 periodos para dados mensais)
+producao_var = variation(producao, horizon='year', periods=12)
 
 # Plota com extremos historicos destacados
-producao_yoy.chartkit.plot(
-    title="Producao Industrial - Variacao YoY",
+producao_var.chartkit.plot(
+    title="Producao Industrial - Variacao Anual",
     units='%',
     source='IBGE',
     metrics=['ath', 'atl'],  # All-Time High e All-Time Low
     highlight=True
-).save('producao_yoy.png')
+).save('producao_anual.png')
 
 # Para dados trimestrais, usar periods=4
 pib_trimestral = pd.DataFrame({
     'pib': [2.1, 2.3, 2.5, 2.8, 2.2, 2.4, 2.6, 2.9]
 }, index=pd.date_range('2022-03', periods=8, freq='QE'))
 
-pib_yoy = yoy(pib_trimestral, periods=4)
+pib_var = variation(pib_trimestral, horizon='year', periods=4)
 
-pib_yoy.chartkit.plot(
-    title="PIB - Variacao YoY",
+pib_var.chartkit.plot(
+    title="PIB - Variacao Anual",
     units='%',
     source='IBGE',
     metrics=['ath', 'atl']
-).save('pib_yoy.png')
+).save('pib_anual.png')
 ```
 
 ---

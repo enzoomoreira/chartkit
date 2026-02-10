@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import inspect
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, NamedTuple
 
 import pandas as pd
 from loguru import logger
@@ -22,10 +23,17 @@ class MetricSpec:
     label: str | None = None
 
 
+class _MetricEntry(NamedTuple):
+    func: Callable
+    param_names: list[str]
+    required_params: list[str]
+    uses_series: bool
+
+
 class MetricRegistry:
     """Registro central de metricas com parse de string specs e aplicacao em batch."""
 
-    _metrics: dict[str, tuple[Callable, list[str], bool]] = {}
+    _metrics: dict[str, _MetricEntry] = {}
 
     @classmethod
     def register(
@@ -43,9 +51,17 @@ class MetricRegistry:
             uses_series: Se a metrica usa o parametro ``series`` para
                 selecionar coluna em DataFrames multi-serie.
         """
+        names = param_names or []
 
         def decorator(func: Callable) -> Callable:
-            cls._metrics[name] = (func, param_names or [], uses_series)
+            sig = inspect.signature(func)
+            required = [
+                p
+                for p in names
+                if p in sig.parameters
+                and sig.parameters[p].default is inspect.Parameter.empty
+            ]
+            cls._metrics[name] = _MetricEntry(func, names, required, uses_series)
             return func
 
         return decorator
@@ -59,7 +75,8 @@ class MetricRegistry:
         ``|`` separa label customizado; ``@`` seleciona coluna; ``:`` separa params.
 
         Raises:
-            ValueError: Metrica nao registrada ou series vazio apos ``@``.
+            ValueError: Metrica nao registrada, params obrigatorios ausentes,
+                ou series vazio apos ``@``.
         """
         if isinstance(spec, MetricSpec):
             return spec
@@ -89,23 +106,30 @@ class MetricRegistry:
                 f"Metrica desconhecida: '{name}'. Disponiveis: {available}"
             )
 
-        _, param_names, _ = cls._metrics[name]
+        entry = cls._metrics[name]
         params: dict[str, Any] = {}
 
         raw_params = parts[1:]
-        extra = raw_params[len(param_names) :]
+        extra = raw_params[len(entry.param_names) :]
         if extra:
             logger.warning("Parametros extras ignorados em '{}': {}", spec, extra)
 
         for i, value in enumerate(raw_params):
-            if i < len(param_names):
+            if i < len(entry.param_names):
                 try:
                     parsed_value: Any = float(value)
                     if parsed_value.is_integer():
                         parsed_value = int(parsed_value)
-                    params[param_names[i]] = parsed_value
+                    params[entry.param_names[i]] = parsed_value
                 except ValueError:
-                    params[param_names[i]] = value
+                    params[entry.param_names[i]] = value
+
+        missing = [p for p in entry.required_params if p not in params]
+        if missing:
+            raise ValueError(
+                f"Metrica '{name}' requer parametro(s): {', '.join(missing)}. "
+                f"Use '{name}:{':'.join('<' + p + '>' for p in entry.param_names)}'."
+            )
 
         return MetricSpec(name, params, series, label)
 
@@ -120,13 +144,13 @@ class MetricRegistry:
         """Aplica lista de metricas ao grafico."""
         for spec in specs:
             parsed = cls.parse(spec)
-            func, _, uses_series = cls._metrics[parsed.name]
+            entry = cls._metrics[parsed.name]
             kwargs = parsed.params.copy()
-            if parsed.series is not None and uses_series:
+            if parsed.series is not None and entry.uses_series:
                 kwargs["series"] = parsed.series
             if parsed.label is not None:
                 kwargs["label"] = parsed.label
-            func(ax, x_data, y_data, **kwargs)
+            entry.func(ax, x_data, y_data, **kwargs)
 
     @classmethod
     def available(cls) -> list[str]:

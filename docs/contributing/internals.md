@@ -324,7 +324,9 @@ def currency_formatter(currency: str = "BRL"):
     config = get_config()
     locale = config.formatters.locale.babel_locale
 
-    def _format(x, pos):
+    def _format(x: float, pos: int | None) -> str:
+        if not math.isfinite(x):
+            return ""
         return babel_format_currency(
             x,
             currency,

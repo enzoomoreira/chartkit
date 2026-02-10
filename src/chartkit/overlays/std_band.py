@@ -31,6 +31,11 @@ def add_std_band(
         show_center: Se plota a linha central (media movel).
         series: Coluna a usar se y_data for DataFrame (default: primeira).
     """
+    if window < 2:
+        raise ValueError(f"window must be >= 2, got {window}")
+    if num_std <= 0:
+        raise ValueError(f"num_std must be positive, got {num_std}")
+
     config = get_config()
 
     if isinstance(y_data, pd.DataFrame):

@@ -112,15 +112,13 @@ Accessor encadeavel para transformacoes. Cada metodo retorna novo `TransformAcce
 
 | Metodo | Assinatura | Descricao |
 |--------|------------|-----------|
-| `yoy()` | `yoy(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Variacao percentual anual (auto-detect de frequencia) |
-| `mom()` | `mom(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Variacao percentual mensal (auto-detect de frequencia) |
-| `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Acumulado via produto composto em janela movel |
+| `variation()` | `variation(horizon: str = "month", periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Variacao percentual por horizonte (`'month'` ou `'year'`, auto-detect de frequencia) |
+| `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Acumulado via produto composto em janela movel (fallback: `config.transforms.accum_window`) |
 | `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Diferenca absoluta entre periodos |
 | `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normaliza serie (default: `config.transforms.normalize_base`) |
 | `drawdown()` | `drawdown() -> TransformAccessor` | Distancia percentual do pico historico |
 | `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Padronizacao estatistica (global ou rolling) |
 | `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Anualiza taxa periodica via juros compostos (auto-detect de frequencia) |
-| `compound_rolling()` | `compound_rolling(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Retorno composto (auto-detect de frequencia) |
 | `to_month_end()` | `to_month_end() -> TransformAccessor` | Normaliza indice para fim do mes |
 | `plot()` | `plot(**kwargs) -> PlotResult` | Finaliza cadeia e plota |
 | `df` | `@property -> pd.DataFrame` | Acesso ao DataFrame transformado |
@@ -433,7 +431,7 @@ class ChartingConfig(BaseSettings):
 | Campo | Tipo | Default |
 |-------|------|---------|
 | `normalize_base` | `int` | `100` |
-| `rolling_window` | `int` | `12` |
+| `accum_window` | `int` | `12` |
 
 #### FormattersConfig
 
@@ -538,15 +536,13 @@ from chartkit import (
     TransformError,
 
     # Transforms (funcoes standalone)
-    yoy,
-    mom,
+    variation,
     accum,
     diff,
     normalize,
     drawdown,
     zscore,
     annualize,
-    compound_rolling,
     to_month_end,
 )
 ```

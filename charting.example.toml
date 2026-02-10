@@ -181,7 +181,7 @@ dpi = 300              # Resolucao para exportacao
 
 # [transforms]
 # normalize_base = 100
-# rolling_window = 12
+# accum_window = 12
 
 # --- Formatadores -------------------------------------------------------------
 

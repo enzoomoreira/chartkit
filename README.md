@@ -25,13 +25,13 @@ df = pd.DataFrame({
 df.chartkit.plot(title="Taxa de Juros", units='%', source='BCB')
 
 # Grafico de barras
-df.chartkit.mom().plot(kind='bar', title="Variacao Mensal", units='%', highlight=['last'])
+df.chartkit.variation().plot(kind='bar', title="Variacao Mensal", units='%', highlight=['last'])
 
 # Grafico com metricas (ATH, media movel, etc)
 df.chartkit.plot(title="Análise", metrics=['ath|Máxima', 'atl|Mínima', 'ma:12|Média Móvel'])
 
 # Encadeamento completo
-df.chartkit.mom().plot(title="Variacao MoM").show()
+df.chartkit.variation().plot(title="Variacao Mensal").show()
 ```
 
 ## Funcionalidades
@@ -40,7 +40,7 @@ df.chartkit.mom().plot(title="Variacao MoM").show()
 - **Graficos**: Linhas, barras e barras empilhadas com estilo profissional
 - **Formatadores**: BRL, USD, BRL_compact, USD_compact, %, pontos, notacao humana (1k, 1M)
 - **Metricas Declarativas**: `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5', 'target:1000', 'std_band:20:2', 'vband:2020-03:2020-06']`
-- **Transforms Encadeados**: `df.chartkit.yoy().drawdown().plot()` com method chaining e auto-deteccao de frequencia
+- **Transforms Encadeados**: `df.chartkit.variation(horizon='year').drawdown().plot()` com method chaining e auto-deteccao de frequencia
 - **Overlays**: Area entre series (`fill_between`), bandas de desvio padrao, bandas verticais
 - **ChartRegistry**: Sistema plugavel de chart types via decorator
 - **Configuracao TOML + Env Vars**: Personalize via arquivo TOML ou variaveis de ambiente (`CHARTKIT_*`)

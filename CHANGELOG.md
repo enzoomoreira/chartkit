@@ -1,5 +1,23 @@
 # Project Changelog
 
+## [2026-02-10 05:00]
+### Changed
+- **`yoy()` e `mom()` unificados em `variation(horizon)`**: API simplificada -- `variation(horizon='year')` substitui `yoy()`, `variation(horizon='month')` substitui `mom()`. Horizonte como parametro semantico em vez de funcoes separadas
+- **`compound_rolling()` absorvido por `accum()`**: `accum()` agora faz fallback para `config.transforms.accum_window` quando frequencia nao pode ser inferida, cobrindo o caso de uso de `compound_rolling`
+- **Config `rolling_window` renomeado para `accum_window`**: Reflete a consolidacao de transforms -- campo agora pertence exclusivamente ao `accum()`
+- **`MetricRegistry` usa `_MetricEntry` NamedTuple**: Substitui tuple crua por tipo nomeado com `func`, `param_names`, `required_params`, `uses_series`. Introspecao de parametros obrigatorios via `inspect.signature`
+- **`accum()` usa `np.prod` em vez de `np.nanprod`**: Semantica mais correta -- NaN propagado em vez de silenciosamente ignorado
+
+### Added
+- **Validacao de parametros obrigatorios em metricas**: `MetricRegistry.parse()` agora levanta `ValueError` com mensagem descritiva quando params obrigatorios estao ausentes (ex: `"Metrica 'ma' requer parametro(s): window"`)
+- **Guard clauses em overlays**: `add_moving_average` valida `window >= 1`, `add_std_band` valida `window >= 2` e `num_std > 0`
+- **Protecao contra valores nao-finitos nos formatters**: Todos os formatadores (currency, compact, %, human, points) retornam `""` para `inf`/`NaN`, evitando crashes no matplotlib
+
+### Removed
+- **`yoy()`**: Substituido por `variation(horizon='year')`
+- **`mom()`**: Substituido por `variation(horizon='month')`
+- **`compound_rolling()`**: Caso de uso coberto por `accum()` com fallback para config
+
 ## [2026-02-10 04:33]
 ### Changed
 - **Valores hardcoded extraidos para config**: Parametros que antes viviam diretamente no codigo agora sao configuraveis via TOML/env vars:
