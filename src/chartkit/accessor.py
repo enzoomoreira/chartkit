@@ -8,6 +8,7 @@ from .engine import ChartingPlotter
 from .transforms.accessor import TransformAccessor
 
 if TYPE_CHECKING:
+    from .engine import ChartKind, UnitFormat
     from .result import PlotResult
 
 
@@ -80,12 +81,12 @@ class ChartingAccessor:
         self,
         x: str | None = None,
         y: str | list[str] | None = None,
-        kind: str = "line",
+        *,
+        kind: ChartKind = "line",
         title: str | None = None,
-        units: str | None = None,
+        units: UnitFormat | None = None,
         source: str | None = None,
-        highlight_last: bool = False,
-        save_path: str | None = None,
+        highlight: bool = False,
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
@@ -100,8 +101,7 @@ class ChartingAccessor:
             title=title,
             units=units,
             source=source,
-            highlight_last=highlight_last,
-            save_path=save_path,
+            highlight=highlight,
             metrics=metrics,
             fill_between=fill_between,
             legend=legend,

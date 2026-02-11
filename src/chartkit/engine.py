@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -24,6 +24,8 @@ from .styling import (
     theme,
 )
 
+ChartKind = Literal["line", "bar", "stacked_bar"]
+UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
 
 _FORMATTERS = {
     "BRL": lambda: currency_formatter("BRL"),
@@ -48,12 +50,12 @@ class ChartingPlotter:
         self,
         x: str | None = None,
         y: str | list[str] | None = None,
-        kind: str = "line",
+        *,
+        kind: ChartKind = "line",
         title: str | None = None,
-        units: str | None = None,
+        units: UnitFormat | None = None,
         source: str | None = None,
-        highlight_last: bool = False,
-        save_path: str | None = None,
+        highlight: bool = False,
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
@@ -62,8 +64,14 @@ class ChartingPlotter:
         """Gera grafico padronizado.
 
         Args:
-            units: Formatacao do eixo Y (``'BRL'``, ``'USD'``, ``'%'``,
-                ``'human'``, ``'points'``, ``'BRL_compact'``, ``'USD_compact'``).
+            x: Coluna para o eixo X. ``None`` usa o index do DataFrame.
+            y: Coluna(s) para o eixo Y. ``None`` usa todas as numericas.
+            kind: Tipo de grafico.
+            title: Titulo exibido acima do grafico.
+            units: Formatacao do eixo Y.
+            source: Fonte dos dados exibida no rodape. Sobrescreve
+                ``branding.default_source`` do config quando fornecido.
+            highlight: Destaca o ultimo ponto de dados no grafico.
             metrics: Metrica(s) declarativas. Ver ``chartkit.metrics`` para
                 sintaxe completa (ex: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``).
             fill_between: Tupla ``(col1, col2)`` para sombrear area entre
@@ -96,7 +104,7 @@ class ChartingPlotter:
 
         # 4. Plot
         chart_fn = ChartRegistry.get(kind)
-        chart_fn(ax, x_data, y_data, highlight=highlight_last, **kwargs)
+        chart_fn(ax, x_data, y_data, highlight=highlight, **kwargs)
 
         # 5. Metrics
         if metrics:
@@ -119,13 +127,9 @@ class ChartingPlotter:
         self._apply_title(ax, title)
         self._apply_decorations(fig, source)
 
-        # 9. Output
-        if save_path:
-            self.save(save_path)
-
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
 
-    def _apply_y_formatter(self, ax, units: str | None) -> None:
+    def _apply_y_formatter(self, ax, units: UnitFormat | None) -> None:
         if units and units in _FORMATTERS:
             ax.yaxis.set_major_formatter(_FORMATTERS[units]())
 

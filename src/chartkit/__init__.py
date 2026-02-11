@@ -9,7 +9,7 @@ from ._internal import register_fixed, register_moveable, register_passive
 from ._logging import configure_logging
 from .accessor import ChartingAccessor
 from .charts import ChartRegistry
-from .engine import ChartingPlotter
+from .engine import ChartingPlotter, ChartKind, UnitFormat
 from .exceptions import ChartKitError, TransformError
 from .metrics import MetricRegistry
 from .result import PlotResult
@@ -64,6 +64,9 @@ __all__ = [
     "register_fixed",
     "register_moveable",
     "register_passive",
+    # Types
+    "ChartKind",
+    "UnitFormat",
     # Classes principais
     "ChartingAccessor",
     "ChartingPlotter",

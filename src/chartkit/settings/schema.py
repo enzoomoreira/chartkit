@@ -38,6 +38,7 @@ __all__ = [
 
 class BrandingConfig(BaseModel):
     company_name: str = ""
+    default_source: str = ""
     footer_format: str = "Fonte: {source}, {company_name}"
     footer_format_no_source: str = "{company_name}"
 

@@ -9,11 +9,18 @@ def add_footer(fig: Figure, source: str | None = None) -> None:
 
     O formato e controlado por ``branding.footer_format`` (com source) ou
     ``branding.footer_format_no_source`` (sem source) em settings.
+
+    Args:
+        source: Fonte dos dados. Quando ``None``, usa ``branding.default_source``
+            da configuracao como fallback.
     """
     config = get_config()
     branding = config.branding
     layout = config.layout.footer
     fonts = config.fonts.sizes
+
+    if source is None:
+        source = branding.default_source
 
     if source:
         footer_text = branding.footer_format.format(

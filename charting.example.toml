@@ -21,6 +21,9 @@
 # -----------------------------------------------------------------------------
 [branding]
 company_name = "Sua Empresa"
+# Fonte de dados exibida no rodape (ex: "IBGE", "BCB", "Bloomberg")
+# Configuravel via configure(branding={"default_source": "IBGE"}) ou env CHARTKIT_BRANDING__DEFAULT_SOURCE
+default_source = ""
 footer_format = "Fonte: {source}, {company_name}"
 footer_format_no_source = "{company_name}"
 
