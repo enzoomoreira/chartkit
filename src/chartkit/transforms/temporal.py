@@ -14,13 +14,18 @@ from typing import overload
 
 import numpy as np
 import pandas as pd
+from loguru import logger
 
 from ..exceptions import TransformError
 from ..settings import get_config
 from ._validation import (
+    _DiffParams,
+    _FreqResolvedParams,
     _NormalizeParams,
-    _PctChangeParams,
     _RollingParams,
+    _ZScoreParams,
+    _infer_freq,
+    _normalize_freq_code,
     coerce_input,
     resolve_periods,
     sanitize_result,
@@ -67,6 +72,8 @@ def variation(
         horizon: Horizonte de comparacao (``'month'`` ou ``'year'``).
             Em dados mensais, ``'month'`` compara com o mes anterior (periods=1)
             e ``'year'`` compara com o mesmo mes do ano anterior (periods=12).
+            Para dados trimestrais/anuais, ``'month'`` compara com o periodo
+            anterior (period-over-period).
         periods: Override explicito do numero de periodos.
             Mutuamente exclusivo com ``freq``.
         freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
@@ -76,9 +83,25 @@ def variation(
         raise TransformError(
             f"Invalid horizon '{horizon}'. Use: {', '.join(sorted(_VALID_HORIZONS))}"
         )
-    params = validate_params(_PctChangeParams, periods=periods, freq=freq)
+    params = validate_params(_FreqResolvedParams, periods=periods, freq=freq)
     data = validate_numeric(coerce_input(df))
     resolved = resolve_periods(data, horizon, params.periods, params.freq)
+    logger.debug("variation: horizon='{}', resolved_periods={}", horizon, resolved)
+
+    # Alerta quando horizon='month' nao significa "mes calendario"
+    if horizon == "month" and resolved == 1 and params.periods is None:
+        detected = (
+            _infer_freq(data)
+            if params.freq is None
+            else _normalize_freq_code(params.freq)
+        )
+        if detected in ("QE", "QS", "YE", "YS"):
+            logger.warning(
+                "horizon='month' with {} data resolves to periods=1 "
+                "(period-over-period, not calendar month-over-month)",
+                detected,
+            )
+
     result = data.pct_change(periods=resolved) * 100
     return sanitize_result(result)
 
@@ -124,10 +147,15 @@ def accum(
 
     try:
         resolved = resolve_periods(data, "accum", params.window, params.freq)
+        logger.debug("accum: resolved_window={}", resolved)
     except TransformError:
         if params.window is not None or params.freq is not None:
             raise
         resolved = get_config().transforms.accum_window
+        logger.info(
+            "Could not auto-detect frequency for accum. Using config accum_window={}",
+            resolved,
+        )
 
     factor = 1 + data / 100
 
@@ -158,10 +186,11 @@ def diff(
 
     Args:
         df: Dados de entrada.
-        periods: Numero de periodos para o diff.
+        periods: Numero de periodos para o diff. Negativo para forward diff.
     """
+    params = validate_params(_DiffParams, periods=periods)
     data = validate_numeric(coerce_input(df))
-    return data.diff(periods=periods)
+    return sanitize_result(data.diff(periods=params.periods))
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +223,7 @@ def normalize(
     Args:
         df: Dados de entrada.
         base: Valor base para normalizacao (default: config ``normalize_base``).
+            Deve ser positivo.
         base_date: Data de referencia (string parseable por ``pd.Timestamp``).
             Se a data exata nao existir no index, usa a mais proxima.
     """
@@ -207,7 +237,12 @@ def normalize(
     )
 
     if params.base_date is not None:
-        ts = pd.Timestamp(params.base_date)
+        try:
+            ts = pd.Timestamp(params.base_date)
+        except (ValueError, TypeError) as exc:
+            raise TransformError(
+                f"Invalid base_date '{params.base_date}': {exc}"
+            ) from exc
         if ts in data.index:
             base_value = data.loc[ts]
         else:
@@ -217,6 +252,10 @@ def normalize(
                     f"base_date '{params.base_date}' could not be matched "
                     f"to any date in the index"
                 )
+            matched_date = data.index[idx[0]]
+            logger.debug(
+                "normalize: base_date '{}' matched to nearest '{}'", ts, matched_date
+            )
             base_value = data.iloc[idx[0]]
     else:
         # Primeiro valor nao-NaN
@@ -247,6 +286,8 @@ def normalize(
                 f"Base value is zero or NaN for columns: {problem_cols}. "
                 f"Cannot normalize these columns."
             )
+    else:
+        raise TransformError(f"Unexpected base value type: {type(base_value).__name__}")
 
     result = (data / base_value) * effective_base
     return sanitize_result(result)
@@ -285,9 +326,10 @@ def annualize(
         freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
             Mutuamente exclusivo com ``periods``.
     """
-    params = validate_params(_PctChangeParams, periods=periods, freq=freq)
+    params = validate_params(_FreqResolvedParams, periods=periods, freq=freq)
     data = validate_numeric(coerce_input(df))
     resolved = resolve_periods(data, "annualize", params.periods, params.freq)
+    logger.debug("annualize: resolved_periods_per_year={}", resolved)
     rate_decimal = data / 100
     annualized = (1 + rate_decimal) ** resolved - 1
     return sanitize_result(annualized * 100)
@@ -362,10 +404,11 @@ def zscore(
             rolling (media e desvio padrao moveis). Se ``None``, calcula
             z-score sobre toda a serie (global).
     """
+    params = validate_params(_ZScoreParams, window=window)
     data = validate_numeric(coerce_input(df))
 
-    if window is not None:
-        rolling = data.rolling(window=window, min_periods=window)
+    if params.window is not None:
+        rolling = data.rolling(window=params.window, min_periods=params.window)
         mean = rolling.mean()
         std = rolling.std()
     else:
@@ -373,6 +416,18 @@ def zscore(
         std = data.std()
 
     result = (data - mean) / std
+
+    # Alerta quando std=0 (dados constantes) produz all-NaN
+    if isinstance(data, pd.DataFrame):
+        all_nan_cols = result.columns[result.isna().all()].tolist()
+        if all_nan_cols:
+            logger.warning(
+                "zscore produced all-NaN for columns {} (constant data, std=0)",
+                all_nan_cols,
+            )
+    elif result.isna().all():
+        logger.warning("zscore produced all-NaN (constant data, std=0)")
+
     return sanitize_result(result)
 
 
@@ -397,12 +452,15 @@ def to_month_end(
         df: Dados de entrada. Index deve ser DatetimeIndex.
 
     Raises:
-        TypeError: Se o index nao for DatetimeIndex.
+        TransformError: Se os dados forem vazios ou o index nao for DatetimeIndex.
     """
     data = coerce_input(df)
 
+    if data.empty:
+        raise TransformError("Input data is empty")
+
     if not isinstance(data.index, pd.DatetimeIndex):
-        raise TypeError(
+        raise TransformError(
             f"to_month_end requires DatetimeIndex, got {type(data.index).__name__}"
         )
 

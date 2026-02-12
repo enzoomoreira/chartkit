@@ -1,5 +1,34 @@
 # Project Changelog
 
+## [2026-02-11 21:18]
+### Added
+- **Custom exception hierarchy**: `ValidationError`, `RegistryError`, `StateError` com heranca multipla dos tipos built-in (`ValueError`, `LookupError`, `RuntimeError`) para manter compatibilidade com `except ValueError` existente
+- **`disable_logging()`**: Nova funcao publica para reverter `configure_logging()` -- remove handlers e desativa logger
+- **Logging estruturado em toda a lib**: `logger.debug` para tracing interno (plot params, dispatch, collision counts, transform resolution) e `logger.warning` para problemas potenciais (series vazias, dados NaN, datas invertidas, comprimentos diferentes)
+- **Validacao de `diff(periods=0)`**: Rejeitado com mensagem descritiva (retorna all-zeros, quase certamente erro do usuario)
+- **Validacao de `zscore(window=1)`**: Rejeitado (std de 1 valor e indefinido, produziria all-NaN)
+- **Frequencias `BME`/`BMS` (Business Month End/Start)**: Suportadas em `FREQ_ALIASES` e `FREQ_PERIODS_MAP`
+- **Frequencias `BQE`/`BQS`/`BYE`/`BYS` (Business Quarter/Year)**: Adicionadas ao `FREQ_PERIODS_MAP` e restauradas em `_ANCHORED_PREFIXES` para auto-detect via `pd.infer_freq()`
+- **Erro especifico para frequencia detectada mas nao suportada**: `resolve_periods()` agora diferencia "nao consegui detectar" de "detectei mas nao suporto", com mensagem listando frequencias validas
+
+### Changed
+- **`ValueError`/`RuntimeError`/`TypeError` migrados para hierarquia customizada**: Todos os raises internos agora usam `ValidationError`, `RegistryError`, `StateError` ou `TransformError` -- catch via `except ChartKitError` captura todos
+- **`configure_logging()` idempotente**: Chamadas repetidas removem handler anterior antes de adicionar novo, evitando duplicacao de logs
+- **`_PctChangeParams` renomeado para `_FreqResolvedParams`**: Nome mais descritivo (usado por `variation` e `annualize`)
+- **`normalize(base_date)` com error handling**: `pd.Timestamp()` invalido agora gera `TransformError` em vez de exception crua
+- **`diff()` e `zscore()` com validacao via pydantic**: Parametros validados antes da execucao, mensagens de erro limpas
+- **`TransformsConfig.normalize_base` e `accum_window` validados como `PositiveInt`**: Config com valores <= 0 rejeitada na carga
+- **Logs padronizados em ingles**: Mensagens de warning em `bar.py` e `stacked_bar.py` convertidas de portugues para ingles
+
+### Fixed
+- **`_ANCHORED_PREFIXES` incompleto**: Prefixos `BQE-`/`BQS-`/`BYE-`/`BYS-` haviam sido removidos, quebrando auto-detect para dados com frequencia business quarter/year
+- **Stripping de multiplicador em freq codes produzia calculos errados**: `"2D"` (bidiario) era normalizado para `"D"` (diario), resultando em periods incorretos. Agora frequencias multiplicadas caem no erro "not supported" com sugestao de usar `periods=` explicito
+- **`coerce_input()` levantava `TypeError` em vez de `TransformError`**: Inconsistente com o resto do modulo de validacao
+
+### Removed
+- **Aliases ambiguos `"day"`, `"bday"`, `"week"`, `"month"`, `"quarter"`, `"year"` de `FREQ_ALIASES`**: Conflitavam com `horizon='month'`/`'year'` em `variation()`. Aliases existentes `"daily"`, `"business"`, `"weekly"`, `"monthly"`, `"quarterly"`, `"yearly"` cobrem os mesmos casos sem ambiguidade
+- **Nomes com underscore de `__all__` em `_validation.py`**: `_FreqResolvedParams`, `_DiffParams`, `_ZScoreParams`, `_infer_freq`, `_normalize_freq_code` removidos -- modulo interno nao deve exportar nomes privados
+
 ## [2026-02-10 05:00]
 ### Changed
 - **`yoy()` e `mom()` unificados em `variation(horizon)`**: API simplificada -- `variation(horizon='year')` substitui `yoy()`, `variation(horizon='month')` substitui `mom()`. Horizonte como parametro semantico em vez de funcoes separadas

@@ -7,6 +7,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
+from ..exceptions import ValidationError
 from ..overlays.markers import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
@@ -38,7 +39,9 @@ def plot_stacked_bar(
             ``'auto'`` ajusta limites para focar nos dados com margem.
     """
     if y_origin not in ("zero", "auto"):
-        raise ValueError(f"y_origin deve ser 'zero' ou 'auto', recebeu: {y_origin!r}")
+        raise ValidationError(
+            f"y_origin deve ser 'zero' ou 'auto', recebeu: {y_origin!r}"
+        )
 
     config = get_config()
     bars = config.bars
@@ -48,7 +51,7 @@ def plot_stacked_bar(
 
     if len(y_data) > bars.warning_threshold:
         logger.warning(
-            "Stacked bar com {} pontos pode ficar ilegivel. Considere kind='line'.",
+            "Stacked bar with {} points may be hard to read. Consider kind='line'.",
             len(y_data),
         )
 

@@ -6,12 +6,18 @@ df.chartkit.variation(horizon='year').plot(title='Variacao Anual').save('chart.p
 """
 
 from ._internal import register_fixed, register_moveable, register_passive
-from ._logging import configure_logging
+from ._logging import configure_logging, disable_logging
 from .accessor import ChartingAccessor
 from .charts import ChartRegistry
 from .engine import ChartingPlotter, ChartKind, HighlightInput, UnitFormat
 from .overlays.markers import HighlightMode
-from .exceptions import ChartKitError, TransformError
+from .exceptions import (
+    ChartKitError,
+    RegistryError,
+    StateError,
+    TransformError,
+    ValidationError,
+)
 from .metrics import MetricRegistry
 from .result import PlotResult
 from .settings import (
@@ -52,6 +58,7 @@ __all__ = [
     # Configuracao
     "configure",
     "configure_logging",
+    "disable_logging",
     "get_config",
     "reset_config",
     "ChartingConfig",
@@ -79,6 +86,9 @@ __all__ = [
     # Exceptions
     "ChartKitError",
     "TransformError",
+    "ValidationError",
+    "RegistryError",
+    "StateError",
     # Transforms
     "variation",
     "accum",

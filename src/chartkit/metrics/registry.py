@@ -9,6 +9,8 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
+from ..exceptions import RegistryError, ValidationError
+
 
 @dataclass
 class MetricSpec:
@@ -75,8 +77,8 @@ class MetricRegistry:
         ``|`` separa label customizado; ``@`` seleciona coluna; ``:`` separa params.
 
         Raises:
-            ValueError: Metrica nao registrada, params obrigatorios ausentes,
-                ou series vazio apos ``@``.
+            RegistryError: Metrica nao registrada.
+            ValidationError: Params obrigatorios ausentes ou series vazio apos ``@``.
         """
         if isinstance(spec, MetricSpec):
             return spec
@@ -90,7 +92,7 @@ class MetricRegistry:
         if "@" in spec:
             metric_part, series = spec.rsplit("@", 1)
             if not series:
-                raise ValueError(
+                raise ValidationError(
                     f"Series vazio em '{spec}'. Use 'metrica@coluna' ou "
                     f"MetricSpec(name, series=coluna) para colunas com '@'."
                 )
@@ -102,7 +104,7 @@ class MetricRegistry:
 
         if name not in cls._metrics:
             available = ", ".join(sorted(cls._metrics.keys()))
-            raise ValueError(
+            raise RegistryError(
                 f"Metrica desconhecida: '{name}'. Disponiveis: {available}"
             )
 
@@ -126,7 +128,7 @@ class MetricRegistry:
 
         missing = [p for p in entry.required_params if p not in params]
         if missing:
-            raise ValueError(
+            raise ValidationError(
                 f"Metrica '{name}' requer parametro(s): {', '.join(missing)}. "
                 f"Use '{name}:{':'.join('<' + p + '>' for p in entry.param_names)}'."
             )

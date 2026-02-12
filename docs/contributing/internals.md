@@ -165,10 +165,10 @@ from loguru import logger
 logger.disable("chartkit")
 ```
 
-### Ativando Logs
+### Ativando e Desativando Logs
 
 ```python
-from chartkit import configure_logging
+from chartkit import configure_logging, disable_logging
 
 # Ativa logs DEBUG
 configure_logging(level="DEBUG")
@@ -177,27 +177,43 @@ configure_logging(level="DEBUG")
 configure_logging(level="INFO")
 
 # Direciona para arquivo
-configure_logging(level="DEBUG", sink="chartkit.log")
+configure_logging(level="DEBUG", sink=open("chartkit.log", "w"))
+
+# Desativa logging e remove handlers
+disable_logging()
 ```
+
+`configure_logging()` e idempotente: chamadas repetidas removem o handler anterior antes de adicionar o novo, evitando duplicacao de logs.
 
 ### Implementacao de configure_logging()
 
 ```python
-def configure_logging(level: str = "DEBUG", sink=None) -> None:
-    """
-    Ativa logging da biblioteca chartkit.
+_handler_ids: list[int] = []
 
-    Args:
-        level: Nivel minimo (DEBUG, INFO, WARNING, ERROR).
-        sink: Destino opcional (arquivo, stream). Se None, usa stderr.
+def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int:
+    # Remove handlers anteriores
+    for hid in _handler_ids:
+        try:
+            logger.remove(hid)
+        except ValueError:
+            pass
+    _handler_ids.clear()
 
-    Example:
-        >>> from chartkit import configure_logging
-        >>> configure_logging(level="DEBUG")
-    """
     logger.enable("chartkit")
-    if sink:
-        logger.add(sink, level=level)
+    target = sink if sink is not None else sys.stderr
+    handler_id = logger.add(target, level=level, filter="chartkit")
+    _handler_ids.append(handler_id)
+    return handler_id
+
+
+def disable_logging() -> None:
+    logger.disable("chartkit")
+    for hid in _handler_ids:
+        try:
+            logger.remove(hid)
+        except ValueError:
+            pass
+    _handler_ids.clear()
 ```
 
 ### Lazy Evaluation
@@ -215,11 +231,16 @@ logger.debug(f"find_project_root: encontrado {current}")
 
 ### Niveis de Log por Modulo
 
-| Modulo | DEBUG | INFO | WARNING |
-|--------|-------|------|---------|
-| `discovery.py` | Cache hits/misses, paths encontrados | - | - |
-| `loader.py` | Config files merged, overrides aplicados | - | Erros de TOML parsing |
-| `fonts.py` | - | - | Fonte nao encontrada |
+| Modulo | DEBUG | WARNING |
+|--------|-------|---------|
+| `engine.py` | Plot params, chart dispatch, highlight modes | - |
+| `collision.py` | Collision iteration counts, label movements | - |
+| `temporal.py` | Transform resolution (freq, periods) | - |
+| `_validation.py` | Auto-detected frequency, non-numeric columns filtered | - |
+| `discovery.py` | Cache hits/misses, paths encontrados | - |
+| `loader.py` | Config files merged, overrides aplicados | Erros de TOML parsing |
+| `fonts.py` | - | Fonte nao encontrada |
+| `bar.py` / `stacked_bar.py` | - | Empty series, NaN values, data length mismatches |
 
 ### Logging Conservador
 

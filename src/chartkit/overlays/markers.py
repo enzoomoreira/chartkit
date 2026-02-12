@@ -5,9 +5,11 @@ from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
+from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_moveable
+from ..exceptions import RegistryError
 from ..settings import get_config
 from ..styling.theme import theme
 
@@ -57,6 +59,7 @@ def _resolve_target(
         val = valid_series[idx]
 
     if not np.isfinite(val):
+        logger.debug("Highlight mode '{}': target value is not finite, skipping", mode)
         return None
     return idx, float(val)
 
@@ -140,10 +143,12 @@ def add_highlight(
         modes: Modos de highlight a aplicar. ``None`` = ``["last"]``.
     """
     if series.empty:
+        logger.warning("Highlight skipped: series is empty")
         return
 
     valid_series = series.dropna()
     if valid_series.empty:
+        logger.warning("Highlight skipped: all values are NaN")
         return
 
     if modes is None:
@@ -155,7 +160,7 @@ def add_highlight(
     if isinstance(style, str):
         if style not in HIGHLIGHT_STYLES:
             available = ", ".join(sorted(HIGHLIGHT_STYLES))
-            raise ValueError(
+            raise RegistryError(
                 f"Highlight style '{style}' nao suportado. Disponiveis: {available}"
             )
         style = HIGHLIGHT_STYLES[style]

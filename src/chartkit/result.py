@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
+from loguru import logger
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -35,6 +36,7 @@ class PlotResult:
 
     def show(self) -> PlotResult:
         """Exibe o grafico em janela interativa."""
+        logger.debug("PlotResult.show: '{}'", self.ax.get_title() or "Untitled")
         plt.show()
         return self
 

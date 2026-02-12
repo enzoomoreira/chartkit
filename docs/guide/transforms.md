@@ -74,7 +74,9 @@ df_var = variation(df, horizon='year', freq='Q')    # Trimestral: 4 periodos
 df_var = variation(df, horizon='year', periods=4)   # Override direto
 ```
 
-Frequencias suportadas: `D`, `B`, `W`, `M`, `Q`, `Y` (incluindo aliases e freq codes ancorados do pandas).
+Frequencias suportadas: `D`, `B`, `W`, `M`, `Q`, `Y`, `BME`, `BMS` (incluindo aliases como `daily`, `business`, `weekly`, `monthly`, `quarterly`, `yearly`, `annual` e freq codes ancorados do pandas como `W-SUN`, `QE-DEC`, `BQE-DEC`, `BYE-DEC`).
+
+Se a frequencia detectada nao for suportada, um `TransformError` e levantado com mensagem listando as frequencias validas e sugerindo uso de `periods=` explicito.
 
 ---
 
@@ -170,7 +172,7 @@ ipca_mensal.chartkit.accum().plot(
 
 ### diff() - Diferenca Absoluta
 
-Calcula diferenca absoluta entre periodos.
+Calcula diferenca absoluta entre periodos. `periods=0` e rejeitado com `ValidationError` (retornaria all-zeros, quase certamente erro do usuario).
 
 ```python
 def diff(df, periods: int = 1) -> DataFrame | Series
@@ -179,7 +181,7 @@ def diff(df, periods: int = 1) -> DataFrame | Series
 | Parametro | Tipo | Default | Descricao |
 |-----------|------|---------|-----------|
 | `df` | DataFrame \| Series | - | Dados com indice temporal |
-| `periods` | int | 1 | Periodos para diferenca |
+| `periods` | int | 1 | Periodos para diferenca (deve ser >= 1) |
 
 **Exemplo:**
 
@@ -277,7 +279,7 @@ ibovespa.chartkit.drawdown().plot(
 
 ### zscore() - Padronizacao Estatistica
 
-Transforma a serie em unidades de desvio padrao em relacao a media. Permite comparar series com unidades completamente diferentes no mesmo grafico.
+Transforma a serie em unidades de desvio padrao em relacao a media. Permite comparar series com unidades completamente diferentes no mesmo grafico. `window=1` e rejeitado com `ValidationError` (std de 1 valor e indefinido, produziria all-NaN).
 
 - **Global** (sem `window`): `(data - mean) / std`
 - **Rolling** (com `window`): `(data - rolling_mean) / rolling_std`
@@ -289,7 +291,7 @@ def zscore(df, window: int | None = None) -> DataFrame | Series
 | Parametro | Tipo | Default | Descricao |
 |-----------|------|---------|-----------|
 | `df` | DataFrame \| Series | - | Dados de entrada |
-| `window` | int \| None | None | Janela rolling. Se None, calcula z-score global |
+| `window` | int \| None | None | Janela rolling (deve ser >= 2). Se None, calcula z-score global |
 
 **Exemplo:**
 

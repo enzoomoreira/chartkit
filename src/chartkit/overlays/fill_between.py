@@ -1,4 +1,5 @@
 import pandas as pd
+from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_passive
@@ -27,6 +28,13 @@ def add_fill_between(
         y2: Serie superior (ou segunda serie).
     """
     config = get_config()
+
+    if len(y1) != len(y2):
+        logger.warning(
+            "fill_between: y1 ({}) and y2 ({}) have different lengths",
+            len(y1),
+            len(y2),
+        )
 
     fill_color = color if color is not None else theme.colors.primary
     fill_alpha = alpha if alpha is not None else config.bands.alpha

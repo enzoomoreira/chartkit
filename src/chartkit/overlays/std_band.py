@@ -2,6 +2,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_passive
+from ..exceptions import ValidationError
 from ..settings import get_config
 from ..styling.theme import theme
 
@@ -32,9 +33,9 @@ def add_std_band(
         series: Coluna a usar se y_data for DataFrame (default: primeira).
     """
     if window < 2:
-        raise ValueError(f"window must be >= 2, got {window}")
+        raise ValidationError(f"window must be >= 2, got {window}")
     if num_std <= 0:
-        raise ValueError(f"num_std must be positive, got {num_std}")
+        raise ValidationError(f"num_std must be positive, got {num_std}")
 
     config = get_config()
 

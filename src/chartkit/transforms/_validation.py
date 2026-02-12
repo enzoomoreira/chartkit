@@ -13,10 +13,8 @@ __all__ = [
     "sanitize_result",
     "validate_numeric",
     "validate_params",
-    "_PctChangeParams",
-    "_RollingParams",
-    "_NormalizeParams",
 ]
+
 
 import numpy as np
 import pandas as pd
@@ -36,6 +34,8 @@ FreqLiteral = Literal[
     "M",
     "Q",
     "Y",
+    "BME",
+    "BMS",
     "daily",
     "business",
     "weekly",
@@ -66,6 +66,8 @@ FREQ_ALIASES: dict[str, str] = {
     "Y": "YE",
     "yearly": "YE",
     "annual": "YE",
+    "BME": "BME",
+    "BMS": "BMS",
 }
 
 # Mapeamento de freq code normalizado -> periods por tipo de transform.
@@ -76,15 +78,31 @@ FREQ_PERIODS_MAP: dict[str, dict[TransformName, int]] = {
     "W": {"month": 4, "year": 52, "accum": 52, "annualize": 52},
     "ME": {"month": 1, "year": 12, "accum": 12, "annualize": 12},
     "MS": {"month": 1, "year": 12, "accum": 12, "annualize": 12},
+    "BME": {"month": 1, "year": 12, "accum": 12, "annualize": 12},
+    "BMS": {"month": 1, "year": 12, "accum": 12, "annualize": 12},
     "QE": {"month": 1, "year": 4, "accum": 4, "annualize": 4},
     "QS": {"month": 1, "year": 4, "accum": 4, "annualize": 4},
+    "BQE": {"month": 1, "year": 4, "accum": 4, "annualize": 4},
+    "BQS": {"month": 1, "year": 4, "accum": 4, "annualize": 4},
     "YE": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
     "YS": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
+    "BYE": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
+    "BYS": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
 }
 
 # Prefixos de freq codes ancorados que pd.infer_freq() pode retornar.
-# Ex: "W-SUN" -> "W", "QE-DEC" -> "QE", "YE-DEC" -> "YE"
-_ANCHORED_PREFIXES = ("W-", "QE-", "QS-", "BQE-", "BQS-", "YE-", "YS-", "BYE-", "BYS-")
+# Ex: "W-SUN" -> "W", "QE-DEC" -> "QE", "BYE-DEC" -> "BYE"
+_ANCHORED_PREFIXES = (
+    "W-",
+    "QE-",
+    "QS-",
+    "BQE-",
+    "BQS-",
+    "YE-",
+    "YS-",
+    "BYE-",
+    "BYS-",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -92,14 +110,14 @@ _ANCHORED_PREFIXES = ("W-", "QE-", "QS-", "BQE-", "BQS-", "YE-", "YS-", "BYE-", 
 # ---------------------------------------------------------------------------
 
 
-class _PctChangeParams(BaseModel):
-    """Validacao para variation/annualize."""
+class _FreqResolvedParams(BaseModel):
+    """Validacao para transforms que resolvem periods via frequencia (variation, annualize)."""
 
     periods: PositiveInt | None = None
     freq: FreqLiteral | None = None
 
     @model_validator(mode="after")
-    def _periods_xor_freq(self) -> _PctChangeParams:
+    def _periods_xor_freq(self) -> _FreqResolvedParams:
         if self.periods is not None and self.freq is not None:
             raise ValueError("Cannot specify both 'periods' and 'freq'")
         return self
@@ -123,6 +141,30 @@ class _NormalizeParams(BaseModel):
 
     base: PositiveInt | None = None
     base_date: str | None = None
+
+
+class _DiffParams(BaseModel):
+    """Validacao para diff."""
+
+    periods: int
+
+    @model_validator(mode="after")
+    def _nonzero(self) -> _DiffParams:
+        if self.periods == 0:
+            raise ValueError("'periods' must be non-zero (periods=0 returns all zeros)")
+        return self
+
+
+class _ZScoreParams(BaseModel):
+    """Validacao para zscore."""
+
+    window: PositiveInt | None = None
+
+    @model_validator(mode="after")
+    def _min_window(self) -> _ZScoreParams:
+        if self.window is not None and self.window < 2:
+            raise ValueError("'window' must be >= 2 (std of 1 value is undefined)")
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +202,7 @@ def coerce_input(data: object) -> pd.DataFrame | pd.Series:
     """Converte inputs comuns para DataFrame ou Series.
 
     Aceita: DataFrame, Series, dict, list, np.ndarray.
-    Raises ``TypeError`` para tipos nao suportados.
+    Raises ``TransformError`` para tipos nao suportados.
     """
     if isinstance(data, (pd.DataFrame, pd.Series)):
         return data
@@ -179,7 +221,7 @@ def coerce_input(data: object) -> pd.DataFrame | pd.Series:
             return pd.DataFrame(arr)
         raise TransformError(f"Arrays with {arr.ndim} dimensions are not supported")
 
-    raise TypeError(
+    raise TransformError(
         f"Expected DataFrame, Series, dict, list, or ndarray. Got {type(data).__name__}"
     )
 
@@ -251,8 +293,8 @@ def sanitize_result(
 def _normalize_freq_code(raw: str) -> str:
     """Normaliza freq code para chave do FREQ_PERIODS_MAP.
 
-    Trata aliases amigaveis ('M' -> 'ME') e freq codes ancorados
-    retornados por pd.infer_freq() ('W-SUN' -> 'W', 'QE-DEC' -> 'QE').
+    Trata aliases amigaveis (``'M'`` -> ``'ME'``) e freq codes ancorados
+    (``'W-SUN'`` -> ``'W'``, ``'BQE-DEC'`` -> ``'BQE'``).
     """
     if raw in FREQ_ALIASES:
         return FREQ_ALIASES[raw]
@@ -260,6 +302,9 @@ def _normalize_freq_code(raw: str) -> str:
     for prefix in _ANCHORED_PREFIXES:
         if raw.startswith(prefix):
             return prefix.rstrip("-")
+
+    if raw in FREQ_PERIODS_MAP:
+        return raw
 
     return raw
 
@@ -333,8 +378,14 @@ def resolve_periods(
                 "Auto-detected frequency '{}' for transform '{}'", detected, transform
             )
             return mapping[transform]
+        # Detectou frequencia mas nao e suportada
+        raise TransformError(
+            f"Detected frequency '{detected}' is not supported. "
+            f"Supported: {', '.join(sorted(FREQ_PERIODS_MAP.keys()))}. "
+            f"Pass periods= explicitly."
+        )
 
-    # 4. Nada funcionou
+    # 4. Nao conseguiu detectar frequencia
     raise TransformError(
         f"Cannot determine frequency for '{transform}'. "
         f"Pass freq= (e.g. 'M', 'D', 'B') or periods= explicitly."

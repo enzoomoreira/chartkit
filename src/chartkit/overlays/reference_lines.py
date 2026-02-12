@@ -1,6 +1,7 @@
 from typing import Any
 
 import pandas as pd
+from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_fixed
@@ -29,6 +30,9 @@ def _add_stat_line(
 
     value = getattr(y_data, stat)()
     if pd.isna(value):
+        logger.warning(
+            "Stat '{}' returned NaN for series, skipping reference line", stat
+        )
         return
 
     line = ax.axhline(

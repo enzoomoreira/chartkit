@@ -7,11 +7,14 @@ from typing import Literal, cast, get_args
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from loguru import logger
 from pydantic import BaseModel, StrictBool
+from pydantic import ValidationError as PydanticValidationError
 
 from ._internal import resolve_collisions
 from .charts import ChartRegistry
 from .decorations import add_footer
+from .exceptions import StateError, ValidationError
 from .metrics import MetricRegistry
 from .overlays import HighlightMode, add_fill_between
 from .result import PlotResult
@@ -50,7 +53,7 @@ def _normalize_highlight(highlight: HighlightInput) -> list[HighlightMode]:
     if isinstance(highlight, str):
         if highlight not in _VALID_HIGHLIGHT_MODES:
             available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
-            raise ValueError(
+            raise ValidationError(
                 f"Highlight mode '{highlight}' invalido. Disponiveis: {available}"
             )
         return [cast(HighlightMode, highlight)]
@@ -58,7 +61,9 @@ def _normalize_highlight(highlight: HighlightInput) -> list[HighlightMode]:
     for m in highlight:
         if m not in _VALID_HIGHLIGHT_MODES:
             available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
-            raise ValueError(f"Highlight mode '{m}' invalido. Disponiveis: {available}")
+            raise ValidationError(
+                f"Highlight mode '{m}' invalido. Disponiveis: {available}"
+            )
         modes.append(cast(HighlightMode, m))
     return modes
 
@@ -117,6 +122,14 @@ class ChartingPlotter:
         self._validate_params(units=units, legend=legend)
         config = get_config()
 
+        logger.debug(
+            "plot: kind={}, shape={}, units={}, metrics={}",
+            kind,
+            self.df.shape,
+            units,
+            metrics,
+        )
+
         # 1. Style
         theme.apply()
         fig, ax = plt.subplots(figsize=config.layout.figsize)
@@ -133,17 +146,29 @@ class ChartingPlotter:
         else:
             y_data = self.df[y]
 
+        y_cols = (
+            list(y_data.columns) if isinstance(y_data, pd.DataFrame) else [y_data.name]
+        )
+        logger.debug(
+            "Data: x={}, y_columns={}, y_shape={}",
+            "index" if x is None else x,
+            y_cols,
+            y_data.shape,
+        )
+
         # 3. Y formatter
         self._apply_y_formatter(ax, units)
 
         # 4. Plot
         chart_fn = ChartRegistry.get(kind)
+        logger.debug("Dispatch: kind='{}'", kind)
         chart_fn(ax, x_data, y_data, highlight=highlight_modes, **kwargs)
 
         # 5. Metrics
         if metrics:
             if isinstance(metrics, str):
                 metrics = [metrics]
+            logger.debug("Applying {} metric(s)", len(metrics))
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
         # 5b. Fill between
@@ -165,17 +190,15 @@ class ChartingPlotter:
 
     @staticmethod
     def _validate_params(units: UnitFormat | None, legend: bool | None) -> None:
-        from pydantic import ValidationError
-
         try:
             _PlotParams(units=units, legend=legend)
-        except ValidationError as exc:
+        except PydanticValidationError as exc:
             errors = exc.errors()
             msgs = [
                 f"  {e['loc'][0]}: {e['msg']}" if e.get("loc") else f"  {e['msg']}"
                 for e in errors
             ]
-            raise ValueError(
+            raise ValidationError(
                 "Parametros de plot invalidos:\n" + "\n".join(msgs)
             ) from exc
 
@@ -219,10 +242,10 @@ class ChartingPlotter:
         """Salva o grafico em arquivo.
 
         Raises:
-            RuntimeError: Se nenhum grafico foi gerado ainda.
+            StateError: Se nenhum grafico foi gerado ainda.
         """
         if self._fig is None:
-            raise RuntimeError("Nenhum grafico gerado. Chame plot() primeiro.")
+            raise StateError("Nenhum grafico gerado. Chame plot() primeiro.")
 
         config = get_config()
 
@@ -235,4 +258,5 @@ class ChartingPlotter:
             charts_path.mkdir(parents=True, exist_ok=True)
             path_obj = charts_path / path_obj
 
+        logger.info("Saving: {} (dpi={})", path_obj, dpi)
         self._fig.savefig(path_obj, bbox_inches="tight", dpi=dpi)

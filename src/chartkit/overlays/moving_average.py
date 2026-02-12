@@ -2,6 +2,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_passive
+from ..exceptions import ValidationError
 from ..settings import get_config
 
 
@@ -22,7 +23,7 @@ def add_moving_average(
         series: Coluna a usar se y_data for DataFrame (default: primeira).
     """
     if window < 1:
-        raise ValueError(f"window must be >= 1, got {window}")
+        raise ValidationError(f"window must be >= 1, got {window}")
 
     config = get_config()
 

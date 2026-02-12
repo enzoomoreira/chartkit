@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any, Callable, Protocol
 import pandas as pd
 from matplotlib.axes import Axes
 
+from ..exceptions import RegistryError
+
 if TYPE_CHECKING:
     from ..overlays.markers import HighlightMode
 
@@ -48,11 +50,11 @@ class ChartRegistry:
         """Retorna a funcao de rendering para o chart type.
 
         Raises:
-            ValueError: Chart type nao registrado.
+            RegistryError: Chart type nao registrado.
         """
         if name not in cls._charts:
             available = ", ".join(sorted(cls._charts.keys()))
-            raise ValueError(
+            raise RegistryError(
                 f"Chart type '{name}' nao suportado. Disponiveis: {available}"
             )
         return cls._charts[name]

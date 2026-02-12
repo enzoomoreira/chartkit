@@ -114,10 +114,10 @@ Accessor encadeavel para transformacoes. Cada metodo retorna novo `TransformAcce
 |--------|------------|-----------|
 | `variation()` | `variation(horizon: str = "month", periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Variacao percentual por horizonte (`'month'` ou `'year'`, auto-detect de frequencia) |
 | `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Acumulado via produto composto em janela movel (fallback: `config.transforms.accum_window`) |
-| `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Diferenca absoluta entre periodos |
+| `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Diferenca absoluta entre periodos (periods >= 1) |
 | `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normaliza serie (default: `config.transforms.normalize_base`) |
 | `drawdown()` | `drawdown() -> TransformAccessor` | Distancia percentual do pico historico |
-| `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Padronizacao estatistica (global ou rolling) |
+| `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Padronizacao estatistica (global ou rolling, window >= 2) |
 | `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Anualiza taxa periodica via juros compostos (auto-detect de frequencia) |
 | `to_month_end()` | `to_month_end() -> TransformAccessor` | Normaliza indice para fim do mes |
 | `plot()` | `plot(**kwargs) -> PlotResult` | Finaliza cadeia e plota |
@@ -239,10 +239,18 @@ Reseta configuracoes para defaults.
 ### configure_logging()
 
 ```python
-def configure_logging(level: str = "DEBUG", sink: Any = None) -> None
+def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int
 ```
 
-Ativa logging da biblioteca (desabilitado por padrao).
+Ativa logging da biblioteca (desabilitado por padrao). Chamadas repetidas removem o handler anterior antes de adicionar o novo, evitando duplicacao de logs. Retorna o ID do handler adicionado.
+
+### disable_logging()
+
+```python
+def disable_logging() -> None
+```
+
+Desativa logging da biblioteca e remove todos os handlers adicionados por `configure_logging()`. Reverte ao estado inicial (logging desabilitado).
 
 ---
 
@@ -430,8 +438,8 @@ class ChartingConfig(BaseSettings):
 
 | Campo | Tipo | Default |
 |-------|------|---------|
-| `normalize_base` | `int` | `100` |
-| `accum_window` | `int` | `12` |
+| `normalize_base` | `PositiveInt` | `100` |
+| `accum_window` | `PositiveInt` | `12` |
 
 #### FormattersConfig
 
@@ -480,18 +488,33 @@ class ChartingConfig(BaseSettings):
 | Classe | Base | Descricao |
 |--------|------|-----------|
 | `ChartKitError` | `Exception` | Excecao base da biblioteca |
-| `TransformError` | `ChartKitError` | Erro de validacao ou execucao em transforms |
+| `TransformError` | `ChartKitError` | Erro durante validacao ou execucao de transforms |
+| `ValidationError` | `ChartKitError`, `ValueError` | Erro de validacao de parametro ou input |
+| `RegistryError` | `ChartKitError`, `LookupError` | Erro de lookup em registry (chart type, metrica, style) |
+| `StateError` | `ChartKitError`, `RuntimeError` | Erro de operacao em estado invalido |
+
+As novas excecoes herdam dos tipos built-in correspondentes, mantendo compatibilidade com `except ValueError`, `except LookupError` e `except RuntimeError`. Use `except ChartKitError` para capturar todos os erros da biblioteca.
 
 `TransformError` e levantado quando:
 - `drawdown()` recebe dados com valores nao-positivos
 - Auto-deteccao de frequencia falha e nenhum `periods=`/`freq=` foi fornecido
+- Frequencia detectada mas nao suportada (com mensagem listando frequencias validas)
 - Parametros mutuamente exclusivos (`periods` e `freq`) sao passados simultaneamente
+- `normalize(base_date=...)` recebe data invalida
 
-`ValueError` e levantado quando:
+`ValidationError` e levantado quando:
 - `plot()` recebe modo invalido em `highlight` (ex: `"banana"` em vez de `"last"`, `"max"` ou `"min"`)
 - `plot()` recebe valor invalido em `units` (ex: `"EUR"` em vez de `"BRL"`)
 - `y_origin` recebe valor fora de `"zero"` / `"auto"` em graficos de barras
+- `diff(periods=0)` (retorna all-zeros, quase certamente erro do usuario)
+- `zscore(window=1)` (std de 1 valor e indefinido)
+
+`RegistryError` e levantado quando:
+- `ChartRegistry.get()` recebe chart type nao registrado
 - `add_highlight()` recebe `style` nao registrado em `HIGHLIGHT_STYLES`
+
+`StateError` e levantado quando:
+- Operacao requer estado que nao foi inicializado
 
 ---
 
@@ -502,6 +525,7 @@ from chartkit import (
     # Configuracao
     configure,
     configure_logging,
+    disable_logging,
     get_config,
     reset_config,
     ChartingConfig,
@@ -534,6 +558,9 @@ from chartkit import (
     # Exceptions
     ChartKitError,
     TransformError,
+    ValidationError,
+    RegistryError,
+    StateError,
 
     # Transforms (funcoes standalone)
     variation,

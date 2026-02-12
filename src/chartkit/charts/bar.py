@@ -6,6 +6,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
+from ..exceptions import ValidationError
 from ..overlays.markers import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
@@ -32,7 +33,9 @@ def plot_bar(
             ``'auto'`` ajusta limites para focar nos dados com margem.
     """
     if y_origin not in ("zero", "auto"):
-        raise ValueError(f"y_origin deve ser 'zero' ou 'auto', recebeu: {y_origin!r}")
+        raise ValidationError(
+            f"y_origin deve ser 'zero' ou 'auto', recebeu: {y_origin!r}"
+        )
 
     config = get_config()
     bars = config.bars
@@ -45,7 +48,7 @@ def plot_bar(
     if multi_col:
         if len(y_data) > bars.warning_threshold:
             logger.warning(
-                "Bar chart com {} pontos pode ficar ilegivel. Considere kind='line'.",
+                "Bar chart with {} points may be hard to read. Consider kind='line'.",
                 len(y_data),
             )
         # pandas .plot(kind="bar") usa eixo categorico; width e relativo (0-1)
@@ -55,7 +58,7 @@ def plot_bar(
 
         if len(vals) > bars.warning_threshold:
             logger.warning(
-                "Bar chart com {} pontos pode ficar ilegivel. Considere kind='line'.",
+                "Bar chart with {} points may be hard to read. Consider kind='line'.",
                 len(vals),
             )
 

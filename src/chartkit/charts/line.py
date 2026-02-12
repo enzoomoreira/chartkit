@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import pandas as pd
+from loguru import logger
 from matplotlib.axes import Axes
 
 from ..overlays.markers import add_highlight
@@ -31,6 +32,8 @@ def plot_line(
 
     if isinstance(y_data, pd.Series):
         y_data = y_data.to_frame()
+
+    logger.debug("plot_line: {} series, {} points", len(y_data.columns), len(y_data))
 
     user_color = kwargs.pop("color", None)
     user_linewidth = kwargs.pop("linewidth", None)

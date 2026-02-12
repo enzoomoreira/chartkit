@@ -13,6 +13,7 @@ from typing import Protocol, runtime_checkable
 from weakref import WeakKeyDictionary
 
 import matplotlib.dates as mdates
+from loguru import logger
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import RendererBase
@@ -79,6 +80,9 @@ def resolve_collisions(ax: Axes) -> None:
 
     # Obstaculos: registrados explicitamente + patches auto-detectados
     fixed = _collect_obstacles(ax, moveables)
+    logger.debug(
+        "Collision: {} moveable(s), {} obstacle(s)", len(positionable), len(fixed)
+    )
 
     if fixed:
         _resolve_against_fixed(positionable, fixed, renderer, ax, collision)

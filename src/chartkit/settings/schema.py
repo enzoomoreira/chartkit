@@ -2,7 +2,7 @@
 
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PositiveInt
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -176,8 +176,8 @@ class CollisionConfig(BaseModel):
 
 
 class TransformsConfig(BaseModel):
-    normalize_base: int = 100
-    accum_window: int = 12
+    normalize_base: PositiveInt = 100
+    accum_window: PositiveInt = 12
 
 
 class LocaleConfig(BaseModel):
