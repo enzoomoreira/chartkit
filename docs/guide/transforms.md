@@ -1,19 +1,19 @@
 # Transforms
 
-Funcoes de transformacao para series temporais financeiras.
+Transformation functions for financial time series.
 
-## Resumo
+## Summary
 
-| Funcao | Descricao | Uso tipico |
-|--------|-----------|------------|
-| `variation()` | Variacao percentual por horizonte | IPCA mensal, crescimento anual |
-| `accum()` | Acumulado em janela movel | IPCA 12m, Selic 12m |
-| `diff()` | Diferenca absoluta | Variacao em p.p. |
-| `normalize()` | Normaliza para base | Comparar escalas |
-| `drawdown()` | Distancia percentual do pico | Queda de ativos |
-| `zscore()` | Padronizacao estatistica | Comparar series |
-| `annualize()` | Anualiza taxa periodica | CDI anual |
-| `to_month_end()` | Normaliza para fim do mes | Alinhar series |
+| Function | Description | Typical Use |
+|----------|-------------|-------------|
+| `variation()` | Percentage variation by horizon | Monthly CPI, annual growth |
+| `accum()` | Accumulated in rolling window | Trailing 12m CPI, Selic 12m |
+| `diff()` | Absolute difference | Variation in p.p. |
+| `normalize()` | Normalize to base | Compare scales |
+| `drawdown()` | Percentage distance from peak | Asset decline |
+| `zscore()` | Statistical standardization | Compare series |
+| `annualize()` | Annualize periodic rate | Annual CDI |
+| `to_month_end()` | Normalize to month-end | Align series |
 
 ## Import
 
@@ -25,286 +25,286 @@ from chartkit import (
 )
 ```
 
-## Uso Encadeado via Accessor
+## Chained Usage via Accessor
 
-Todos os transforms podem ser encadeados diretamente no DataFrame usando o accessor `.chartkit`:
+All transforms can be chained directly on the DataFrame using the `.chartkit` accessor:
 
 ```python
 import pandas as pd
 
-# Carregar dados
-df = pd.read_csv('dados.csv', index_col=0, parse_dates=True)
+# Load data
+df = pd.read_csv('data.csv', index_col=0, parse_dates=True)
 
-# Encadeamento simples
-df.chartkit.variation(horizon='year').plot(title="Variacao Anual")
+# Simple chaining
+df.chartkit.variation(horizon='year').plot(title="Annual Variation")
 
-# Com metricas e salvamento
+# With metrics and saving
 df.chartkit.annualize().plot(metrics=['ath']).save('chart.png')
 
-# Acesso ao DataFrame transformado (sem plotar)
+# Access the transformed DataFrame (without plotting)
 df_transformed = df.chartkit.variation(horizon='year').df
 ```
 
-O accessor retorna um `TransformAccessor` que permite encadear quantas transformacoes forem necessarias antes de finalizar com `.plot()` ou acessar o DataFrame via `.df`.
+The accessor returns a `TransformAccessor` that allows chaining as many transformations as needed before finalizing with `.plot()` or accessing the DataFrame via `.df`.
 
-## Contrato Unificado de Entrada
+## Unified Input Contract
 
-Todas as funcoes de transformacao aceitam multiplos tipos de entrada:
+All transformation functions accept multiple input types:
 
-- `pd.DataFrame` e `pd.Series` (tipos primarios)
-- `dict`, `list` e `np.ndarray` (convertidos automaticamente)
+- `pd.DataFrame` and `pd.Series` (primary types)
+- `dict`, `list`, and `np.ndarray` (automatically converted)
 
-A coercao e feita internamente. Colunas nao-numericas sao filtradas com warning, e valores `inf`/`-inf` no resultado sao substituidos por `NaN`.
+Coercion is done internally. Non-numeric columns are filtered with a warning, and `inf`/`-inf` values in the result are replaced with `NaN`.
 
-## Auto-Deteccao de Frequencia
+## Auto-Detection of Frequency
 
-As funcoes `variation`, `accum` e `annualize` detectam automaticamente a frequencia dos dados via `pd.infer_freq`, resolvendo o numero de periodos adequado (ex: 12 para dados mensais, 252 para diarios).
+The `variation`, `accum`, and `annualize` functions automatically detect data frequency via `pd.infer_freq`, resolving the appropriate number of periods (e.g., 12 for monthly data, 252 for daily).
 
-Voce pode usar o parametro `freq=` como alternativa a `periods=`/`window=`:
+You can use the `freq=` parameter as an alternative to `periods=`/`window=`:
 
 ```python
-# Auto-detect (usa pd.infer_freq)
+# Auto-detect (uses pd.infer_freq)
 df_var = variation(df, horizon='year')
 
-# Frequencia explicita
-df_var = variation(df, horizon='year', freq='M')    # Mensal: 12 periodos
-df_var = variation(df, horizon='year', freq='Q')    # Trimestral: 4 periodos
+# Explicit frequency
+df_var = variation(df, horizon='year', freq='M')    # Monthly: 12 periods
+df_var = variation(df, horizon='year', freq='Q')    # Quarterly: 4 periods
 
-# Periodos explicitos (mutuamente exclusivo com freq)
-df_var = variation(df, horizon='year', periods=4)   # Override direto
+# Explicit periods (mutually exclusive with freq)
+df_var = variation(df, horizon='year', periods=4)   # Direct override
 ```
 
-Frequencias suportadas: `D`, `B`, `W`, `M`, `Q`, `Y`, `BME`, `BMS` (incluindo aliases como `daily`, `business`, `weekly`, `monthly`, `quarterly`, `yearly`, `annual` e freq codes ancorados do pandas como `W-SUN`, `QE-DEC`, `BQE-DEC`, `BYE-DEC`).
+Supported frequencies: `D`, `B`, `W`, `M`, `Q`, `Y`, `BME`, `BMS` (including aliases like `daily`, `business`, `weekly`, `monthly`, `quarterly`, `yearly`, `annual` and anchored pandas freq codes like `W-SUN`, `QE-DEC`, `BQE-DEC`, `BYE-DEC`).
 
-Se a frequencia detectada nao for suportada, um `TransformError` e levantado com mensagem listando as frequencias validas e sugerindo uso de `periods=` explicito.
+If the detected frequency is not supported, a `TransformError` is raised with a message listing valid frequencies and suggesting the use of explicit `periods=`.
 
 ---
 
-## Transformacoes Basicas
+## Basic Transformations
 
-### variation() - Variacao Percentual
+### variation() - Percentage Variation
 
-Calcula variacao percentual entre periodos com horizonte configuravel. O `horizon` determina o numero de periodos de comparacao com base na frequencia dos dados (ex: `'month'` em dados mensais -> 1 periodo, `'year'` em dados mensais -> 12 periodos).
+Calculates percentage variation between periods with a configurable horizon. The `horizon` determines the number of comparison periods based on data frequency (e.g., `'month'` on monthly data -> 1 period, `'year'` on monthly data -> 12 periods).
 
 ```python
 def variation(df, horizon: str = "month", periods: int | None = None, freq: str | None = None) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Dados de entrada |
-| `horizon` | str | `"month"` | Horizonte de comparacao: `'month'` ou `'year'` |
-| `periods` | int \| None | None | Override do numero de periodos. Mutuamente exclusivo com `freq` |
-| `freq` | str \| None | None | Frequencia dos dados (`'D'`, `'M'`, `'Q'`, etc.). Mutuamente exclusivo com `periods` |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Input data |
+| `horizon` | str | `"month"` | Comparison horizon: `'month'` or `'year'` |
+| `periods` | int \| None | None | Override for number of periods. Mutually exclusive with `freq` |
+| `freq` | str \| None | None | Data frequency (`'D'`, `'M'`, `'Q'`, etc.). Mutually exclusive with `periods` |
 
-**Exemplo:**
+**Example:**
 
 ```python
 import pandas as pd
 from chartkit import variation
 
-# Dados mensais
+# Monthly data
 df = pd.DataFrame({
-    'valor': [100, 102, 101, 105]
+    'value': [100, 102, 101, 105]
 }, index=pd.date_range('2024-01', periods=4, freq='ME'))
 
-# Variacao mensal (auto-detect: dados mensais -> periods=1)
+# Month-over-month variation (auto-detect: monthly data -> periods=1)
 df_mom = variation(df)
-# Resultado: [NaN, 2.0, -0.98, 3.96]
+# Result: [NaN, 2.0, -0.98, 3.96]
 
-# Variacao anual (auto-detect: dados mensais -> periods=12)
+# Year-over-year variation (auto-detect: monthly data -> periods=12)
 df_yoy = variation(df, horizon='year')
 
-# Dados trimestrais + horizonte anual (auto-detect: trimestral -> 4 periodos)
-df_yoy = variation(df_trimestral, horizon='year')
+# Quarterly data + annual horizon (auto-detect: quarterly -> 4 periods)
+df_yoy = variation(df_quarterly, horizon='year')
 
-# Frequencia explicita
-df_yoy = variation(df, horizon='year', freq='Q')  # Trimestral: 4 periodos
+# Explicit frequency
+df_yoy = variation(df, horizon='year', freq='Q')  # Quarterly: 4 periods
 
-# Periodos explicitos
+# Explicit periods
 df_yoy = variation(df, horizon='year', periods=4)
 
 # Via accessor
-df.chartkit.variation(horizon='month').plot(title="Variacao Mensal")
-df.chartkit.variation(horizon='year').plot(title="Variacao Anual")
+df.chartkit.variation(horizon='month').plot(title="Monthly Variation")
+df.chartkit.variation(horizon='year').plot(title="Annual Variation")
 ```
 
 ---
 
-### accum() - Acumulado em Janela Movel
+### accum() - Accumulated in Rolling Window
 
-Calcula variacao acumulada via produto composto em janela movel. A janela e resolvida pela seguinte precedencia: `window=` explicito > `freq=` explicito > auto-detect via `pd.infer_freq` > fallback para `config.transforms.accum_window` (default: 12).
+Calculates accumulated variation via compound product in a rolling window. The window is resolved by the following precedence: explicit `window=` > explicit `freq=` > auto-detect via `pd.infer_freq` > fallback to `config.transforms.accum_window` (default: 12).
 
-**Formula:** `(Produto(1 + x/100) - 1) * 100`
+**Formula:** `(Product(1 + x/100) - 1) * 100`
 
 ```python
 def accum(df, window: int | None = None, freq: str | None = None) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Taxas em percentual |
-| `window` | int \| None | None | Tamanho da janela em periodos. Mutuamente exclusivo com `freq` |
-| `freq` | str \| None | None | Frequencia dos dados (`'D'`, `'M'`, `'Q'`, etc.). Mutuamente exclusivo com `window` |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Rates in percentage |
+| `window` | int \| None | None | Window size in periods. Mutually exclusive with `freq` |
+| `freq` | str \| None | None | Data frequency (`'D'`, `'M'`, `'Q'`, etc.). Mutually exclusive with `window` |
 
-**Exemplo:**
+**Example:**
 
 ```python
 from chartkit import accum
 
-# IPCA mensal -> IPCA acumulado 12 meses (auto-detect: mensal -> 12)
-ipca_12m = accum(ipca_mensal)
+# Monthly CPI -> trailing 12-month CPI (auto-detect: monthly -> 12)
+cpi_12m = accum(monthly_cpi)
 
-# Janela explicita de 6 meses
-ipca_6m = accum(ipca_mensal, window=6)
+# Explicit 6-month window
+cpi_6m = accum(monthly_cpi, window=6)
 
-# Frequencia explicita
-ipca_12m = accum(ipca_mensal, freq='M')
+# Explicit frequency
+cpi_12m = accum(monthly_cpi, freq='M')
 
-# Via accessor com plotagem
-ipca_mensal.chartkit.accum().plot(
-    title="IPCA Acumulado 12 Meses",
+# Via accessor with plotting
+monthly_cpi.chartkit.accum().plot(
+    title="CPI Trailing 12 Months",
     units='%'
 )
 ```
 
 ---
 
-### diff() - Diferenca Absoluta
+### diff() - Absolute Difference
 
-Calcula diferenca absoluta entre periodos. `periods=0` e rejeitado com `ValidationError` (retornaria all-zeros, quase certamente erro do usuario).
+Calculates absolute difference between periods. `periods=0` is rejected with `ValidationError` (would return all-zeros, almost certainly a user error).
 
 ```python
 def diff(df, periods: int = 1) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Dados com indice temporal |
-| `periods` | int | 1 | Periodos para diferenca (deve ser >= 1) |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Data with temporal index |
+| `periods` | int | 1 | Periods for difference (must be >= 1) |
 
-**Exemplo:**
+**Example:**
 
 ```python
 from chartkit import diff
 
-# Variacao em pontos percentuais
-df_diff = diff(selic)  # Diferenca para periodo anterior
+# Variation in percentage points
+df_diff = diff(selic)  # Difference from previous period
 
-# Diferenca de 12 meses
+# 12-month difference
 df_diff_12m = diff(selic, periods=12)
 
 # Via accessor
-selic.chartkit.diff().plot(title="Variacao da Selic (p.p.)")
+selic.chartkit.diff().plot(title="Selic Variation (p.p.)")
 ```
 
 ---
 
-### normalize() - Normalizacao
+### normalize() - Normalization
 
-Normaliza serie para um valor base em data especifica. Util para comparar series com escalas diferentes. Usa o primeiro valor nao-NaN como referencia; `base_date` busca a data mais proxima (nearest) se a data exata nao existir no indice.
+Normalizes series to a base value at a specific date. Useful for comparing series with different scales. Uses the first non-NaN value as reference; `base_date` finds the nearest date if the exact date doesn't exist in the index.
 
 ```python
 def normalize(df, base: int | None = None, base_date: str | None = None) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Dados com indice temporal |
-| `base` | int \| None | None | Valor base para normalizacao (default: `config.transforms.normalize_base`) |
-| `base_date` | str \| None | None | Data base. Se None, usa primeiro valor nao-NaN. Busca nearest se data exata nao existir |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Data with temporal index |
+| `base` | int \| None | None | Base value for normalization (default: `config.transforms.normalize_base`) |
+| `base_date` | str \| None | None | Base date. If None, uses first non-NaN value. Finds nearest if exact date doesn't exist |
 
-**Exemplo:**
+**Example:**
 
 ```python
 from chartkit import normalize
 import pandas as pd
 
-# Base 100 na primeira data
+# Base 100 at first date
 df_norm = normalize(df)
 
-# Base 100 em data especifica
+# Base 100 at specific date
 df_norm = normalize(df, base_date='2020-01-01')
 
-# Comparar duas series com escalas diferentes
+# Compare two series with different scales
 series_a = normalize(df['ibovespa'])
 series_b = normalize(df['sp500'])
 
-comparativo = pd.concat([series_a, series_b], axis=1)
-comparativo.chartkit.plot(title="Comparativo Base 100")
+comparison = pd.concat([series_a, series_b], axis=1)
+comparison.chartkit.plot(title="Base 100 Comparison")
 
 # Via accessor
 df.chartkit.normalize(base_date='2020-01-01').plot(
-    title="Indices Normalizados (Base 100 = Jan/2020)"
+    title="Normalized Indices (Base 100 = Jan/2020)"
 )
 ```
 
 ---
 
-## Analise Estatistica
+## Statistical Analysis
 
-### drawdown() - Distancia do Pico
+### drawdown() - Distance from Peak
 
-Calcula a distancia percentual do pico historico (cumulative maximum). Retorna valores <= 0, onde 0 indica que o valor esta no pico e valores negativos indicam a magnitude da queda.
+Calculates the percentage distance from the historical peak (cumulative maximum). Returns values <= 0, where 0 indicates the value is at the peak and negative values indicate the magnitude of the decline.
 
 **Formula:** `(data / cummax - 1) * 100`
 
-Requer valores estritamente positivos. Raises `TransformError` se os dados contiverem zero ou negativos.
+Requires strictly positive values. Raises `TransformError` if data contains zero or negative values.
 
 ```python
 def drawdown(df) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Dados com valores positivos (precos, indices) |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Data with positive values (prices, indices) |
 
-**Exemplo:**
+**Example:**
 
 ```python
 from chartkit import drawdown
 
-# Queda em relacao ao pico
+# Decline from peak
 dd = drawdown(ibovespa)
-# Resultado: [0, -2.3, -5.1, 0, -1.2, ...]
+# Result: [0, -2.3, -5.1, 0, -1.2, ...]
 
 # Via accessor
 ibovespa.chartkit.drawdown().plot(
-    title="Drawdown do Ibovespa",
+    title="Ibovespa Drawdown",
     units='%'
 )
 ```
 
 ---
 
-### zscore() - Padronizacao Estatistica
+### zscore() - Statistical Standardization
 
-Transforma a serie em unidades de desvio padrao em relacao a media. Permite comparar series com unidades completamente diferentes no mesmo grafico. `window=1` e rejeitado com `ValidationError` (std de 1 valor e indefinido, produziria all-NaN).
+Transforms the series into standard deviation units relative to the mean. Allows comparing series with completely different units on the same chart. `window=1` is rejected with `ValidationError` (std of 1 value is undefined, would produce all-NaN).
 
-- **Global** (sem `window`): `(data - mean) / std`
-- **Rolling** (com `window`): `(data - rolling_mean) / rolling_std`
+- **Global** (without `window`): `(data - mean) / std`
+- **Rolling** (with `window`): `(data - rolling_mean) / rolling_std`
 
 ```python
 def zscore(df, window: int | None = None) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Dados de entrada |
-| `window` | int \| None | None | Janela rolling (deve ser >= 2). Se None, calcula z-score global |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Input data |
+| `window` | int \| None | None | Rolling window (must be >= 2). If None, calculates global z-score |
 
-**Exemplo:**
+**Example:**
 
 ```python
 from chartkit import zscore
 
-# Z-score global
+# Global z-score
 df_z = zscore(df)
 
-# Z-score rolling (janela de 12 periodos)
+# Rolling z-score (12-period window)
 df_z = zscore(df, window=12)
 
-# Comparar series com escalas diferentes
+# Compare series with different scales
 import pandas as pd
 
 df = pd.DataFrame({
@@ -312,17 +312,17 @@ df = pd.DataFrame({
     'sp500': sp_values,
 })
 
-# Z-score elimina escala, permite comparacao direta
+# Z-score eliminates scale, allows direct comparison
 df.chartkit.zscore().plot(title="Ibovespa vs S&P 500 (Z-Score)")
 ```
 
 ---
 
-## Transformacoes de Juros
+## Interest Rate Transformations
 
-### annualize() - Anualizar Taxa Periodica
+### annualize() - Annualize Periodic Rate
 
-Anualiza taxa periodica para taxa anual usando juros compostos. O numero de periodos por ano e resolvido automaticamente pela frequencia dos dados (ex: 252 para diario, 12 para mensal). Suporta auto-deteccao de frequencia.
+Annualizes a periodic rate to an annual rate using compound interest. The number of periods per year is automatically resolved by data frequency (e.g., 252 for daily, 12 for monthly). Supports auto-detection of frequency.
 
 **Formula:** `((1 + r/100) ^ periods_per_year - 1) * 100`
 
@@ -330,61 +330,61 @@ Anualiza taxa periodica para taxa anual usando juros compostos. O numero de peri
 def annualize(df, periods: int | None = None, freq: str | None = None) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Taxas em % |
-| `periods` | int \| None | None | Periodos por ano para composicao. Mutuamente exclusivo com `freq` |
-| `freq` | str \| None | None | Frequencia dos dados (`'D'`, `'B'`, `'M'`, `'Q'`, etc.). Mutuamente exclusivo com `periods` |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Rates in % |
+| `periods` | int \| None | None | Periods per year for compounding. Mutually exclusive with `freq` |
+| `freq` | str \| None | None | Data frequency (`'D'`, `'B'`, `'M'`, `'Q'`, etc.). Mutually exclusive with `periods` |
 
-**Exemplo:**
+**Example:**
 
 ```python
 from chartkit import annualize
 
-# CDI diario -> CDI anualizado (auto-detect: diario -> 252 periodos)
-cdi_anual = annualize(cdi_diario)
+# Daily CDI -> annualized CDI (auto-detect: daily -> 252 periods)
+annual_cdi = annualize(daily_cdi)
 
-# Frequencia explicita
-cdi_anual = annualize(cdi_diario, freq='B')  # Business days: 252 periodos
+# Explicit frequency
+annual_cdi = annualize(daily_cdi, freq='B')  # Business days: 252 periods
 
-# Periodos explicitos
-cdi_anual = annualize(cdi_diario, periods=252)
+# Explicit periods
+annual_cdi = annualize(daily_cdi, periods=252)
 
-# Taxa mensal -> anualizada (auto-detect: mensal -> 12 periodos)
-taxa_anual = annualize(taxa_mensal)
+# Monthly rate -> annualized (auto-detect: monthly -> 12 periods)
+annual_rate = annualize(monthly_rate)
 
 # Via accessor
-cdi_diario.chartkit.annualize().plot(
-    title="CDI Anualizado",
+daily_cdi.chartkit.annualize().plot(
+    title="Annualized CDI",
     units='%'
 )
 ```
 
 ---
 
-### to_month_end() - Normalizar para Fim do Mes
+### to_month_end() - Normalize to Month-End
 
-Normaliza indice temporal para ultimo dia do mes. Util para alinhar series com frequencias diferentes antes de operacoes. Raises `TypeError` se o indice nao for `DatetimeIndex`.
+Normalizes temporal index to last day of the month. Useful for aligning series with different frequencies before operations. Raises `TypeError` if the index is not a `DatetimeIndex`.
 
 ```python
 def to_month_end(df) -> DataFrame | Series
 ```
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `df` | DataFrame \| Series | - | Dados com DatetimeIndex |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Data with DatetimeIndex |
 
-**Exemplo:**
+**Example:**
 
 ```python
 from chartkit import to_month_end
 
-# Alinhar series antes de operacoes
+# Align series before operations
 selic = to_month_end(selic)
-ipca = to_month_end(ipca)
+cpi = to_month_end(cpi)
 
-# Agora podem ser operadas juntas
-spread = selic - ipca
+# Now they can be operated together
+spread = selic - cpi
 
 # Via accessor
 selic.chartkit.to_month_end().plot()
@@ -392,106 +392,106 @@ selic.chartkit.to_month_end().plot()
 
 ---
 
-## Casos de Uso Compostos
+## Composite Use Cases
 
-### Comparacao de Indices Base 100
+### Base 100 Index Comparison
 
-Comparar performance de ativos com escalas diferentes:
+Compare asset performance with different scales:
 
 ```python
 import pandas as pd
 from chartkit import normalize
 
-# Duas series com escalas diferentes
+# Two series with different scales
 df = pd.DataFrame({
     'ibovespa': [100000, 105000, 102000, 110000],
     'sp500': [4000, 4200, 4100, 4400],
 }, index=pd.date_range('2024-01', periods=4, freq='ME'))
 
-# Normaliza para base 100
+# Normalize to base 100
 df_norm = normalize(df)
 
-# Compara evolucao
+# Compare evolution
 df_norm.chartkit.plot(title="Ibovespa vs S&P500 (Base 100)")
 ```
 
-### IPCA Mensal para 12 Meses
+### Monthly CPI to 12 Months
 
-Transformar variacao mensal em acumulado anualizado:
+Transform monthly variation into annualized accumulated:
 
 ```python
-# IPCA mensal (ex: 0.5, 0.3, 0.8, ...)
-ipca_mensal.chartkit.accum().plot(
-    title="IPCA Acumulado 12 Meses",
+# Monthly CPI (e.g., 0.5, 0.3, 0.8, ...)
+monthly_cpi.chartkit.accum().plot(
+    title="CPI Trailing 12 Months",
     units='%'
 )
 ```
 
-### Selic Diaria para Taxa Anual
+### Daily Selic to Annual Rate
 
-Converter taxa diaria do CDI/Selic para equivalente anual:
+Convert daily CDI/Selic rate to annual equivalent:
 
 ```python
-# CDI diario (ex: 0.0398, 0.0399, ...)
+# Daily CDI (e.g., 0.0398, 0.0399, ...)
 cdi.chartkit.annualize().plot(
-    title="CDI - Taxa Anual Equivalente",
+    title="CDI - Annual Equivalent Rate",
     units='%'
 )
 ```
 
-### Juro Real (Selic - IPCA)
+### Real Interest Rate (Selic - CPI)
 
-Calcular spread entre taxa nominal e inflacao:
+Calculate spread between nominal rate and inflation:
 
 ```python
 from chartkit import to_month_end, accum
 
-# Alinhar frequencias
-selic = to_month_end(selic_mensal)
-ipca = to_month_end(ipca_mensal)
+# Align frequencies
+selic = to_month_end(monthly_selic)
+cpi = to_month_end(monthly_cpi)
 
-# Calcular acumulados 12 meses
+# Calculate trailing 12-month accumulated
 selic_12m = accum(selic)
-ipca_12m = accum(ipca)
+cpi_12m = accum(cpi)
 
-# Spread (aproximacao simplificada)
-juro_real = selic_12m - ipca_12m
-juro_real.chartkit.plot(
-    title="Juro Real (Selic - IPCA)",
+# Spread (simplified approximation)
+real_rate = selic_12m - cpi_12m
+real_rate.chartkit.plot(
+    title="Real Interest Rate (Selic - CPI)",
     units='p.p.'
 )
 ```
 
-### Variacao Anual com Destaque de Metricas
+### Annual Variation with Metric Highlights
 
-Analisar variacao anual com metricas automaticas:
+Analyze annual variation with automatic metrics:
 
 ```python
-# PIB ou outro indicador economico
-pib.chartkit.variation(horizon='year').plot(
-    title="Crescimento do PIB (Anual)",
+# GDP or other economic indicator
+gdp.chartkit.variation(horizon='year').plot(
+    title="GDP Growth (Annual)",
     metrics=['ath', 'atl', 'last'],
     units='%'
 )
 ```
 
-### Encadeamento Complexo
+### Complex Chaining
 
-Multiplas transformacoes em sequencia:
+Multiple transformations in sequence:
 
 ```python
-# Taxa diaria -> anualizada -> variacao anual
-cdi_diario.chartkit \
+# Daily rate -> annualized -> annual variation
+daily_cdi.chartkit \
     .annualize() \
     .variation(horizon='year') \
-    .plot(title="CDI Anualizado - Variacao Anual")
+    .plot(title="Annualized CDI - Annual Variation")
 
-# Acessar dados transformados sem plotar
-df_final = cdi_diario.chartkit \
+# Access transformed data without plotting
+df_final = daily_cdi.chartkit \
     .annualize() \
     .to_month_end() \
     .df
 
-# Usar DataFrame transformado em outras operacoes
+# Use transformed DataFrame in other operations
 df_final.describe()
 ```

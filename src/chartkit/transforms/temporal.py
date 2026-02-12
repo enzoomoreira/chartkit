@@ -1,11 +1,11 @@
-"""Transformacoes puras de series temporais.
+"""Pure time series transforms.
 
-Todas as funcoes seguem o contrato:
-- Aceitam DataFrame, Series, dict, list ou ndarray (coercao automatica).
-- Validam que dados sao numericos (warning + filtragem para non-numeric).
-- Protegem contra inf (substituem por NaN no resultado).
-- Funcoes que dependem de frequencia (variation, accum, annualize)
-  resolvem periods via auto-detect ou exigem freq=/periods= explicito.
+All functions follow the contract:
+- Accept DataFrame, Series, dict, list or ndarray (automatic coercion).
+- Validate that data is numeric (warning + filtering for non-numeric).
+- Guard against inf (replace with NaN in the result).
+- Functions that depend on frequency (variation, accum, annualize)
+  resolve periods via auto-detect or require explicit freq=/periods=.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from ._validation import (
 
 
 # ---------------------------------------------------------------------------
-# variation -- variacao percentual por horizonte
+# variation -- percentage change by horizon
 # ---------------------------------------------------------------------------
 
 _VALID_HORIZONS = {"month", "year"}
@@ -61,23 +61,23 @@ def variation(
     periods: int | None = None,
     freq: str | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Variacao percentual entre periodos.
+    """Percentage change between periods.
 
-    Calcula a variacao percentual comparando cada ponto com um ponto anterior,
-    determinado pelo ``horizon``. O numero de periodos de comparacao e resolvido
-    automaticamente com base na frequencia dos dados.
+    Calculates percentage change by comparing each point with a prior point,
+    determined by ``horizon``. The number of comparison periods is resolved
+    automatically based on the data frequency.
 
     Args:
-        df: Dados de entrada.
-        horizon: Horizonte de comparacao (``'month'`` ou ``'year'``).
-            Em dados mensais, ``'month'`` compara com o mes anterior (periods=1)
-            e ``'year'`` compara com o mesmo mes do ano anterior (periods=12).
-            Para dados trimestrais/anuais, ``'month'`` compara com o periodo
-            anterior (period-over-period).
-        periods: Override explicito do numero de periodos.
-            Mutuamente exclusivo com ``freq``.
-        freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
-            Mutuamente exclusivo com ``periods``.
+        df: Input data.
+        horizon: Comparison horizon (``'month'`` or ``'year'``).
+            For monthly data, ``'month'`` compares with the previous month (periods=1)
+            and ``'year'`` compares with the same month of the prior year (periods=12).
+            For quarterly/annual data, ``'month'`` compares with the prior period
+            (period-over-period).
+        periods: Explicit override of the number of periods.
+            Mutually exclusive with ``freq``.
+        freq: Data frequency (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
+            Mutually exclusive with ``periods``.
     """
     if horizon not in _VALID_HORIZONS:
         raise TransformError(
@@ -88,7 +88,7 @@ def variation(
     resolved = resolve_periods(data, horizon, params.periods, params.freq)
     logger.debug("variation: horizon='{}', resolved_periods={}", horizon, resolved)
 
-    # Alerta quando horizon='month' nao significa "mes calendario"
+    # Warn when horizon='month' does not mean "calendar month"
     if horizon == "month" and resolved == 1 and params.periods is None:
         detected = (
             _infer_freq(data)
@@ -107,7 +107,7 @@ def variation(
 
 
 # ---------------------------------------------------------------------------
-# accum -- variacao acumulada em janela movel
+# accum -- cumulative change in rolling window
 # ---------------------------------------------------------------------------
 
 
@@ -124,23 +124,23 @@ def accum(
     window: int | None = None,
     freq: str | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Variacao acumulada via produto composto em janela movel.
+    """Cumulative change via compound product in rolling window.
 
-    Formula: ``(prod(1 + x/100) - 1) * 100`` sobre a janela.
+    Formula: ``(prod(1 + x/100) - 1) * 100`` over the window.
 
-    A janela e resolvida pela seguinte precedencia:
+    The window is resolved by the following precedence:
 
-    1. ``window=`` explicito
-    2. ``freq=`` explicito (resolve via mapeamento)
+    1. Explicit ``window=``
+    2. Explicit ``freq=`` (resolved via mapping)
     3. Auto-detect via ``pd.infer_freq``
-    4. Fallback para ``config.transforms.accum_window``
+    4. Fallback to ``config.transforms.accum_window``
 
     Args:
-        df: Dados de entrada (taxas em percentual).
-        window: Tamanho da janela em numero de periodos.
-            Mutuamente exclusivo com ``freq``.
-        freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
-            Mutuamente exclusivo com ``window``.
+        df: Input data (rates in percentage).
+        window: Window size in number of periods.
+            Mutually exclusive with ``freq``.
+        freq: Data frequency (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
+            Mutually exclusive with ``window``.
     """
     params = validate_params(_RollingParams, window=window, freq=freq)
     data = validate_numeric(coerce_input(df))
@@ -170,7 +170,7 @@ def accum(
 
 
 # ---------------------------------------------------------------------------
-# diff -- diferenca absoluta
+# diff -- absolute difference
 # ---------------------------------------------------------------------------
 
 
@@ -182,11 +182,11 @@ def diff(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
     periods: int = 1,
 ) -> pd.DataFrame | pd.Series:
-    """Diferenca absoluta entre periodos.
+    """Absolute difference between periods.
 
     Args:
-        df: Dados de entrada.
-        periods: Numero de periodos para o diff. Negativo para forward diff.
+        df: Input data.
+        periods: Number of periods for the diff. Negative for forward diff.
     """
     params = validate_params(_DiffParams, periods=periods)
     data = validate_numeric(coerce_input(df))
@@ -194,7 +194,7 @@ def diff(
 
 
 # ---------------------------------------------------------------------------
-# normalize -- rebase para valor base
+# normalize -- rebase to base value
 # ---------------------------------------------------------------------------
 
 
@@ -215,17 +215,17 @@ def normalize(
     base: int | None = None,
     base_date: str | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Normaliza serie para um valor base.
+    """Normalize series to a base value.
 
-    Usa o primeiro valor nao-NaN como referencia. Se ``base_date`` for
-    fornecido, usa o valor naquela data.
+    Uses the first non-NaN value as reference. If ``base_date`` is
+    provided, uses the value at that date.
 
     Args:
-        df: Dados de entrada.
-        base: Valor base para normalizacao (default: config ``normalize_base``).
-            Deve ser positivo.
-        base_date: Data de referencia (string parseable por ``pd.Timestamp``).
-            Se a data exata nao existir no index, usa a mais proxima.
+        df: Input data.
+        base: Base value for normalization (default: config ``normalize_base``).
+            Must be positive.
+        base_date: Reference date (string parseable by ``pd.Timestamp``).
+            If the exact date does not exist in the index, uses the nearest one.
     """
     params = validate_params(_NormalizeParams, base=base, base_date=base_date)
     data = validate_numeric(coerce_input(df))
@@ -258,7 +258,7 @@ def normalize(
             )
             base_value = data.iloc[idx[0]]
     else:
-        # Primeiro valor nao-NaN
+        # First non-NaN value
         if isinstance(data, pd.DataFrame):
             base_value = data.apply(
                 lambda s: s.dropna().iloc[0] if not s.dropna().empty else np.nan
@@ -269,7 +269,7 @@ def normalize(
                 raise TransformError("Cannot normalize: all values are NaN")
             base_value = clean.iloc[0]
 
-    # Validar base_value
+    # Validate base_value
     if isinstance(base_value, (int, float, np.integer, np.floating)):
         if np.isnan(base_value) or base_value == 0:
             raise TransformError(
@@ -277,7 +277,7 @@ def normalize(
                 f"Cannot divide by {'NaN' if np.isnan(base_value) else 'zero'}."
             )
     elif isinstance(base_value, pd.Series):
-        # DataFrame: base_value e uma Series (uma entrada por coluna)
+        # DataFrame: base_value is a Series (one entry per column)
         zero_cols = base_value[base_value == 0].index.tolist()
         nan_cols = base_value[base_value.isna()].index.tolist()
         problem_cols = zero_cols + nan_cols
@@ -294,7 +294,7 @@ def normalize(
 
 
 # ---------------------------------------------------------------------------
-# annualize -- anualizacao de taxa periodica
+# annualize -- annualize periodic rate
 # ---------------------------------------------------------------------------
 
 
@@ -311,20 +311,20 @@ def annualize(
     periods: int | None = None,
     freq: str | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Anualiza taxa periodica via juros compostos.
+    """Annualize periodic rate via compound interest.
 
     Formula: ``((1 + r/100) ^ periods_per_year - 1) * 100``
 
-    O numero de periodos por ano e resolvido automaticamente pela
-    frequencia dos dados (ex: 252 para diario, 12 para mensal).
-    Use ``periods=`` ou ``freq=`` para override.
+    The number of periods per year is resolved automatically from the
+    data frequency (e.g. 252 for daily, 12 for monthly).
+    Use ``periods=`` or ``freq=`` to override.
 
     Args:
-        df: Dados de entrada (taxas em percentual).
-        periods: Numero de periodos por ano para composicao.
-            Mutuamente exclusivo com ``freq``.
-        freq: Frequencia dos dados (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
-            Mutuamente exclusivo com ``periods``.
+        df: Input data (rates in percentage).
+        periods: Number of periods per year for compounding.
+            Mutually exclusive with ``freq``.
+        freq: Data frequency (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
+            Mutually exclusive with ``periods``.
     """
     params = validate_params(_FreqResolvedParams, periods=periods, freq=freq)
     data = validate_numeric(coerce_input(df))
@@ -336,7 +336,7 @@ def annualize(
 
 
 # ---------------------------------------------------------------------------
-# drawdown -- distancia percentual do pico historico
+# drawdown -- percentage distance from historical peak
 # ---------------------------------------------------------------------------
 
 
@@ -347,20 +347,20 @@ def drawdown(df: pd.Series) -> pd.Series: ...
 def drawdown(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
 ) -> pd.DataFrame | pd.Series:
-    """Distancia percentual do pico historico (drawdown).
+    """Percentage distance from historical peak (drawdown).
 
-    Formula: ``(data / cummax - 1) * 100``. Retorna valores <= 0,
-    onde 0 indica que o valor esta no pico e valores negativos indicam
-    a magnitude da queda em relacao ao maximo acumulado.
+    Formula: ``(data / cummax - 1) * 100``. Returns values <= 0,
+    where 0 means the value is at its peak and negative values indicate
+    the magnitude of the decline relative to the cumulative maximum.
 
     Args:
-        df: Dados de entrada.
+        df: Input data.
     """
     data = validate_numeric(coerce_input(df))
     cummax = data.cummax()
 
-    # Drawdown requer valores positivos (precos, indices).
-    # cummax <= 0 causa divisao por zero ou resultados invertidos.
+    # Drawdown requires strictly positive values (prices, indices).
+    # cummax <= 0 causes division by zero or inverted results.
     has_non_positive = (
         (cummax <= 0).any().any()
         if isinstance(cummax, pd.DataFrame)
@@ -377,7 +377,7 @@ def drawdown(
 
 
 # ---------------------------------------------------------------------------
-# zscore -- padronizacao estatistica
+# zscore -- statistical standardization
 # ---------------------------------------------------------------------------
 
 
@@ -389,20 +389,20 @@ def zscore(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
     window: int | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Padronizacao estatistica (z-score).
+    """Statistical standardization (z-score).
 
-    Transforma a serie em unidades de desvio padrao em relacao a media,
-    eliminando escala e nivel. Permite comparar series com unidades
-    completamente diferentes no mesmo grafico.
+    Transforms the series into standard deviation units relative to the mean,
+    removing scale and level. Allows comparing series with completely
+    different units on the same chart.
 
-    Formula global: ``(data - mean) / std``
-    Formula rolling: ``(data - rolling_mean) / rolling_std``
+    Global formula: ``(data - mean) / std``
+    Rolling formula: ``(data - rolling_mean) / rolling_std``
 
     Args:
-        df: Dados de entrada.
-        window: Janela rolling opcional. Se fornecido, calcula z-score
-            rolling (media e desvio padrao moveis). Se ``None``, calcula
-            z-score sobre toda a serie (global).
+        df: Input data.
+        window: Optional rolling window. If provided, computes rolling
+            z-score (moving mean and std). If ``None``, computes
+            z-score over the entire series (global).
     """
     params = validate_params(_ZScoreParams, window=window)
     data = validate_numeric(coerce_input(df))
@@ -417,7 +417,7 @@ def zscore(
 
     result = (data - mean) / std
 
-    # Alerta quando std=0 (dados constantes) produz all-NaN
+    # Warn when std=0 (constant data) produces all-NaN
     if isinstance(data, pd.DataFrame):
         all_nan_cols = result.columns[result.isna().all()].tolist()
         if all_nan_cols:
@@ -432,7 +432,7 @@ def zscore(
 
 
 # ---------------------------------------------------------------------------
-# to_month_end -- normaliza index para fim de mes
+# to_month_end -- normalize index to month end
 # ---------------------------------------------------------------------------
 
 
@@ -443,16 +443,16 @@ def to_month_end(df: pd.Series) -> pd.Series: ...
 def to_month_end(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
 ) -> pd.DataFrame | pd.Series:
-    """Normaliza indice temporal para fim do mes.
+    """Normalize temporal index to month end.
 
-    Cada timestamp e mapeado para o ultimo dia do respectivo mes.
-    Dados sub-mensais (ex: diarios) resultarao em indices duplicados.
+    Each timestamp is mapped to the last day of its respective month.
+    Sub-monthly data (e.g. daily) will result in duplicate indices.
 
     Args:
-        df: Dados de entrada. Index deve ser DatetimeIndex.
+        df: Input data. Index must be DatetimeIndex.
 
     Raises:
-        TransformError: Se os dados forem vazios ou o index nao for DatetimeIndex.
+        TransformError: If data is empty or index is not DatetimeIndex.
     """
     data = coerce_input(df)
 

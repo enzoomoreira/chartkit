@@ -5,14 +5,14 @@ from ..styling.theme import theme
 
 
 def add_footer(fig: Figure, source: str | None = None) -> None:
-    """Adiciona rodape padrao ao grafico, alinhado com a borda esquerda do axes.
+    """Add standard footer to the chart, aligned with the left edge of the axes.
 
-    O formato e controlado por ``branding.footer_format`` (com source) ou
-    ``branding.footer_format_no_source`` (sem source) em settings.
+    The format is controlled by ``branding.footer_format`` (with source) or
+    ``branding.footer_format_no_source`` (without source) in settings.
 
     Args:
-        source: Fonte dos dados. Quando ``None``, usa ``branding.default_source``
-            da configuracao como fallback.
+        source: Data source. When ``None``, uses ``branding.default_source``
+            from configuration as fallback.
     """
     config = get_config()
     branding = config.branding
@@ -32,7 +32,7 @@ def add_footer(fig: Figure, source: str | None = None) -> None:
             company_name=branding.company_name,
         )
 
-    # Alinha com borda esquerda do axes (area do grafico)
+    # Align with left edge of axes (chart area)
     x_pos = fig.axes[0].get_position().x0 if fig.axes else 0.01
 
     fig.text(

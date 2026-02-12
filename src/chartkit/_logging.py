@@ -1,7 +1,7 @@
-"""Configuracao de logging da biblioteca.
+"""Library logging configuration.
 
-O logger e desabilitado por default (best practice para bibliotecas).
-Use ``configure_logging()`` para ativar e ``disable_logging()`` para reverter.
+The logger is disabled by default (best practice for libraries).
+Use ``configure_logging()`` to enable and ``disable_logging()`` to revert.
 """
 
 from __future__ import annotations
@@ -19,17 +19,17 @@ _handler_ids: list[int] = []
 
 
 def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int:
-    """Ativa logging da biblioteca chartkit.
+    """Enable chartkit library logging.
 
-    Remove handlers anteriores antes de adicionar o novo para evitar
-    duplicacao de logs em chamadas repetidas.
+    Removes previous handlers before adding the new one to avoid
+    duplicate logs on repeated calls.
 
     Args:
-        level: Nivel minimo de log (default: ``DEBUG``).
-        sink: Destino dos logs (stream). Se ``None``, usa ``sys.stderr``.
+        level: Minimum log level (default: ``DEBUG``).
+        sink: Log destination (stream). If ``None``, uses ``sys.stderr``.
 
     Returns:
-        ID do handler adicionado (pode ser passado a ``logger.remove()``).
+        ID of the added handler (can be passed to ``logger.remove()``).
     """
     for hid in _handler_ids:
         try:
@@ -46,7 +46,7 @@ def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int:
 
 
 def disable_logging() -> None:
-    """Desativa logging da biblioteca e remove handlers adicionados."""
+    """Disable library logging and remove added handlers."""
     logger.disable("chartkit")
     for hid in _handler_ids:
         try:

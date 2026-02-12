@@ -1,5 +1,18 @@
 # Project Changelog
 
+## [2026-02-12 00:53]
+### Added
+- **Suite de testes com 283 tests**: Cobertura completa dos modulos com logica propria, preparando a lib para open-source
+  - `tests/transforms/` (150 tests): validacao, coercao, resolucao de frequencia, pydantic models, e todas as 8 funcoes de transform (variation, accum, diff, normalize, annualize, drawdown, zscore, to_month_end) + TransformAccessor delegation
+  - `tests/metrics/` (30 tests): MetricRegistry.parse() com specs simples/compostas/targeting/labels, coercao de tipos, erros, e registro/lifecycle do registry
+  - `tests/settings/` (39 tests): _deep_merge, find_project_root/find_config_files, ConfigLoader (cache, reset, path resolution, TOML loading), ChartingConfig defaults e env vars
+  - `tests/collision/` (16 tests): _best_displacement com geometria exata (Bbox), _pos_to_numeric, _get_padded_bbox com mock artist
+  - `tests/engine/` (13 tests): _normalize_highlight (modos validos/invalidos, bool, lista) e _PlotParams validation (Pydantic)
+  - `tests/test_formatters.py` (15 tests): currency, compact_currency, percent, human_readable e points formatters com mock de config
+- **Fixtures compartilhadas** (`tests/conftest.py`): DataFrames financeiros realistas (seed fixa rng=42), edge cases (empty, all-NaN, constant, non-datetime index)
+- **Fixtures por modulo**: known-value data para transforms (resultados pre-calculados), registry snapshot/restore para metrics, config isolation para settings
+- **Config pytest** (`pyproject.toml`): `[tool.pytest.ini_options]` com strict-markers, strict-config, filterwarnings error + ignore matplotlib UserWarning
+
 ## [2026-02-11 21:18]
 ### Added
 - **Custom exception hierarchy**: `ValidationError`, `RegistryError`, `StateError` com heranca multipla dos tipos built-in (`ValueError`, `LookupError`, `RuntimeError`) para manter compatibilidade com `except ValueError` existente

@@ -1,4 +1,4 @@
-"""Decoracoes visuais (rodapes, branding)."""
+"""Visual decorations (footers, branding)."""
 
 from .footer import add_footer
 

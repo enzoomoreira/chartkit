@@ -1,4 +1,4 @@
-"""Estilizacao visual: tema global, fontes e formatadores de eixo."""
+"""Visual styling: global theme, fonts, and axis formatters."""
 
 from .formatters import (
     compact_currency_formatter,

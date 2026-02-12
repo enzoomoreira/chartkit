@@ -1,4 +1,4 @@
-"""Schema de configuracao com pydantic models."""
+"""Configuration schema with pydantic models."""
 
 from typing import Any, ClassVar
 
@@ -61,7 +61,7 @@ class ColorsConfig(BaseModel):
     moving_average: str = "#888888"
 
     def cycle(self) -> list[str]:
-        """Retorna lista de cores em gradiente para multiplas series."""
+        """Return color gradient list for multiple series."""
         return [
             self.primary,
             self.secondary,
@@ -96,7 +96,7 @@ class TitleConfig(BaseModel):
 
 
 class SpinesConfig(BaseModel):
-    """Controle de visibilidade das bordas do grafico."""
+    """Chart border visibility control."""
 
     top: bool = False
     right: bool = False
@@ -105,7 +105,7 @@ class SpinesConfig(BaseModel):
 
 
 class ZOrderConfig(BaseModel):
-    """Ordem de camadas: bands(0) < reference_lines(1) < moving_average(2) < data(3) < markers(5)."""
+    """Layer order: bands(0) < reference_lines(1) < moving_average(2) < data(3) < markers(5)."""
 
     bands: int = 0
     reference_lines: int = 1
@@ -211,7 +211,7 @@ class PathsConfig(BaseModel):
 
 
 class _DictSource(PydanticBaseSettingsSource):
-    """Source customizado que recebe um dict pre-mergeado de TOML files."""
+    """Custom source that receives a pre-merged dict from TOML files."""
 
     def __init__(self, settings_cls: type[BaseSettings], data: dict) -> None:
         super().__init__(settings_cls)
@@ -233,7 +233,7 @@ class _DictSource(PydanticBaseSettingsSource):
 
 
 class ChartingConfig(BaseSettings):
-    """Configuracao principal que agrega todas as sub-configuracoes."""
+    """Main configuration that aggregates all sub-configurations."""
 
     model_config = SettingsConfigDict(
         env_prefix="CHARTKIT_",

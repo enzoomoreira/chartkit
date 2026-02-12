@@ -18,14 +18,14 @@ def add_fill_between(
     alpha: float | None = None,
     label: str | None = None,
 ) -> None:
-    """Adiciona area sombreada entre duas series.
+    """Add shaded area between two series.
 
-    Util para visualizar spreads, diferencas entre expectativa e realizado,
-    intervalos de confianca, etc.
+    Useful for visualizing spreads, differences between expected and actual,
+    confidence intervals, etc.
 
     Args:
-        y1: Serie inferior (ou primeira serie).
-        y2: Serie superior (ou segunda serie).
+        y1: Lower series (or first series).
+        y2: Upper series (or second series).
     """
     config = get_config()
 

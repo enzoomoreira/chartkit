@@ -29,19 +29,17 @@ def plot_stacked_bar(
     y_origin: Literal["zero", "auto"] = "zero",
     **kwargs,
 ) -> None:
-    """Plota grafico de barras empilhadas para composicao.
+    """Plot stacked bar chart for composition.
 
-    Cada coluna do DataFrame vira uma camada da pilha, com cores da paleta.
-    Series unica se comporta identicamente a um bar chart normal.
+    Each DataFrame column becomes a layer in the stack, with colors from the palette.
+    A single Series behaves identically to a normal bar chart.
 
     Args:
-        y_origin: ``'zero'`` inclui zero no eixo Y (default),
-            ``'auto'`` ajusta limites para focar nos dados com margem.
+        y_origin: ``'zero'`` includes zero in the Y axis (default),
+            ``'auto'`` adjusts limits to focus on data with margin.
     """
     if y_origin not in ("zero", "auto"):
-        raise ValidationError(
-            f"y_origin deve ser 'zero' ou 'auto', recebeu: {y_origin!r}"
-        )
+        raise ValidationError(f"y_origin must be 'zero' or 'auto', got: {y_origin!r}")
 
     config = get_config()
     bars = config.bars

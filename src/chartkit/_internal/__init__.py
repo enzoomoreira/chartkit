@@ -1,8 +1,8 @@
 """
-Utilitarios internos da biblioteca.
+Internal library utilities.
 
-Este modulo contem funcoes auxiliares que nao fazem parte da API publica.
-Nao importe diretamente deste modulo em codigo externo.
+This module contains helper functions that are not part of the public API.
+Do not import directly from this module in external code.
 """
 
 from .collision import (

@@ -1,6 +1,6 @@
-"""Validacao, coercao e resolucao de frequencia para transforms.
+"""Validation, coercion and frequency resolution for transforms.
 
-Modulo interno -- nao faz parte da API publica.
+Internal module -- not part of the public API.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from pydantic import BaseModel, PositiveInt, model_validator
 from ..exceptions import TransformError
 
 # ---------------------------------------------------------------------------
-# Tipos
+# Types
 # ---------------------------------------------------------------------------
 
 FreqLiteral = Literal[
@@ -48,10 +48,10 @@ FreqLiteral = Literal[
 TransformName = Literal["month", "year", "accum", "annualize"]
 
 # ---------------------------------------------------------------------------
-# Constantes de mapeamento freq -> periods
+# Frequency -> periods mapping constants
 # ---------------------------------------------------------------------------
 
-# Aliases amigaveis que o usuario pode passar no parametro freq=
+# Friendly aliases the user can pass in the freq= parameter
 FREQ_ALIASES: dict[str, str] = {
     "D": "D",
     "daily": "D",
@@ -70,8 +70,8 @@ FREQ_ALIASES: dict[str, str] = {
     "BMS": "BMS",
 }
 
-# Mapeamento de freq code normalizado -> periods por tipo de transform.
-# Os codes aqui sao os retornados por pd.infer_freq() ou normalizados via FREQ_ALIASES.
+# Mapping of normalized freq code -> periods per transform type.
+# Codes here are those returned by pd.infer_freq() or normalized via FREQ_ALIASES.
 FREQ_PERIODS_MAP: dict[str, dict[TransformName, int]] = {
     "D": {"month": 30, "year": 365, "accum": 365, "annualize": 365},
     "B": {"month": 21, "year": 252, "accum": 252, "annualize": 252},
@@ -90,8 +90,8 @@ FREQ_PERIODS_MAP: dict[str, dict[TransformName, int]] = {
     "BYS": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
 }
 
-# Prefixos de freq codes ancorados que pd.infer_freq() pode retornar.
-# Ex: "W-SUN" -> "W", "QE-DEC" -> "QE", "BYE-DEC" -> "BYE"
+# Prefixes of anchored freq codes that pd.infer_freq() may return.
+# E.g.: "W-SUN" -> "W", "QE-DEC" -> "QE", "BYE-DEC" -> "BYE"
 _ANCHORED_PREFIXES = (
     "W-",
     "QE-",
@@ -106,12 +106,12 @@ _ANCHORED_PREFIXES = (
 
 
 # ---------------------------------------------------------------------------
-# Pydantic models para validacao de parametros
+# Pydantic models for parameter validation
 # ---------------------------------------------------------------------------
 
 
 class _FreqResolvedParams(BaseModel):
-    """Validacao para transforms que resolvem periods via frequencia (variation, annualize)."""
+    """Validation for transforms that resolve periods via frequency (variation, annualize)."""
 
     periods: PositiveInt | None = None
     freq: FreqLiteral | None = None
@@ -124,7 +124,7 @@ class _FreqResolvedParams(BaseModel):
 
 
 class _RollingParams(BaseModel):
-    """Validacao para accum."""
+    """Validation for accum."""
 
     window: PositiveInt | None = None
     freq: FreqLiteral | None = None
@@ -137,14 +137,14 @@ class _RollingParams(BaseModel):
 
 
 class _NormalizeParams(BaseModel):
-    """Validacao para normalize."""
+    """Validation for normalize."""
 
     base: PositiveInt | None = None
     base_date: str | None = None
 
 
 class _DiffParams(BaseModel):
-    """Validacao para diff."""
+    """Validation for diff."""
 
     periods: int
 
@@ -156,7 +156,7 @@ class _DiffParams(BaseModel):
 
 
 class _ZScoreParams(BaseModel):
-    """Validacao para zscore."""
+    """Validation for zscore."""
 
     window: PositiveInt | None = None
 
@@ -168,15 +168,15 @@ class _ZScoreParams(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Validacao de parametros (wrapper pydantic -> TransformError)
+# Parameter validation (pydantic wrapper -> TransformError)
 # ---------------------------------------------------------------------------
 
 
 def validate_params[T: BaseModel](model_class: type[T], **kwargs) -> T:
-    """Valida parametros escalares via pydantic model.
+    """Validate scalar parameters via pydantic model.
 
-    Captura ``ValidationError`` e re-raises como ``TransformError``
-    com mensagem limpa.
+    Catches ``ValidationError`` and re-raises as ``TransformError``
+    with a clean message.
     """
     from pydantic import ValidationError
 
@@ -194,15 +194,15 @@ def validate_params[T: BaseModel](model_class: type[T], **kwargs) -> T:
 
 
 # ---------------------------------------------------------------------------
-# Coercao de input
+# Input coercion
 # ---------------------------------------------------------------------------
 
 
 def coerce_input(data: object) -> pd.DataFrame | pd.Series:
-    """Converte inputs comuns para DataFrame ou Series.
+    """Convert common inputs to DataFrame or Series.
 
-    Aceita: DataFrame, Series, dict, list, np.ndarray.
-    Raises ``TransformError`` para tipos nao suportados.
+    Accepts: DataFrame, Series, dict, list, np.ndarray.
+    Raises ``TransformError`` for unsupported types.
     """
     if isinstance(data, (pd.DataFrame, pd.Series)):
         return data
@@ -227,16 +227,16 @@ def coerce_input(data: object) -> pd.DataFrame | pd.Series:
 
 
 # ---------------------------------------------------------------------------
-# Validacao numerica
+# Numeric validation
 # ---------------------------------------------------------------------------
 
 
 def validate_numeric(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
-    """Valida e filtra dados para conter apenas colunas numericas.
+    """Validate and filter data to contain only numeric columns.
 
-    - DataFrame: filtra colunas non-numeric com warning, raises se nenhuma sobra.
-    - Series: raises se non-numeric.
-    - Emite warning se index nao e DatetimeIndex.
+    - DataFrame: filters non-numeric columns with warning, raises if none remain.
+    - Series: raises if non-numeric.
+    - Emits warning if index is not DatetimeIndex.
     """
     if df.empty:
         raise TransformError("Input data is empty")
@@ -274,26 +274,26 @@ def validate_numeric(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
 
 
 # ---------------------------------------------------------------------------
-# Sanitizacao de resultado
+# Result sanitization
 # ---------------------------------------------------------------------------
 
 
 def sanitize_result(
     result: pd.DataFrame | pd.Series,
 ) -> pd.DataFrame | pd.Series:
-    """Substitui inf/-inf por NaN no resultado."""
+    """Replace inf/-inf with NaN in the result."""
     return result.replace([np.inf, -np.inf], np.nan)
 
 
 # ---------------------------------------------------------------------------
-# Resolucao de frequencia -> periods
+# Frequency -> periods resolution
 # ---------------------------------------------------------------------------
 
 
 def _normalize_freq_code(raw: str) -> str:
-    """Normaliza freq code para chave do FREQ_PERIODS_MAP.
+    """Normalize freq code to FREQ_PERIODS_MAP key.
 
-    Trata aliases amigaveis (``'M'`` -> ``'ME'``) e freq codes ancorados
+    Handles friendly aliases (``'M'`` -> ``'ME'``) and anchored freq codes
     (``'W-SUN'`` -> ``'W'``, ``'BQE-DEC'`` -> ``'BQE'``).
     """
     if raw in FREQ_ALIASES:
@@ -310,9 +310,9 @@ def _normalize_freq_code(raw: str) -> str:
 
 
 def _infer_freq(df: pd.DataFrame | pd.Series) -> str | None:
-    """Tenta inferir frequencia do index via pandas.
+    """Try to infer index frequency via pandas.
 
-    Retorna freq code normalizado ou None se nao conseguir.
+    Returns normalized freq code or None if unable to determine.
     """
     if not isinstance(df.index, pd.DatetimeIndex):
         return None
@@ -337,28 +337,28 @@ def resolve_periods(
     periods: int | None,
     freq: str | None,
 ) -> int:
-    """Resolve o numero de periods para um transform.
+    """Resolve the number of periods for a transform.
 
-    Precedencia: ``periods`` (explicito) > ``freq`` (explicito) >
+    Precedence: ``periods`` (explicit) > ``freq`` (explicit) >
     auto-detect via ``pd.infer_freq`` > ``ValueError``.
 
     Args:
-        df: Dados de input (usado para auto-detect).
-        transform: Nome do transform ('month', 'year', 'accum', 'annualize').
-        periods: Periods explicito passado pelo usuario.
-        freq: Frequencia explicita passada pelo usuario.
+        df: Input data (used for auto-detect).
+        transform: Transform name ('month', 'year', 'accum', 'annualize').
+        periods: Explicit periods passed by the user.
+        freq: Explicit frequency passed by the user.
 
     Returns:
-        Numero de periods resolvido.
+        Resolved number of periods.
 
     Raises:
-        TransformError: Se frequencia nao pode ser resolvida.
+        TransformError: If frequency cannot be resolved.
     """
-    # 1. periods explicito -> usa direto
+    # 1. Explicit periods -> use directly
     if periods is not None:
         return periods
 
-    # 2. freq explicito -> lookup
+    # 2. Explicit freq -> lookup
     if freq is not None:
         normalized = _normalize_freq_code(freq)
         mapping = FREQ_PERIODS_MAP.get(normalized)
@@ -378,14 +378,14 @@ def resolve_periods(
                 "Auto-detected frequency '{}' for transform '{}'", detected, transform
             )
             return mapping[transform]
-        # Detectou frequencia mas nao e suportada
+        # Detected frequency but it is not supported
         raise TransformError(
             f"Detected frequency '{detected}' is not supported. "
             f"Supported: {', '.join(sorted(FREQ_PERIODS_MAP.keys()))}. "
             f"Pass periods= explicitly."
         )
 
-    # 4. Nao conseguiu detectar frequencia
+    # 4. Could not detect frequency
     raise TransformError(
         f"Cannot determine frequency for '{transform}'. "
         f"Pass freq= (e.g. 'M', 'D', 'B') or periods= explicitly."

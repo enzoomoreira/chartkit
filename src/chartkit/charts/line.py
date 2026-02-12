@@ -23,9 +23,9 @@ def plot_line(
     highlight: list[HighlightMode],
     **kwargs,
 ) -> None:
-    """Plota series temporais como grafico de linha.
+    """Plot time series as a line chart.
 
-    Se y_data for DataFrame, cada coluna vira uma serie com cor da paleta.
+    If y_data is a DataFrame, each column becomes a series with a color from the palette.
     """
     config = get_config()
     lines = config.lines

@@ -17,13 +17,13 @@ def add_vband(
     alpha: float | None = None,
     label: str | None = None,
 ) -> None:
-    """Adiciona banda vertical sombreada entre duas datas.
+    """Add vertical shaded band between two dates.
 
-    Util para marcar periodos de recessao, crises, mudancas de politica, etc.
+    Useful for marking recession periods, crises, policy changes, etc.
 
     Args:
-        start: Data de inicio do periodo (string parseable ou Timestamp).
-        end: Data de fim do periodo (string parseable ou Timestamp).
+        start: Period start date (parseable string or Timestamp).
+        end: Period end date (parseable string or Timestamp).
     """
     config = get_config()
 

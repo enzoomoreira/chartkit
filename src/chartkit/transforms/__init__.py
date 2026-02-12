@@ -1,4 +1,4 @@
-"""Transformacoes de dados temporais."""
+"""Temporal data transforms."""
 
 from .accessor import TransformAccessor
 from .temporal import (

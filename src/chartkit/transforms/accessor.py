@@ -20,14 +20,14 @@ if TYPE_CHECKING:
 
 
 class TransformAccessor:
-    """Accessor encadeavel para transforms sobre DataFrames e Series.
+    """Chainable accessor for transforms on DataFrames and Series.
 
-    Cada metodo retorna um novo TransformAccessor, permitindo encadeamento.
-    Finalize com ``.plot()`` para gerar o grafico ou ``.df`` para obter os dados.
-    Series sao convertidas para DataFrame internamente.
+    Each method returns a new TransformAccessor, enabling chaining.
+    Finalize with ``.plot()`` to generate the chart or ``.df`` to get the data.
+    Series are converted to DataFrame internally.
 
     Example:
-        >>> df.chartkit.variation(horizon='year').plot(title="Variacao Anual")
+        >>> df.chartkit.variation(horizon='year').plot(title="YoY Variation")
         >>> transformed = df.chartkit.normalize().df
     """
 
@@ -40,45 +40,45 @@ class TransformAccessor:
         periods: int | None = None,
         freq: str | None = None,
     ) -> TransformAccessor:
-        """Variacao percentual entre periodos."""
+        """Percentage change between periods."""
         return TransformAccessor(variation(self._df, horizon, periods, freq))
 
     def accum(
         self, window: int | None = None, freq: str | None = None
     ) -> TransformAccessor:
-        """Variacao acumulada via produto composto em janela movel."""
+        """Cumulative change via compound product in rolling window."""
         return TransformAccessor(accum(self._df, window, freq))
 
     def diff(self, periods: int = 1) -> TransformAccessor:
-        """Diferenca absoluta entre periodos."""
+        """Absolute difference between periods."""
         return TransformAccessor(diff(self._df, periods))
 
     def normalize(
         self, base: int | None = None, base_date: str | None = None
     ) -> TransformAccessor:
-        """Normaliza serie para um valor base em uma data especifica."""
+        """Normalize series to a base value at a specific date."""
         return TransformAccessor(normalize(self._df, base, base_date))
 
     def annualize(
         self, periods: int | None = None, freq: str | None = None
     ) -> TransformAccessor:
-        """Anualiza taxa periodica via juros compostos."""
+        """Annualize periodic rate via compound interest."""
         return TransformAccessor(annualize(self._df, periods, freq))
 
     def drawdown(self) -> TransformAccessor:
-        """Distancia percentual do pico historico."""
+        """Percentage distance from historical peak."""
         return TransformAccessor(drawdown(self._df))
 
     def zscore(self, window: int | None = None) -> TransformAccessor:
-        """Padronizacao estatistica (z-score)."""
+        """Statistical standardization (z-score)."""
         return TransformAccessor(zscore(self._df, window))
 
     def to_month_end(self) -> TransformAccessor:
-        """Normaliza indice temporal para fim do mes."""
+        """Normalize temporal index to month end."""
         return TransformAccessor(to_month_end(self._df))
 
     def plot(self, **kwargs) -> PlotResult:
-        """Finaliza a cadeia de transforms e plota o DataFrame."""
+        """Finalize the transform chain and plot the DataFrame."""
         from ..engine import ChartingPlotter
 
         plotter = ChartingPlotter(self._df)

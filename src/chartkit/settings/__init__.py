@@ -1,7 +1,7 @@
-"""Configuracoes centralizadas via TOML ou API programatica.
+"""Centralized configuration via TOML or programmatic API.
 
-Precedencia: configure() > .charting.toml > pyproject.toml [tool.charting]
-> ~/.config/charting/config.toml > defaults built-in.
+Precedence: configure() > .charting.toml > pyproject.toml [tool.charting]
+> ~/.config/charting/config.toml > built-in defaults.
 """
 
 from .loader import (

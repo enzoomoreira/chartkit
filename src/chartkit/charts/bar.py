@@ -26,16 +26,14 @@ def plot_bar(
     y_origin: Literal["zero", "auto"] = "zero",
     **kwargs,
 ) -> None:
-    """Plota grafico de barras com largura automatica baseada na frequencia.
+    """Plot bar chart with automatic width based on frequency.
 
     Args:
-        y_origin: ``'zero'`` inclui zero no eixo Y (default),
-            ``'auto'`` ajusta limites para focar nos dados com margem.
+        y_origin: ``'zero'`` includes zero in the Y axis (default),
+            ``'auto'`` adjusts limits to focus on data with margin.
     """
     if y_origin not in ("zero", "auto"):
-        raise ValidationError(
-            f"y_origin deve ser 'zero' ou 'auto', recebeu: {y_origin!r}"
-        )
+        raise ValidationError(f"y_origin must be 'zero' or 'auto', got: {y_origin!r}")
 
     config = get_config()
     bars = config.bars
@@ -51,7 +49,7 @@ def plot_bar(
                 "Bar chart with {} points may be hard to read. Consider kind='line'.",
                 len(y_data),
             )
-        # pandas .plot(kind="bar") usa eixo categorico; width e relativo (0-1)
+        # pandas .plot(kind="bar") uses categorical axis; width is relative (0-1)
         y_data.plot(kind="bar", ax=ax, width=bars.width_default, **kwargs)
     else:
         vals = y_data.iloc[:, 0] if isinstance(y_data, pd.DataFrame) else y_data

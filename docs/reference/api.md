@@ -1,6 +1,6 @@
-# Referencia da API
+# API Reference
 
-Referencia tecnica completa do chartkit.
+Complete technical reference for chartkit.
 
 ---
 
@@ -25,39 +25,39 @@ def plot(
 ) -> PlotResult
 ```
 
-#### Parametros
+#### Parameters
 
-| Parametro | Tipo | Default | Descricao |
-|-----------|------|---------|-----------|
-| `x` | `str \| None` | `None` | Coluna para eixo X. Se `None`, usa o index |
-| `y` | `str \| list[str] \| None` | `None` | Coluna(s) para eixo Y. Se `None`, usa colunas numericas |
-| `kind` | `ChartKind` | `"line"` | Tipo de grafico registrado no `ChartRegistry` (ex: `"line"`, `"bar"`, `"stacked_bar"`) |
-| `title` | `str \| None` | `None` | Titulo do grafico |
-| `units` | `UnitFormat \| None` | `None` | Formatacao do eixo Y (ver tabela abaixo) |
-| `source` | `str \| None` | `None` | Fonte dos dados para rodape. Quando `None`, usa `branding.default_source` como fallback |
-| `highlight` | `HighlightInput` | `False` | Modo(s) de destaque. `True` / `'last'` = ultimo valor; `'max'` / `'min'` = extremos. Aceita lista para combinar modos (ex: `['max', 'min']`) |
-| `metrics` | `str \| list[str] \| None` | `None` | Metrica(s) a aplicar (string ou lista) |
-| `fill_between` | `tuple[str, str] \| None` | `None` | Tupla `(col1, col2)` para sombrear area entre duas colunas |
-| `legend` | `bool \| None` | `None` | Controle da legenda. `None` = auto (mostra com 2+ artists), `True` = forca, `False` = suprime |
-| `**kwargs` | - | - | Parametros chart-specific (ex: `y_origin='auto'`) e extras matplotlib |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the index |
+| `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses numeric columns |
+| `kind` | `ChartKind` | `"line"` | Chart type registered in `ChartRegistry` (e.g., `"line"`, `"bar"`, `"stacked_bar"`) |
+| `title` | `str \| None` | `None` | Chart title |
+| `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see table below) |
+| `source` | `str \| None` | `None` | Data source for footer. When `None`, uses `branding.default_source` as fallback |
+| `highlight` | `HighlightInput` | `False` | Highlight mode(s). `True` / `'last'` = last value; `'max'` / `'min'` = extremes. Accepts list to combine modes (e.g., `['max', 'min']`) |
+| `metrics` | `str \| list[str] \| None` | `None` | Metric(s) to apply (string or list) |
+| `fill_between` | `tuple[str, str] \| None` | `None` | Tuple `(col1, col2)` to shade area between two columns |
+| `legend` | `bool \| None` | `None` | Legend control. `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `**kwargs` | - | - | Chart-specific parameters (e.g., `y_origin='auto'`) and extra matplotlib args |
 
-#### Metricas Disponiveis
+#### Available Metrics
 
-| Sintaxe | Descricao | Exemplo |
-|---------|-----------|---------|
-| `"ath"` | All-Time High (linha no maximo historico) | `metrics=["ath"]` |
-| `"atl"` | All-Time Low (linha no minimo historico) | `metrics=["atl"]` |
-| `"ma:N"` | Media movel de N periodos | `metrics=["ma:12"]` |
-| `"hline:V"` | Linha horizontal no valor V | `metrics=["hline:3.0"]` |
-| `"band:L:U"` | Banda sombreada entre L e U | `metrics=["band:1.5:4.5"]` |
-| `"target:V"` | Linha de meta no valor V | `metrics=["target:1000"]` |
-| `"std_band:W:N"` | Banda de N desvios padrao com janela W | `metrics=["std_band:20:2"]` |
-| `"avg"` | Linha horizontal na media dos dados | `metrics=["avg"]` |
-| `"vband:D1:D2"` | Banda vertical entre datas D1 e D2 | `metrics=["vband:2020-03-01:2020-06-30"]` |
+| Syntax | Description | Example |
+|--------|-------------|---------|
+| `"ath"` | All-Time High (line at historical maximum) | `metrics=["ath"]` |
+| `"atl"` | All-Time Low (line at historical minimum) | `metrics=["atl"]` |
+| `"ma:N"` | N-period moving average | `metrics=["ma:12"]` |
+| `"hline:V"` | Horizontal line at value V | `metrics=["hline:3.0"]` |
+| `"band:L:U"` | Shaded band between L and U | `metrics=["band:1.5:4.5"]` |
+| `"target:V"` | Target line at value V | `metrics=["target:1000"]` |
+| `"std_band:W:N"` | Band of N standard deviations with window W | `metrics=["std_band:20:2"]` |
+| `"avg"` | Horizontal line at data mean | `metrics=["avg"]` |
+| `"vband:D1:D2"` | Vertical band between dates D1 and D2 | `metrics=["vband:2020-03-01:2020-06-30"]` |
 
-Metricas suportam label customizado via sintaxe `|`: `'ath|Maximo'`, `'ma:12@col|Media 12M'`, `'hline:100|Meta: Q1'`.
+Metrics support custom labels via `|` syntax: `'ath|Maximum'`, `'ma:12@col|12M Average'`, `'hline:100|Target: Q1'`.
 
-#### Tipos
+#### Types
 
 ```python
 ChartKind = Literal["line", "bar", "stacked_bar"]
@@ -70,7 +70,7 @@ HighlightInput = bool | HighlightMode | list[HighlightMode]
 
 ## PlotResult
 
-Resultado de plotagem com method chaining.
+Plot result with method chaining.
 
 ```python
 @dataclass
@@ -80,16 +80,16 @@ class PlotResult:
     plotter: ChartingPlotter
 ```
 
-### Metodos e Properties
+### Methods and Properties
 
-| Membro | Tipo | Retorno | Descricao |
-|--------|------|---------|-----------|
-| `save(path, dpi=None)` | metodo | `PlotResult` | Salva grafico em arquivo |
-| `show()` | metodo | `PlotResult` | Exibe grafico interativo |
-| `axes` | property | `Axes` | Acesso ao matplotlib Axes |
-| `figure` | property | `Figure` | Acesso ao matplotlib Figure |
+| Member | Type | Return | Description |
+|--------|------|--------|-------------|
+| `save(path, dpi=None)` | method | `PlotResult` | Saves chart to file |
+| `show()` | method | `PlotResult` | Displays interactive chart |
+| `axes` | property | `Axes` | Access to matplotlib Axes |
+| `figure` | property | `Figure` | Access to matplotlib Figure |
 
-### Assinaturas
+### Signatures
 
 ```python
 def save(self, path: str, dpi: int | None = None) -> PlotResult
@@ -106,46 +106,46 @@ def figure(self) -> Figure
 
 ## TransformAccessor
 
-Accessor encadeavel para transformacoes. Cada metodo retorna novo `TransformAccessor`.
+Chainable accessor for transformations. Each method returns a new `TransformAccessor`.
 
-### Metodos
+### Methods
 
-| Metodo | Assinatura | Descricao |
-|--------|------------|-----------|
-| `variation()` | `variation(horizon: str = "month", periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Variacao percentual por horizonte (`'month'` ou `'year'`, auto-detect de frequencia) |
-| `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Acumulado via produto composto em janela movel (fallback: `config.transforms.accum_window`) |
-| `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Diferenca absoluta entre periodos (periods >= 1) |
-| `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normaliza serie (default: `config.transforms.normalize_base`) |
-| `drawdown()` | `drawdown() -> TransformAccessor` | Distancia percentual do pico historico |
-| `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Padronizacao estatistica (global ou rolling, window >= 2) |
-| `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Anualiza taxa periodica via juros compostos (auto-detect de frequencia) |
-| `to_month_end()` | `to_month_end() -> TransformAccessor` | Normaliza indice para fim do mes |
-| `plot()` | `plot(**kwargs) -> PlotResult` | Finaliza cadeia e plota |
-| `df` | `@property -> pd.DataFrame` | Acesso ao DataFrame transformado |
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `variation()` | `variation(horizon: str = "month", periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Percentage variation by horizon (`'month'` or `'year'`, frequency auto-detection) |
+| `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Accumulated via compound product in rolling window (fallback: `config.transforms.accum_window`) |
+| `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Absolute difference between periods (periods >= 1) |
+| `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normalize series (default: `config.transforms.normalize_base`) |
+| `drawdown()` | `drawdown() -> TransformAccessor` | Percentage distance from historical peak |
+| `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Statistical standardization (global or rolling, window >= 2) |
+| `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Annualize periodic rate via compound interest (frequency auto-detection) |
+| `to_month_end()` | `to_month_end() -> TransformAccessor` | Normalize index to month-end |
+| `plot()` | `plot(**kwargs) -> PlotResult` | Finalize chain and plot |
+| `df` | `@property -> pd.DataFrame` | Access to transformed DataFrame |
 
 ---
 
-## Formatadores (units)
+## Formatters (units)
 
-| Valor | Formato | Exemplo |
-|-------|---------|---------|
-| `"BRL"` | Real brasileiro | R$ 1.234,56 |
-| `"USD"` | Dolar americano | $1,234.56 |
-| `"BRL_compact"` | Real compacto | R$ 1,2 mi |
-| `"USD_compact"` | Dolar compacto | $1.2M |
-| `"%"` | Percentual | 10,5% |
-| `"points"` | Inteiros BR | 1.234.567 |
-| `"human"` | Notacao compacta | 1,2M |
+| Value | Format | Example |
+|-------|--------|---------|
+| `"BRL"` | Brazilian Real | R$ 1.234,56 |
+| `"USD"` | US Dollar | $1,234.56 |
+| `"BRL_compact"` | Compact Real | R$ 1,2 mi |
+| `"USD_compact"` | Compact Dollar | $1.2M |
+| `"%"` | Percentage | 10,5% |
+| `"points"` | Locale-aware integers | 1.234.567 |
+| `"human"` | Compact notation | 1,2M |
 
-Formatadores de moeda usam Babel. Locale configuravel via `formatters.locale.babel_locale`.
+Currency formatters use Babel. Locale configurable via `formatters.locale.babel_locale`.
 
 ---
 
 ## ChartRegistry
 
-Sistema plugavel de chart types via decorator.
+Pluggable chart type system via decorator.
 
-### Registrar novo tipo
+### Register new type
 
 ```python
 from chartkit.charts.registry import ChartRegistry
@@ -155,28 +155,28 @@ def plot_scatter(ax, x, y_data, highlight=None, **kwargs):
     ...
 ```
 
-### Metodos
+### Methods
 
-| Metodo | Retorno | Descricao |
-|--------|---------|-----------|
-| `register(name)` | decorator | Registra funcao como chart type |
-| `get(name)` | `ChartFunc` | Retorna funcao registrada |
-| `available()` | `list[str]` | Lista nomes registrados |
+| Method | Return | Description |
+|--------|--------|-------------|
+| `register(name)` | decorator | Registers function as chart type |
+| `get(name)` | `ChartFunc` | Returns registered function |
+| `available()` | `list[str]` | Lists registered names |
 
 ---
 
 ## ChartingPlotter
 
-Uso avancado para controle total.
+Advanced usage for full control.
 
-### Construtor
+### Constructor
 
 ```python
 class ChartingPlotter:
     def __init__(self, df: pd.DataFrame) -> None
 ```
 
-### Metodos
+### Methods
 
 ```python
 def plot(
@@ -199,7 +199,7 @@ def save(self, path: str, dpi: int | None = None) -> None
 
 ---
 
-## Configuracao
+## Configuration
 
 ### configure()
 
@@ -212,10 +212,10 @@ def configure(
 ) -> None
 ```
 
-Overrides por secao:
+Section overrides:
 
 ```python
-configure(branding={"company_name": "Empresa"})
+configure(branding={"company_name": "Company"})
 configure(colors={"primary": "#FF0000"})
 configure(layout={"figsize": [12.0, 8.0], "dpi": 150})
 ```
@@ -226,7 +226,7 @@ configure(layout={"figsize": [12.0, 8.0], "dpi": 150})
 def get_config() -> ChartingConfig
 ```
 
-Retorna pydantic BaseSettings com todas as configuracoes.
+Returns pydantic BaseSettings with all settings.
 
 ### reset_config()
 
@@ -234,7 +234,7 @@ Retorna pydantic BaseSettings com todas as configuracoes.
 def reset_config() -> None
 ```
 
-Reseta configuracoes para defaults.
+Resets settings to defaults.
 
 ### configure_logging()
 
@@ -242,7 +242,7 @@ Reseta configuracoes para defaults.
 def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int
 ```
 
-Ativa logging da biblioteca (desabilitado por padrao). Chamadas repetidas removem o handler anterior antes de adicionar o novo, evitando duplicacao de logs. Retorna o ID do handler adicionado.
+Enables library logging (disabled by default). Repeated calls remove the previous handler before adding a new one, avoiding log duplication. Returns the added handler ID.
 
 ### disable_logging()
 
@@ -250,13 +250,13 @@ Ativa logging da biblioteca (desabilitado por padrao). Chamadas repetidas remove
 def disable_logging() -> None
 ```
 
-Desativa logging da biblioteca e remove todos os handlers adicionados por `configure_logging()`. Reverte ao estado inicial (logging desabilitado).
+Disables library logging and removes all handlers added by `configure_logging()`. Reverts to initial state (logging disabled).
 
 ---
 
 ## ChartingConfig
 
-Estrutura principal de configuracao.
+Main configuration structure.
 
 ```python
 class ChartingConfig(BaseSettings):
@@ -283,17 +283,17 @@ class ChartingConfig(BaseSettings):
 
 #### LegendConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `loc` | `str` | `"best"` |
 | `alpha` | `float` | `0.9` |
 | `frameon` | `bool` | `True` |
 
-### Sub-configuracoes
+### Sub-configurations
 
 #### BrandingConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `company_name` | `str` | `""` |
 | `default_source` | `str` | `""` |
@@ -302,7 +302,7 @@ class ChartingConfig(BaseSettings):
 
 #### ColorsConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `primary` | `str` | `"#00464D"` |
 | `secondary` | `str` | `"#006B6B"` |
@@ -319,15 +319,15 @@ class ChartingConfig(BaseSettings):
 
 #### FontsConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `file` | `str` | `""` |
 | `fallback` | `str` | `"sans-serif"` |
-| `sizes` | `FontSizesConfig` | (ver abaixo) |
+| `sizes` | `FontSizesConfig` | (see below) |
 
 #### FontSizesConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `default` | `int` | `11` |
 | `title` | `int` | `18` |
@@ -336,20 +336,20 @@ class ChartingConfig(BaseSettings):
 
 #### LayoutConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `figsize` | `tuple[float, float]` | `(10.0, 6.0)` |
 | `dpi` | `int` | `300` |
 | `base_style` | `str` | `"seaborn-v0_8-white"` |
 | `grid` | `bool` | `False` |
-| `spines` | `SpinesConfig` | (ver abaixo) |
-| `footer` | `FooterConfig` | (ver abaixo) |
-| `title` | `TitleConfig` | (ver abaixo) |
-| `zorder` | `ZOrderConfig` | (ver abaixo) |
+| `spines` | `SpinesConfig` | (see below) |
+| `footer` | `FooterConfig` | (see below) |
+| `title` | `TitleConfig` | (see below) |
+| `zorder` | `ZOrderConfig` | (see below) |
 
 #### SpinesConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `top` | `bool` | `False` |
 | `right` | `bool` | `False` |
@@ -358,21 +358,21 @@ class ChartingConfig(BaseSettings):
 
 #### FooterConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `y` | `float` | `0.01` |
 | `color` | `str` | `"gray"` |
 
 #### TitleConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `padding` | `int` | `20` |
 | `weight` | `str` | `"bold"` |
 
 #### ZOrderConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `bands` | `int` | `0` |
 | `reference_lines` | `int` | `1` |
@@ -382,7 +382,7 @@ class ChartingConfig(BaseSettings):
 
 #### LinesConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `main_width` | `float` | `2.0` |
 | `overlay_width` | `float` | `1.5` |
@@ -392,38 +392,38 @@ class ChartingConfig(BaseSettings):
 
 #### BarsConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `width_default` | `float` | `0.8` |
 | `width_monthly` | `int` | `20` |
 | `width_annual` | `int` | `300` |
 | `auto_margin` | `float` | `0.1` |
 | `warning_threshold` | `int` | `500` |
-| `frequency_detection` | `FrequencyDetectionConfig` | (ver abaixo) |
+| `frequency_detection` | `FrequencyDetectionConfig` | (see below) |
 
 #### FrequencyDetectionConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `monthly_threshold` | `int` | `25` |
 | `annual_threshold` | `int` | `300` |
 
 #### BandsConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `alpha` | `float` | `0.15` |
 
 #### MarkersConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `scatter_size` | `int` | `30` |
 | `font_weight` | `str` | `"bold"` |
 
 #### CollisionConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `movement` | `str` | `"y"` |
 | `obstacle_padding_px` | `float` | `8.0` |
@@ -436,21 +436,21 @@ class ChartingConfig(BaseSettings):
 
 #### TransformsConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `normalize_base` | `PositiveInt` | `100` |
 | `accum_window` | `PositiveInt` | `12` |
 
 #### FormattersConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
-| `locale` | `LocaleConfig` | (ver abaixo) |
-| `magnitude` | `MagnitudeConfig` | (ver abaixo) |
+| `locale` | `LocaleConfig` | (see below) |
+| `magnitude` | `MagnitudeConfig` | (see below) |
 
 #### LocaleConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `decimal` | `str` | `","` |
 | `thousands` | `str` | `"."` |
@@ -458,24 +458,24 @@ class ChartingConfig(BaseSettings):
 
 #### MagnitudeConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `suffixes` | `list[str]` | `["", "k", "M", "B", "T"]` |
 
 #### LabelsConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `ath` | `str` | `"ATH"` |
 | `atl` | `str` | `"ATL"` |
 | `avg` | `str` | `"AVG"` |
-| `moving_average_format` | `str` | `"MM{window}"` |
+| `moving_average_format` | `str` | `"MA{window}"` |
 | `target_format` | `str` | `"Meta: {value}"` |
 | `std_band_format` | `str` | `"BB({window}, {num_std})"` |
 
 #### PathsConfig
 
-| Campo | Tipo | Default |
+| Field | Type | Default |
 |-------|------|---------|
 | `charts_subdir` | `str` | `"charts"` |
 | `outputs_dir` | `str` | `""` |
@@ -485,44 +485,44 @@ class ChartingConfig(BaseSettings):
 
 ## Exceptions
 
-| Classe | Base | Descricao |
-|--------|------|-----------|
-| `ChartKitError` | `Exception` | Excecao base da biblioteca |
-| `TransformError` | `ChartKitError` | Erro durante validacao ou execucao de transforms |
-| `ValidationError` | `ChartKitError`, `ValueError` | Erro de validacao de parametro ou input |
-| `RegistryError` | `ChartKitError`, `LookupError` | Erro de lookup em registry (chart type, metrica, style) |
-| `StateError` | `ChartKitError`, `RuntimeError` | Erro de operacao em estado invalido |
+| Class | Base | Description |
+|-------|------|-------------|
+| `ChartKitError` | `Exception` | Library base exception |
+| `TransformError` | `ChartKitError` | Error during transform validation or execution |
+| `ValidationError` | `ChartKitError`, `ValueError` | Parameter or input validation error |
+| `RegistryError` | `ChartKitError`, `LookupError` | Registry lookup error (chart type, metric, style) |
+| `StateError` | `ChartKitError`, `RuntimeError` | Invalid state operation error |
 
-As novas excecoes herdam dos tipos built-in correspondentes, mantendo compatibilidade com `except ValueError`, `except LookupError` e `except RuntimeError`. Use `except ChartKitError` para capturar todos os erros da biblioteca.
+The new exceptions inherit from corresponding built-in types, maintaining compatibility with `except ValueError`, `except LookupError`, and `except RuntimeError`. Use `except ChartKitError` to catch all library errors.
 
-`TransformError` e levantado quando:
-- `drawdown()` recebe dados com valores nao-positivos
-- Auto-deteccao de frequencia falha e nenhum `periods=`/`freq=` foi fornecido
-- Frequencia detectada mas nao suportada (com mensagem listando frequencias validas)
-- Parametros mutuamente exclusivos (`periods` e `freq`) sao passados simultaneamente
-- `normalize(base_date=...)` recebe data invalida
+`TransformError` is raised when:
+- `drawdown()` receives data with non-positive values
+- Auto-detection of frequency fails and no `periods=`/`freq=` was provided
+- Detected frequency is not supported (with message listing valid frequencies)
+- Mutually exclusive parameters (`periods` and `freq`) are passed simultaneously
+- `normalize(base_date=...)` receives an invalid date
 
-`ValidationError` e levantado quando:
-- `plot()` recebe modo invalido em `highlight` (ex: `"banana"` em vez de `"last"`, `"max"` ou `"min"`)
-- `plot()` recebe valor invalido em `units` (ex: `"EUR"` em vez de `"BRL"`)
-- `y_origin` recebe valor fora de `"zero"` / `"auto"` em graficos de barras
-- `diff(periods=0)` (retorna all-zeros, quase certamente erro do usuario)
-- `zscore(window=1)` (std de 1 valor e indefinido)
+`ValidationError` is raised when:
+- `plot()` receives an invalid mode in `highlight` (e.g., `"banana"` instead of `"last"`, `"max"` or `"min"`)
+- `plot()` receives an invalid value in `units` (e.g., `"EUR"` instead of `"BRL"`)
+- `y_origin` receives a value outside `"zero"` / `"auto"` in bar charts
+- `diff(periods=0)` (returns all-zeros, almost certainly a user error)
+- `zscore(window=1)` (std of 1 value is undefined)
 
-`RegistryError` e levantado quando:
-- `ChartRegistry.get()` recebe chart type nao registrado
-- `add_highlight()` recebe `style` nao registrado em `HIGHLIGHT_STYLES`
+`RegistryError` is raised when:
+- `ChartRegistry.get()` receives an unregistered chart type
+- `add_highlight()` receives a `style` not registered in `HIGHLIGHT_STYLES`
 
-`StateError` e levantado quando:
-- Operacao requer estado que nao foi inicializado
+`StateError` is raised when:
+- An operation requires state that has not been initialized
 
 ---
 
-## Exports do Modulo
+## Module Exports
 
 ```python
 from chartkit import (
-    # Configuracao
+    # Configuration
     configure,
     configure_logging,
     disable_logging,
@@ -546,7 +546,7 @@ from chartkit import (
     HighlightMode,
     UnitFormat,
 
-    # Classes principais
+    # Main classes
     ChartingAccessor,
     ChartingPlotter,
     ChartRegistry,
@@ -562,7 +562,7 @@ from chartkit import (
     RegistryError,
     StateError,
 
-    # Transforms (funcoes standalone)
+    # Transforms (standalone functions)
     variation,
     accum,
     diff,
@@ -574,7 +574,7 @@ from chartkit import (
 )
 ```
 
-### Funcoes de Paths
+### Path Functions
 
 ```python
 from chartkit.settings import (

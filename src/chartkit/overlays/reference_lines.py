@@ -21,7 +21,7 @@ def _add_stat_line(
     linewidth: float | None = None,
     series: str | None = None,
 ) -> None:
-    """Adiciona linha horizontal em estatistica (max, min, mean) dos dados."""
+    """Add horizontal line at a statistic (max, min, mean) of the data."""
     config = get_config()
 
     if isinstance(y_data, pd.DataFrame):
@@ -51,7 +51,7 @@ def add_ath_line(
     y_data: pd.Series | pd.DataFrame,
     **kwargs: Any,
 ) -> None:
-    """Adiciona linha horizontal no All-Time High (valor maximo)."""
+    """Add horizontal line at the All-Time High (maximum value)."""
     config = get_config()
     _add_stat_line(
         ax,
@@ -68,7 +68,7 @@ def add_atl_line(
     y_data: pd.Series | pd.DataFrame,
     **kwargs: Any,
 ) -> None:
-    """Adiciona linha horizontal no All-Time Low (valor minimo)."""
+    """Add horizontal line at the All-Time Low (minimum value)."""
     config = get_config()
     _add_stat_line(
         ax,
@@ -85,7 +85,7 @@ def add_avg_line(
     y_data: pd.Series | pd.DataFrame,
     **kwargs: Any,
 ) -> None:
-    """Adiciona linha horizontal na media (mean) dos dados."""
+    """Add horizontal line at the mean of the data."""
     config = get_config()
     _add_stat_line(
         ax,
@@ -105,7 +105,7 @@ def add_hline(
     label: str | None = None,
     linewidth: float | None = None,
 ) -> None:
-    """Adiciona linha horizontal em valor arbitrario."""
+    """Add horizontal line at an arbitrary value."""
     config = get_config()
 
     line = ax.axhline(
@@ -127,10 +127,10 @@ def add_target_line(
     label: str | None = None,
     linewidth: float | None = None,
 ) -> None:
-    """Adiciona linha horizontal de meta/target com estilo diferenciado.
+    """Add horizontal target line with distinct styling.
 
-    Semanticamente distinta de ``add_hline``: usa cor propria (secondary),
-    dash pattern alternado e label com prefixo "Meta:" por padrao.
+    Semantically distinct from ``add_hline``: uses its own color (secondary),
+    alternating dash pattern, and label with "Target:" prefix by default.
     """
     config = get_config()
 

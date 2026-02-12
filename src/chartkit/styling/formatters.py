@@ -1,4 +1,4 @@
-"""Formatadores de eixo para matplotlib."""
+"""Axis formatters for matplotlib."""
 
 import math
 
@@ -10,7 +10,7 @@ from ..settings import get_config
 
 
 def currency_formatter(currency: str = "BRL") -> FuncFormatter:
-    """Formatador monetario completo (ex: ``R$ 1.234,56``)."""
+    """Full currency formatter (e.g. ``R$ 1.234,56``)."""
     config = get_config()
     locale = config.formatters.locale.babel_locale
 
@@ -31,9 +31,9 @@ def currency_formatter(currency: str = "BRL") -> FuncFormatter:
 def compact_currency_formatter(
     currency: str = "BRL", fraction_digits: int = 1
 ) -> FuncFormatter:
-    """Formatador monetario compacto (ex: ``R$ 1,2 mi``).
+    """Compact currency formatter (e.g. ``R$ 1,2 mi``).
 
-    Valores abaixo de 1000 usam formato completo automaticamente.
+    Values below 1000 automatically use the full format.
     """
     config = get_config()
     locale = config.formatters.locale.babel_locale
@@ -55,7 +55,7 @@ def compact_currency_formatter(
 
 
 def percent_formatter(decimals: int = 1) -> FuncFormatter:
-    """Formatador percentual com separador de milhar (ex: ``10.234,5%``)."""
+    """Percent formatter with thousands separator (e.g. ``10.234,5%``)."""
     config = get_config()
     locale = config.formatters.locale
 
@@ -74,7 +74,7 @@ def percent_formatter(decimals: int = 1) -> FuncFormatter:
 
 
 def human_readable_formatter(decimals: int = 1) -> FuncFormatter:
-    """Formatador com sufixos de magnitude (ex: ``1,5M``, ``300k``)."""
+    """Magnitude suffix formatter (e.g. ``1,5M``, ``300k``)."""
     config = get_config()
     suffixes = config.formatters.magnitude.suffixes
     locale = config.formatters.locale
@@ -101,7 +101,7 @@ def human_readable_formatter(decimals: int = 1) -> FuncFormatter:
 
 
 def points_formatter(decimals: int = 0) -> FuncFormatter:
-    """Formatador numerico com separador de milhar (ex: ``1.234.567``)."""
+    """Numeric formatter with thousands separator (e.g. ``1.234.567``)."""
     config = get_config()
     locale = config.formatters.locale
 

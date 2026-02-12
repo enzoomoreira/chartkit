@@ -1,8 +1,8 @@
 """
-Engine generica de resolucao de colisao.
+Generic collision resolution engine.
 
-Trabalha exclusivamente com bounding boxes (display pixels).
-Agnostica a tipos de elemento - qualquer Artist com get_window_extent() funciona.
+Works exclusively with bounding boxes (display pixels).
+Element-type agnostic - any Artist with get_window_extent() works.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from matplotlib.transforms import Bbox
 from ..settings import get_config
 from ..settings.schema import ChartingConfig, CollisionConfig
 
-# Estado de colisao por Axes, liberado automaticamente pelo GC.
+# Collision state per Axes, automatically released by GC.
 _labels: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
 _obstacles: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
 _passive: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
@@ -30,7 +30,7 @@ _passive: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
 
 @runtime_checkable
 class PositionableArtist(Protocol):
-    """Artist que suporta reposicionamento via get/set_position."""
+    """Artist that supports repositioning via get/set_position."""
 
     def get_position(self) -> tuple[float, float]: ...
     def set_position(self, xy: tuple[float, float]) -> None: ...
@@ -38,27 +38,27 @@ class PositionableArtist(Protocol):
 
 
 def register_moveable(ax: Axes, artist: Artist) -> None:
-    """Registra Artist que pode ser reposicionado pela engine."""
+    """Register Artist that can be repositioned by the engine."""
     _labels.setdefault(ax, []).append(artist)
 
 
 def register_fixed(ax: Axes, artist: Artist) -> None:
-    """Registra Artist que deve ser evitado por moveables."""
+    """Register Artist that should be avoided by moveables."""
     _obstacles.setdefault(ax, []).append(artist)
 
 
 def register_passive(ax: Axes, artist: Artist) -> None:
-    """Registra Artist que nao participa da resolucao de colisao.
+    """Register Artist that does not participate in collision resolution.
 
-    Patches auto-detectados (ax.patches) sao tratados como obstaculos
-    por padrao. Use esta funcao para excluir elementos visuais de fundo
-    (bandas, areas sombreadas, etc.) da deteccao automatica.
+    Auto-detected patches (ax.patches) are treated as obstacles by default.
+    Use this function to exclude background visual elements (bands, shaded
+    areas, etc.) from automatic detection.
     """
     _passive.setdefault(ax, []).append(artist)
 
 
 def resolve_collisions(ax: Axes) -> None:
-    """Resolve todas as colisoes registradas no axes."""
+    """Resolve all registered collisions in the axes."""
     moveables = _labels.get(ax, [])
     if not moveables:
         return
@@ -70,15 +70,15 @@ def resolve_collisions(ax: Axes) -> None:
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
 
-    # Filtra apenas artists posicionaveis
+    # Filter only positionable artists
     positionable = [m for m in moveables if isinstance(m, PositionableArtist)]
     if not positionable:
         return
 
-    # Salva posicoes originais (numerico) para connectors
+    # Save original positions (numeric) for connectors
     original_positions = [_pos_to_numeric(*m.get_position()) for m in positionable]
 
-    # Obstaculos: registrados explicitamente + patches auto-detectados
+    # Obstacles: explicitly registered + auto-detected patches
     fixed = _collect_obstacles(ax, moveables)
     logger.debug(
         "Collision: {} moveable(s), {} obstacle(s)", len(positionable), len(fixed)
@@ -100,11 +100,11 @@ def _resolve_against_fixed(
     ax: Axes,
     collision: CollisionConfig,
 ) -> None:
-    """Resolve colisoes entre moveables e elementos fixos."""
+    """Resolve collisions between moveables and fixed elements."""
     axes_bbox = ax.get_window_extent(renderer)
 
     for moveable in moveables:
-        # Loop interno para resolver colisoes em cascata
+        # Inner loop to resolve cascading collisions
         for _ in range(5):
             mov_bbox = _get_padded_bbox(
                 moveable, renderer, collision.obstacle_padding_px
@@ -150,13 +150,13 @@ def _best_displacement(
     padding_px: float,
     axes_bbox: Bbox,
 ) -> tuple[float, float] | None:
-    """Calcula menor deslocamento para resolver colisao, respeitando eixo e limites."""
+    """Calculate smallest displacement to resolve collision, respecting axis and bounds."""
     options: list[tuple[float, float, float]] = []  # (dx, dy, abs_distance)
 
     if movement in ("y", "xy"):
-        # UP: mover base do moveable acima do topo do fixed
+        # UP: move moveable base above the top of fixed
         dy_up = fix_bbox.y1 + padding_px - mov_bbox.y0
-        # DOWN: mover topo do moveable abaixo da base do fixed
+        # DOWN: move moveable top below the base of fixed
         dy_down = fix_bbox.y0 - padding_px - mov_bbox.y1
 
         new_y0_up = mov_bbox.y0 + dy_up
@@ -187,7 +187,7 @@ def _best_displacement(
     if not options:
         return None
 
-    # Menor deslocamento absoluto
+    # Smallest absolute displacement
     options.sort(key=lambda o: o[2])
     return (options[0][0], options[0][1])
 
@@ -198,7 +198,7 @@ def _resolve_between_moveables(
     ax: Axes,
     collision: CollisionConfig,
 ) -> None:
-    """Resolve colisoes entre moveables via push-apart iterativo."""
+    """Resolve collisions between moveables via iterative push-apart."""
     movement = collision.movement
     label_padding_px = collision.label_padding_px
 
@@ -257,8 +257,8 @@ def _add_connectors(
     collision: CollisionConfig,
     config: ChartingConfig,
 ) -> None:
-    """Adiciona linhas guia para moveables deslocados alem do threshold."""
-    # Preserva limites do eixo para ax.plot() nao expandir
+    """Add guide lines for moveables displaced beyond the threshold."""
+    # Preserve axis limits so ax.plot() doesn't expand them
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
 
@@ -283,22 +283,22 @@ def _add_connectors(
     ax.set_ylim(ylim)
 
 
-# -- Helpers internos --
+# -- Internal helpers --
 
 
 def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Artist]:
-    """Coleta obstaculos: registrados explicitamente + patches auto-detectados.
+    """Collect obstacles: explicitly registered + auto-detected patches.
 
-    Auto-detecta ax.patches (bars, boxes, areas preenchidas, etc.) como
-    obstaculos. Qualquer Artist com bbox local e detectado automaticamente,
-    sem necessidade de registro manual em cada tipo de chart.
+    Auto-detects ax.patches (bars, boxes, filled areas, etc.) as obstacles.
+    Any Artist with a local bbox is detected automatically, without needing
+    manual registration for each chart type.
     """
     moveable_ids = {id(m) for m in moveables}
     passive_ids = {id(p) for p in _passive.get(ax, [])}
     seen: set[int] = set()
     obstacles: list[Artist] = []
 
-    # 1. Obstaculos registrados explicitamente (reference lines, etc.)
+    # 1. Explicitly registered obstacles (reference lines, etc.)
     for obs in _obstacles.get(ax, []):
         oid = id(obs)
         if oid not in seen:
@@ -306,7 +306,7 @@ def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Artist]:
             seen.add(oid)
 
     # 2. Auto-detect: patches (bars, box plots, etc.)
-    #    Exclui moveables e passivos (bandas, areas de fundo, etc.)
+    #    Excludes moveables and passives (bands, background areas, etc.)
     for patch in ax.patches:
         pid = id(patch)
         if pid not in moveable_ids and pid not in passive_ids and pid not in seen:
@@ -321,7 +321,7 @@ def _get_padded_bbox(
     renderer: RendererBase,
     padding_px: float,
 ) -> Bbox:
-    """Bbox expandido com padding fixo. Seguro para elementos de 0px."""
+    """Expanded bbox with fixed padding. Safe for 0px elements."""
     bbox = artist.get_window_extent(renderer)
     if bbox.width < 1 or bbox.height < 1:
         return Bbox.from_extents(
@@ -337,7 +337,7 @@ def _get_padded_bbox(
 
 
 def _pos_to_numeric(x: object, y: object) -> tuple[float, float]:
-    """Converte posicao data-space para numerico (datas -> mdates float)."""
+    """Convert data-space position to numeric (dates -> mdates float)."""
     if not isinstance(x, (int, float)):
         try:
             x = mdates.date2num(x)
@@ -349,12 +349,12 @@ def _pos_to_numeric(x: object, y: object) -> tuple[float, float]:
 def _shift_label(
     label: PositionableArtist, dx_px: float, dy_px: float, ax: Axes
 ) -> None:
-    """Move label por delta em pixels, convertendo para data coords."""
+    """Move label by pixel delta, converting to data coords."""
     num_x, num_y = _pos_to_numeric(*label.get_position())
     curr_px = ax.transData.transform((num_x, num_y))
     new_px = (curr_px[0] + dx_px, curr_px[1] + dy_px)
     new_data = ax.transData.inverted().transform(new_px)
-    # Pin coordenada que nao deve mudar para evitar drift de roundtrip
+    # Pin coordinate that should not change to avoid roundtrip drift
     final_x = num_x if dx_px == 0 else new_data[0]
     final_y = num_y if dy_px == 0 else new_data[1]
     label.set_position((final_x, final_y))

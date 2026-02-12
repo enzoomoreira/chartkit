@@ -1,10 +1,10 @@
 # chartkit
 
-Biblioteca de charting padronizado para visualizacao de dados financeiros.
+Standardized charting library for financial data visualization.
 
-Gera graficos profissionais via Pandas Accessor com uma linha de codigo.
+Generate professional charts via Pandas Accessor with a single line of code.
 
-## Instalacao
+## Installation
 
 ```bash
 uv add chartkit
@@ -14,66 +14,67 @@ uv add chartkit
 
 ```python
 import pandas as pd
-import chartkit  # Registra o accessor .chartkit
+import chartkit  # Registers the .chartkit accessor
 
-# Dados de exemplo
+# Sample data
 df = pd.DataFrame({
-    'taxa': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
+    'rate': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Grafico de linha
-df.chartkit.plot(title="Taxa de Juros", units='%', source='BCB')
+# Line chart
+df.chartkit.plot(title="Interest Rate", units='%', source='BCB')
 
-# Grafico de barras
-df.chartkit.variation().plot(kind='bar', title="Variacao Mensal", units='%', highlight=['last'])
+# Bar chart
+df.chartkit.variation().plot(kind='bar', title="Monthly Variation", units='%', highlight=['last'])
 
-# Grafico com metricas (ATH, media movel, etc)
-df.chartkit.plot(title="Análise", metrics=['ath|Máxima', 'atl|Mínima', 'ma:12|Média Móvel'])
+# Chart with metrics (ATH, moving average, etc)
+df.chartkit.plot(title="Analysis", metrics=['ath|Maximum', 'atl|Minimum', 'ma:12|Moving Average'])
 
-# Encadeamento completo
-df.chartkit.variation().plot(title="Variacao Mensal").show()
+# Full chaining
+df.chartkit.variation().plot(title="Monthly Variation").show()
 ```
 
-## Funcionalidades
+## Features
 
-- **Pandas Accessor**: Use `df.chartkit.plot()` diretamente em qualquer DataFrame
-- **Graficos**: Linhas, barras e barras empilhadas com estilo profissional
-- **Formatadores**: BRL, USD, BRL_compact, USD_compact, %, pontos, notacao humana (1k, 1M)
-- **Metricas Declarativas**: `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5', 'target:1000', 'std_band:20:2', 'vband:2020-03:2020-06']`
-- **Transforms Encadeados**: `df.chartkit.variation(horizon='year').drawdown().plot()` com method chaining e auto-deteccao de frequencia
-- **Overlays**: Area entre series (`fill_between`), bandas de desvio padrao, bandas verticais
-- **ChartRegistry**: Sistema plugavel de chart types via decorator
-- **Configuracao TOML + Env Vars**: Personalize via arquivo TOML ou variaveis de ambiente (`CHARTKIT_*`)
+- **Pandas Accessor**: Use `df.chartkit.plot()` directly on any DataFrame
+- **Charts**: Line, bar, and stacked bar charts with professional styling
+- **Formatters**: BRL, USD, BRL_compact, USD_compact, %, points, human-readable notation (1k, 1M)
+- **Declarative Metrics**: `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5', 'target:1000', 'std_band:20:2', 'vband:2020-03:2020-06']`
+- **Chained Transforms**: `df.chartkit.variation(horizon='year').drawdown().plot()` with method chaining and frequency auto-detection
+- **Overlays**: Area between series (`fill_between`), standard deviation bands, vertical bands
+- **ChartRegistry**: Pluggable chart type system via decorator
+- **TOML + Env Var Configuration**: Customize via TOML file or environment variables (`CHARTKIT_*`)
 
-## Documentacao
+## Documentation
 
-### Primeiros Passos
+### Getting Started
 
-- [Getting Started](docs/getting-started.md) - Primeiro grafico em 2 minutos
-- [Cookbook](docs/cookbook.md) - Receitas praticas para dados financeiros
+- [Getting Started](docs/getting-started.md) - Your first chart in 2 minutes
+- [Cookbook](docs/cookbook.md) - Practical recipes for financial data
 
-### Guias
+### Guides
 
-| Guia | Descricao |
-|------|-----------|
-| [Plotting](docs/guide/plotting.md) | Tipos de grafico, formatacao e PlotResult |
-| [Metrics](docs/guide/metrics.md) | Sistema declarativo de metricas |
-| [Transforms](docs/guide/transforms.md) | Transformacoes temporais e encadeamento |
-| [Configuration](docs/guide/configuration.md) | TOML, paths e auto-discovery |
+| Guide | Description |
+|-------|-------------|
+| [Plotting](docs/guide/plotting.md) | Chart types, formatting, and PlotResult |
+| [Metrics](docs/guide/metrics.md) | Declarative metrics system |
+| [Transforms](docs/guide/transforms.md) | Temporal transformations and chaining |
+| [Configuration](docs/guide/configuration.md) | TOML, paths, and auto-discovery |
 
-### Referencia
+### Reference
 
-- [API Reference](docs/reference/api.md) - Assinaturas, tipos e parametros
+- [API Reference](docs/reference/api.md) - Signatures, types, and parameters
 
-### Para Contribuidores
+### For Contributors
 
-| Documento | Descricao |
-|-----------|-----------|
-| [Architecture](docs/contributing/architecture.md) | Visao geral e fluxo de dados |
-| [Extending](docs/contributing/extending.md) | MetricRegistry e extensibilidade |
-| [Internals](docs/contributing/internals.md) | Thread-safety, caching e logging |
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/contributing/architecture.md) | Overview and data flow |
+| [Extending](docs/contributing/extending.md) | MetricRegistry and extensibility |
+| [Internals](docs/contributing/internals.md) | Thread-safety, caching, and logging |
+| [Testing](docs/contributing/testing.md) | Test suite, fixtures, and patterns |
 
-## Requisitos
+## Requirements
 
 - Python >= 3.12
 - pandas >= 2.2.0

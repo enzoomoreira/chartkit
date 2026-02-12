@@ -1,4 +1,4 @@
-"""Hierarquia de excecoes do chartkit."""
+"""Exception hierarchy for chartkit."""
 
 __all__ = [
     "ChartKitError",
@@ -10,20 +10,20 @@ __all__ = [
 
 
 class ChartKitError(Exception):
-    """Excecao base para todos os erros do chartkit."""
+    """Base exception for all chartkit errors."""
 
 
 class TransformError(ChartKitError):
-    """Erro durante validacao ou execucao de um transform."""
+    """Error during validation or execution of a transform."""
 
 
 class ValidationError(ChartKitError, ValueError):
-    """Erro de validacao de parametro ou input."""
+    """Parameter or input validation error."""
 
 
 class RegistryError(ChartKitError, LookupError):
-    """Erro de lookup em registry (chart type, metrica, style)."""
+    """Registry lookup error (chart type, metric, style)."""
 
 
 class StateError(ChartKitError, RuntimeError):
-    """Erro de operacao em estado invalido."""
+    """Operation attempted in an invalid state."""

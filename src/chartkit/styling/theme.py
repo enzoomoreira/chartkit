@@ -1,4 +1,4 @@
-"""Tema visual para graficos."""
+"""Visual theme for charts."""
 
 import matplotlib.pyplot as plt
 
@@ -8,10 +8,10 @@ from ..settings.schema import ColorsConfig
 
 
 class ChartingTheme:
-    """Gerencia a identidade visual dos graficos.
+    """Manages the visual identity for charts.
 
-    Singleton que encapsula cores, fontes e rcParams do matplotlib.
-    Usa lazy loading para refletir mudancas via ``configure()``.
+    Singleton that encapsulates colors, fonts, and matplotlib rcParams.
+    Uses lazy loading to reflect changes via ``configure()``.
     """
 
     def __init__(self) -> None:
@@ -32,17 +32,17 @@ class ChartingTheme:
         return self.font.get_name()
 
     def apply(self) -> "ChartingTheme":
-        """Aplica o tema globalmente nos rcParams do matplotlib."""
+        """Apply the theme globally to matplotlib rcParams."""
         config = get_config()
         plt.style.use(config.layout.base_style)
 
         rc_params = {
-            # Fontes
+            # Fonts
             "font.family": self.font_name,
             "font.size": config.fonts.sizes.default,
             "axes.titlesize": config.fonts.sizes.title,
             "axes.labelsize": config.fonts.sizes.axis_label,
-            # Cores
+            # Colors
             "text.color": config.colors.text,
             "axes.labelcolor": config.colors.text,
             "xtick.color": config.colors.text,
@@ -64,5 +64,5 @@ class ChartingTheme:
         return self
 
 
-# Instancia global singleton
+# Global singleton instance
 theme = ChartingTheme()

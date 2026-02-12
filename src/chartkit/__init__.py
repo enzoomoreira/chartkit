@@ -1,8 +1,8 @@
-"""Biblioteca de charting padronizado via Pandas accessor.
+"""Standardized charting library via Pandas accessor.
 
 import chartkit
 df.chartkit.plot(metrics=['ath', 'ma:12'], units='%')
-df.chartkit.variation(horizon='year').plot(title='Variacao Anual').save('chart.png')
+df.chartkit.variation(horizon='year').plot(title='YoY Variation').save('chart.png')
 """
 
 from ._internal import register_fixed, register_moveable, register_passive
@@ -44,7 +44,7 @@ from .transforms import (
 
 
 def __getattr__(name: str):
-    """Lazy evaluation de CHARTS_PATH, OUTPUTS_PATH e ASSETS_PATH."""
+    """Lazy evaluation of CHARTS_PATH, OUTPUTS_PATH, and ASSETS_PATH."""
     if name == "CHARTS_PATH":
         return get_charts_path()
     if name == "OUTPUTS_PATH":
@@ -55,7 +55,7 @@ def __getattr__(name: str):
 
 
 __all__ = [
-    # Configuracao
+    # Configuration
     "configure",
     "configure_logging",
     "disable_logging",
@@ -75,7 +75,7 @@ __all__ = [
     "HighlightInput",
     "HighlightMode",
     "UnitFormat",
-    # Classes principais
+    # Main classes
     "ChartingAccessor",
     "ChartingPlotter",
     "ChartRegistry",

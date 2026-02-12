@@ -1,93 +1,93 @@
 # Collision Engine
 
-Engine de resolucao automatica de colisao entre elementos visuais de graficos.
+Automatic collision resolution engine for chart visual elements.
 
-Quando um grafico possui multiplos labels, linhas de referencia e barras, esses
-elementos competem pelo mesmo espaco visual. A collision engine reposiciona
-labels automaticamente para eliminar sobreposicoes, produzindo graficos legivos
-sem intervencao manual.
-
----
-
-## Conceito
-
-A engine e **agnostica a tipos**. Ela nao sabe o que e um "label", uma "barra"
-ou uma "linha ATH". Ela so enxerga retangulos (bounding boxes) em pixels de tela
-e tres categorias de participacao:
-
-| Categoria | Funcao | Significado |
-|-----------|--------|-------------|
-| **Moveable** | `register_moveable(ax, artist)` | Pode ser reposicionado para resolver colisoes |
-| **Fixed** | `register_fixed(ax, artist)` | Obstaculo imutavel que outros devem evitar |
-| **Passive** | `register_passive(ax, artist)` | Existe visualmente mas nao participa da colisao |
-
-Cada modulo externo decide como classificar seus proprios elementos. A engine
-fornece os building blocks; os modulos fazem a integracao.
+When a chart has multiple labels, reference lines, and bars, these
+elements compete for the same visual space. The collision engine repositions
+labels automatically to eliminate overlaps, producing readable charts
+without manual intervention.
 
 ---
 
-## Uso Automatico
+## Concept
 
-Na maioria dos casos, a collision engine funciona automaticamente. Basta usar
-metricas e highlights:
+The engine is **type-agnostic**. It doesn't know what a "label", a "bar",
+or an "ATH line" is. It only sees rectangles (bounding boxes) in screen pixels
+and three participation categories:
+
+| Category | Function | Meaning |
+|----------|----------|---------|
+| **Moveable** | `register_moveable(ax, artist)` | Can be repositioned to resolve collisions |
+| **Fixed** | `register_fixed(ax, artist)` | Immutable obstacle that others must avoid |
+| **Passive** | `register_passive(ax, artist)` | Exists visually but doesn't participate in collision |
+
+Each external module decides how to classify its own elements. The engine
+provides the building blocks; modules handle the integration.
+
+---
+
+## Automatic Usage
+
+In most cases, the collision engine works automatically. Just use
+metrics and highlights:
 
 ```python
-# Labels e linhas sao registrados automaticamente
+# Labels and lines are registered automatically
 df.chartkit.plot(
     metrics=["ath", "atl", "hline:3.0", "band:1.5:4.5"],
     highlight=True,
 )
 ```
 
-Internamente, o pipeline do `engine.py` chama `resolve_collisions(ax)` apos
-todos os elementos serem registrados.
+Internally, the `engine.py` pipeline calls `resolve_collisions(ax)` after
+all elements have been registered.
 
 ---
 
-## Uso Manual
+## Manual Usage
 
-Para cenarios avancados (overlays customizados, metricas proprias), use a API
-diretamente:
+For advanced scenarios (custom overlays, custom metrics), use the API
+directly:
 
 ```python
 from chartkit import register_moveable, register_fixed, register_passive
 
-# Criar um label que pode ser movido
-text = ax.text(x, y, "Meu label", ha="left", va="center")
+# Create a label that can be moved
+text = ax.text(x, y, "My label", ha="left", va="center")
 register_moveable(ax, text)
 
-# Criar uma linha de referencia como obstaculo
+# Create a reference line as an obstacle
 line = ax.axhline(y=100, color="red", linestyle="--")
 register_fixed(ax, line)
 
-# Criar uma area de fundo que NAO e obstaculo
+# Create a background area that is NOT an obstacle
 patch = ax.axhspan(50, 150, alpha=0.1, color="gray")
 register_passive(ax, patch)
 ```
 
-> **Importante**: Use `ax.text()`, nao `ax.annotate()`. O `ax.text()` usa
-> `transData` nativamente, permitindo reposicionamento programatico via
-> `get_position()`/`set_position()`. O `ax.annotate(textcoords="offset points")`
-> usa transforms customizados incompativeis com a engine.
+> **Important**: Use `ax.text()`, not `ax.annotate()`. `ax.text()` natively uses
+> `transData`, allowing programmatic repositioning via
+> `get_position()`/`set_position()`. `ax.annotate(textcoords="offset points")`
+> uses custom transforms incompatible with the engine.
 
 ---
 
-## Como Funciona
+## How It Works
 
-### Estado Interno
+### Internal State
 
-O estado de colisao (quais artists sao moveable, fixed, passive) e armazenado
-em `WeakKeyDictionary` module-level indexadas por `Axes`. Isso significa:
+The collision state (which artists are moveable, fixed, passive) is stored
+in module-level `WeakKeyDictionary` indexed by `Axes`. This means:
 
-- **Limpeza automatica**: quando um `Axes` e destruido pelo GC, suas entradas
-  sao removidas automaticamente. Nao ha risco de memory leak.
-- **Sem poluicao de namespace**: nenhum atributo privado e adicionado aos
-  objetos matplotlib (anteriormente usava `ax._charting_labels`, etc.).
+- **Automatic cleanup**: when an `Axes` is destroyed by the GC, its entries
+  are automatically removed. There is no risk of memory leak.
+- **No namespace pollution**: no private attribute is added to
+  matplotlib objects (previously used `ax._charting_labels`, etc.).
 
-### Pipeline de Rendering
+### Rendering Pipeline
 
-A collision engine e executada no step 6 do pipeline, apos todos os elementos
-serem criados e antes das decoracoes finais:
+The collision engine runs at step 6 of the pipeline, after all elements
+are created and before final decorations:
 
 ```
 1. Style           theme.apply()
@@ -100,76 +100,76 @@ serem criados e antes das decoracoes finais:
 8. Output          PlotResult
 ```
 
-### Algoritmo em 3 Fases
+### 3-Phase Algorithm
 
-#### Fase 1: Moveables vs Fixed
+#### Phase 1: Moveables vs Fixed
 
-Para cada moveable, verifica colisao contra todos os obstaculos fixos.
-Se ha colisao, calcula o **menor deslocamento possivel** entre ate 4 direcoes:
-
-```
-Exemplo com movement="y" (default):
-
-    Label colide com linha ATH.
-
-    UP:   mover label acima da linha   -> 15px
-    DOWN: mover label abaixo da linha  -> 42px
-
-    Menor: UP (15px). Label sobe 15px.
-```
-
-Restricoes respeitadas:
-- **Eixo de movimento**: configuravel (`"y"`, `"x"`, ou `"xy"`)
-- **Limites do axes**: label nunca sai da area visivel do grafico
-
-Se nenhuma direcao e valida (label encurralado entre obstaculos e borda do axes),
-o label permanece na posicao original.
-
-#### Fase 2: Moveables vs Moveables
-
-Push-apart iterativo entre pares de labels. Quando dois labels colidem, ambos
-sao empurrados em direcoes opostas por metade do overlap + padding:
+For each moveable, checks collision against all fixed obstacles.
+If there's a collision, calculates the **smallest possible displacement** among up to 4 directions:
 
 ```
-    Label A e Label B sobrepostos em Y por 20px:
+Example with movement="y" (default):
+
+    Label collides with ATH line.
+
+    UP:   move label above the line   -> 15px
+    DOWN: move label below the line   -> 42px
+
+    Smallest: UP (15px). Label moves up 15px.
+```
+
+Constraints respected:
+- **Movement axis**: configurable (`"y"`, `"x"`, or `"xy"`)
+- **Axes limits**: label never leaves the visible chart area
+
+If no direction is valid (label trapped between obstacles and axes border),
+the label remains at its original position.
+
+#### Phase 2: Moveables vs Moveables
+
+Iterative push-apart between label pairs. When two labels collide, both
+are pushed in opposite directions by half the overlap + padding:
+
+```
+    Label A and Label B overlapping on Y by 20px:
 
     shift = 20/2 + padding/2 = 12px
 
-    Label A (mais alto): sobe 12px
-    Label B (mais baixo): desce 12px
+    Label A (higher): moves up 12px
+    Label B (lower): moves down 12px
 ```
 
-Repete ate convergir (nenhum par colide) ou atingir `max_iterations`.
+Repeats until convergence (no pair collides) or `max_iterations` is reached.
 
-#### Fase 3: Connectors
+#### Phase 3: Connectors
 
-Se um label foi deslocado alem de `connector_threshold_px` (default: 30px)
-da posicao original, uma linha guia e desenhada conectando o ponto de dados
-original ao label reposicionado. Preserva a associacao visual dado-label.
+If a label was displaced beyond `connector_threshold_px` (default: 30px)
+from its original position, a guide line is drawn connecting the original data point
+to the repositioned label. Preserves the data-label visual association.
 
-### Coleta de Obstaculos
+### Obstacle Collection
 
-A engine combina duas fontes de obstaculos:
+The engine combines two obstacle sources:
 
-1. **Explicitos**: elementos registrados via `register_fixed()` (linhas ATH, ATL, hline)
-2. **Auto-detectados**: todos os `ax.patches` (barras de graficos de barras)
+1. **Explicit**: elements registered via `register_fixed()` (ATH, ATL, hline lines)
+2. **Auto-detected**: all `ax.patches` (bar chart bars)
 
-A auto-deteccao existe para que barras sejam obstaculos automaticamente sem
-registro manual. Porem, nem todo patch e obstaculo - bandas sombreadas
-(`ax.axhspan`) tambem criam patches, mas sao elementos de fundo transparentes.
+Auto-detection exists so that bars are automatically obstacles without
+manual registration. However, not every patch is an obstacle - shaded bands
+(`ax.axhspan`) also create patches, but are transparent background elements.
 
-Para excluir um patch da auto-deteccao, use `register_passive()`. A engine
-filtra:
-- Patches registrados como moveable (labels nao sao obstaculos de si mesmos)
-- Patches registrados como passive (bandas, areas de fundo)
-- Patches ja registrados como fixed (evita duplicacao)
+To exclude a patch from auto-detection, use `register_passive()`. The engine
+filters:
+- Patches registered as moveable (labels are not obstacles to themselves)
+- Patches registered as passive (bands, background areas)
+- Patches already registered as fixed (avoids duplication)
 
 ---
 
-## Integracao com Metricas Customizadas
+## Integration with Custom Metrics
 
-Ao criar metricas customizadas via `MetricRegistry.register`, use as funcoes
-de registro para integrar com a collision engine:
+When creating custom metrics via `MetricRegistry.register`, use the
+registration functions to integrate with the collision engine:
 
 ```python
 from chartkit import register_fixed, register_moveable, register_passive
@@ -177,53 +177,53 @@ from chartkit.metrics import MetricRegistry
 
 @MetricRegistry.register("target", param_names=["value"])
 def metric_target(ax, x_data, y_data, value: float, **kwargs):
-    """Linha de meta com label."""
-    # Linha como obstaculo fixo
+    """Line target with label."""
+    # Line as fixed obstacle
     line = ax.axhline(y=value, color="green", linestyle="--")
     register_fixed(ax, line)
 
-    # Label como moveable
+    # Label as moveable
     text = ax.text(
         x_data[-1], value, f"  Meta: {value}",
         ha="left", va="center", color="green",
     )
     register_moveable(ax, text)
 
-# Uso:
+# Usage:
 df.chartkit.plot(metrics=["target:100", "ath"], highlight=True)
-# A engine resolve colisoes entre o label "Meta: 100", o label do
-# highlight, a linha ATH e a linha de meta automaticamente.
+# The engine resolves collisions between the "Target: 100" label, the
+# highlight label, the ATH line, and the target line automatically.
 ```
 
-Se sua metrica cria uma area de fundo que nao deve ser obstaculo:
+If your metric creates a background area that shouldn't be an obstacle:
 
 ```python
 @MetricRegistry.register("zone", param_names=["lower", "upper"], uses_series=False)
 def metric_zone(ax, x_data, y_data, lower: float, upper: float, **kwargs):
-    """Zona sombreada (nao-obstaculo)."""
+    """Shaded zone (non-obstacle)."""
     patch = ax.axhspan(lower, upper, alpha=0.1, color="blue")
     register_passive(ax, patch)
 ```
 
 ---
 
-## Configuracao
+## Configuration
 
-Todos os parametros da engine sao configuraveis via TOML:
+All engine parameters are configurable via TOML:
 
 ```toml
 [collision]
-movement = "y"                  # Eixo de deslocamento: "y", "x", ou "xy"
-obstacle_padding_px = 8.0       # Padding entre label e obstaculo (px)
-label_padding_px = 4.0          # Padding entre labels (px)
-max_iterations = 50             # Limite de iteracoes push-apart
-connector_threshold_px = 30.0   # Distancia minima para desenhar connector (px)
-connector_alpha = 0.6           # Transparencia da linha connector
-connector_style = "-"           # Estilo da linha connector ("-", "--", ":", "-.")
-connector_width = 1.0           # Espessura da linha connector
+movement = "y"                  # Displacement axis: "y", "x", or "xy"
+obstacle_padding_px = 8.0       # Padding between label and obstacle (px)
+label_padding_px = 4.0          # Padding between labels (px)
+max_iterations = 50             # Push-apart iteration limit
+connector_threshold_px = 30.0   # Minimum distance to draw connector (px)
+connector_alpha = 0.6           # Connector line transparency
+connector_style = "-"           # Connector line style ("-", "--", ":", "-.")
+connector_width = 1.0           # Connector line width
 ```
 
-Ou via `configure()`:
+Or via `configure()`:
 
 ```python
 from chartkit import configure
@@ -234,69 +234,69 @@ configure(collision={
 })
 ```
 
-### Parametros
+### Parameters
 
-| Parametro | Default | Descricao |
-|-----------|---------|-----------|
-| `movement` | `"y"` | Eixo permitido para deslocamento. `"y"` e recomendado para series temporais (preserva posicao temporal no eixo X) |
-| `obstacle_padding_px` | `8.0` | Espaco minimo entre label e obstaculo em pixels |
-| `label_padding_px` | `4.0` | Espaco minimo entre dois labels em pixels |
-| `max_iterations` | `50` | Numero maximo de iteracoes do push-apart entre labels |
-| `connector_threshold_px` | `30.0` | Distancia minima (px) de deslocamento para desenhar linha guia |
-| `connector_alpha` | `0.6` | Transparencia da linha guia (0.0 = invisivel, 1.0 = opaco) |
-| `connector_style` | `"-"` | Estilo matplotlib da linha guia |
-| `connector_width` | `1.0` | Espessura da linha guia em pontos |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `movement` | `"y"` | Allowed displacement axis. `"y"` is recommended for time series (preserves temporal position on X-axis) |
+| `obstacle_padding_px` | `8.0` | Minimum space between label and obstacle in pixels |
+| `label_padding_px` | `4.0` | Minimum space between two labels in pixels |
+| `max_iterations` | `50` | Maximum number of push-apart iterations between labels |
+| `connector_threshold_px` | `30.0` | Minimum displacement distance (px) to draw guide line |
+| `connector_alpha` | `0.6` | Guide line transparency (0.0 = invisible, 1.0 = opaque) |
+| `connector_style` | `"-"` | Matplotlib style for guide line |
+| `connector_width` | `1.0` | Guide line width in points |
 
 ---
 
-## Decisoes de Design
+## Design Decisions
 
-### Por que agnostica a tipos concretos?
+### Why type-agnostic?
 
-A engine nunca faz `isinstance(artist, Text)` ou `isinstance(patch, Rectangle)`.
-Para moveables, usa um `PositionableArtist` Protocol (`runtime_checkable`) que
-verifica estruturalmente se o artist tem `get_position()`, `set_position()` e
-`get_window_extent()`. Para obstaculos, trabalha exclusivamente com
-`Artist.get_window_extent(renderer)`, que retorna um `Bbox` em display pixels.
+The engine never does `isinstance(artist, Text)` or `isinstance(patch, Rectangle)`.
+For moveables, it uses a `PositionableArtist` Protocol (`runtime_checkable`) that
+structurally verifies whether the artist has `get_position()`, `set_position()`, and
+`get_window_extent()`. For obstacles, it works exclusively with
+`Artist.get_window_extent(renderer)`, which returns a `Bbox` in display pixels.
 
-Se amanha adicionarmos um novo tipo de overlay (ex: anotacoes, setas, boxes),
-ele funciona com a engine sem modificar uma unica linha dela -- basta que
-implemente os metodos do Protocol. A responsabilidade de classificacao e do
-modulo que cria o elemento.
+If tomorrow we add a new type of overlay (e.g., annotations, arrows, boxes),
+it works with the engine without modifying a single line of it -- it just needs
+to implement the Protocol methods. The classification responsibility belongs to
+the module that creates the element.
 
-### Por que display pixels?
+### Why display pixels?
 
-Data coordinates podem ser datas, percentuais, moedas - unidades incomparaveis
-entre X e Y. Display pixels sao uniformes e permitem:
-- Comparacao direta entre bboxes de elementos em eixos diferentes
-- Padding visual consistente independente do zoom ou escala
-- Uso direto de `Bbox.overlaps()` do matplotlib
+Data coordinates can be dates, percentages, currencies - incomparable units
+between X and Y. Display pixels are uniform and allow:
+- Direct comparison between bboxes of elements on different axes
+- Consistent visual padding regardless of zoom or scale
+- Direct use of matplotlib's `Bbox.overlaps()`
 
-### Por que `movement="y"` como default?
+### Why `movement="y"` as default?
 
-Em series temporais (caso de uso principal), o eixo X representa tempo. Deslocar
-um label horizontalmente quebraria a associacao temporal - o label de "dezembro"
-apareceria sobre "novembro". Restringir movimento ao eixo Y preserva a posicao
-temporal e produz resultados intuitivos.
+In time series (primary use case), the X-axis represents time. Displacing
+a label horizontally would break the temporal association - the "December" label
+would appear over "November". Restricting movement to the Y-axis preserves the
+temporal position and produces intuitive results.
 
-### Por que 3 categorias (moveable/fixed/passive)?
+### Why 3 categories (moveable/fixed/passive)?
 
-Duas categorias (moveable/fixed) nao sao suficientes. A auto-deteccao de
-`ax.patches` como obstaculos e necessaria para barras, mas `ax.axhspan()` tambem
-cria patches. Sem a terceira categoria, bandas semi-transparentes de fundo seriam
-tratadas como obstaculos gigantes, empurrando labels para fora da area da banda.
+Two categories (moveable/fixed) are not sufficient. Auto-detection of
+`ax.patches` as obstacles is necessary for bars, but `ax.axhspan()` also
+creates patches. Without the third category, semi-transparent background bands would
+be treated as giant obstacles, pushing labels outside the band area.
 
-A alternativa seria a engine verificar tipos (`isinstance(patch, Polygon)`) ou
-propriedades (`alpha < 0.5`), mas isso quebraria o agnosticismo. A solucao
-correta: o modulo que cria o elemento sabe o que ele e e se auto-classifica.
+The alternative would be for the engine to check types (`isinstance(patch, Polygon)`) or
+properties (`alpha < 0.5`), but this would break agnosticism. The correct solution:
+the module that creates the element knows what it is and self-classifies.
 
-### Por que `resolve_collisions` nao e publica?
+### Why isn't `resolve_collisions` public?
 
-A resolucao e orquestrada pelo pipeline do `engine.py`. Metricas customizadas
-registram elementos e a engine resolve automaticamente no step 6. Expor
-`resolve_collisions` na API publica incentivaria chamadas manuais em momentos
-errados do pipeline (antes de todos os elementos serem registrados, por exemplo).
+Resolution is orchestrated by the `engine.py` pipeline. Custom metrics
+register elements and the engine resolves automatically at step 6. Exposing
+`resolve_collisions` in the public API would encourage manual calls at the wrong
+moments in the pipeline (before all elements are registered, for example).
 
-`register_moveable`, `register_fixed` e `register_passive` sao publicas porque
-metricas customizadas precisam registrar seus elementos. A resolucao em si e
-responsabilidade do orquestrador.
+`register_moveable`, `register_fixed`, and `register_passive` are public because
+custom metrics need to register their elements. Resolution itself is the
+orchestrator's responsibility.

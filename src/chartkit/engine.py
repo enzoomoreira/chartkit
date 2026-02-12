@@ -1,4 +1,4 @@
-"""Motor de plotagem principal."""
+"""Main plotting engine."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def _normalize_highlight(highlight: HighlightInput) -> list[HighlightMode]:
         if highlight not in _VALID_HIGHLIGHT_MODES:
             available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
             raise ValidationError(
-                f"Highlight mode '{highlight}' invalido. Disponiveis: {available}"
+                f"Highlight mode '{highlight}' invalid. Available: {available}"
             )
         return [cast(HighlightMode, highlight)]
     modes: list[HighlightMode] = []
@@ -62,7 +62,7 @@ def _normalize_highlight(highlight: HighlightInput) -> list[HighlightMode]:
         if m not in _VALID_HIGHLIGHT_MODES:
             available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
             raise ValidationError(
-                f"Highlight mode '{m}' invalido. Disponiveis: {available}"
+                f"Highlight mode '{m}' invalid. Available: {available}"
             )
         modes.append(cast(HighlightMode, m))
     return modes
@@ -74,7 +74,7 @@ class _PlotParams(BaseModel):
 
 
 class ChartingPlotter:
-    """Factory de visualizacao financeira padronizada."""
+    """Standardized financial visualization factory."""
 
     def __init__(self, df: pd.DataFrame) -> None:
         self.df = df
@@ -96,27 +96,27 @@ class ChartingPlotter:
         legend: bool | None = None,
         **kwargs,
     ) -> PlotResult:
-        """Gera grafico padronizado.
+        """Generate standardized chart.
 
         Args:
-            x: Coluna para o eixo X. ``None`` usa o index do DataFrame.
-            y: Coluna(s) para o eixo Y. ``None`` usa todas as numericas.
-            kind: Tipo de grafico.
-            title: Titulo exibido acima do grafico.
-            units: Formatacao do eixo Y.
-            source: Fonte dos dados exibida no rodape. Sobrescreve
-                ``branding.default_source`` do config quando fornecido.
-            highlight: Modo(s) de destaque de pontos. ``True`` ou ``'last'``
-                destaca o ultimo ponto; ``'max'``/``'min'`` destaca
-                maximo/minimo. Aceita lista para combinar modos.
-            metrics: Metrica(s) declarativas. Use ``|`` para label customizado
-                na legenda (ex: ``'ath|Maximo'``, ``'ma:12@col|Media 12M'``).
-            fill_between: Tupla ``(col1, col2)`` para sombrear area entre
-                duas colunas do DataFrame.
-            legend: Controle da legenda. ``None`` = auto (mostra quando ha
-                2+ artists rotulados), ``True`` = forca, ``False`` = suprime.
-            **kwargs: Parametros chart-specific (ex: ``y_origin='auto'`` para barras)
-                e parametros matplotlib passados diretamente ao renderer.
+            x: Column for the X axis. ``None`` uses the DataFrame index.
+            y: Column(s) for the Y axis. ``None`` uses all numeric columns.
+            kind: Chart type.
+            title: Title displayed above the chart.
+            units: Y axis formatting.
+            source: Data source displayed in the footer. Overrides
+                ``branding.default_source`` from config when provided.
+            highlight: Data point highlight mode(s). ``True`` or ``'last'``
+                highlights the last point; ``'max'``/``'min'`` highlights
+                maximum/minimum. Accepts a list to combine modes.
+            metrics: Declarative metric(s). Use ``|`` for custom legend label
+                (e.g.: ``'ath|Maximum'``, ``'ma:12@col|12M Average'``).
+            fill_between: Tuple ``(col1, col2)`` to shade the area between
+                two DataFrame columns.
+            legend: Legend control. ``None`` = auto (shows when there are
+                2+ labeled artists), ``True`` = force, ``False`` = suppress.
+            **kwargs: Chart-specific parameters (e.g.: ``y_origin='auto'`` for bars)
+                and matplotlib parameters passed directly to the renderer.
         """
         highlight_modes = _normalize_highlight(highlight)
         self._validate_params(units=units, legend=legend)
@@ -199,7 +199,7 @@ class ChartingPlotter:
                 for e in errors
             ]
             raise ValidationError(
-                "Parametros de plot invalidos:\n" + "\n".join(msgs)
+                "Invalid plot parameters:\n" + "\n".join(msgs)
             ) from exc
 
     def _apply_y_formatter(self, ax, units: UnitFormat | None) -> None:
@@ -239,13 +239,13 @@ class ChartingPlotter:
         add_footer(fig, source)
 
     def save(self, path: str, dpi: int | None = None) -> None:
-        """Salva o grafico em arquivo.
+        """Save chart to file.
 
         Raises:
-            StateError: Se nenhum grafico foi gerado ainda.
+            StateError: If no chart has been generated yet.
         """
         if self._fig is None:
-            raise StateError("Nenhum grafico gerado. Chame plot() primeiro.")
+            raise StateError("No chart generated yet. Call plot() first.")
 
         config = get_config()
 

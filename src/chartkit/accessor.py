@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 @pd.api.extensions.register_dataframe_accessor("chartkit")
 @pd.api.extensions.register_series_accessor("chartkit")
 class ChartingAccessor:
-    """Pandas accessor para plotagem e transforms encadeados.
+    """Pandas accessor for plotting and chained transforms.
 
-    Registrado automaticamente ao importar chartkit.
-    Aceita DataFrame e Series (Series e convertida para DataFrame internamente).
-    Transforms retornam ``TransformAccessor``; ``.plot()`` retorna ``PlotResult``.
+    Registered automatically when importing chartkit.
+    Accepts DataFrame and Series (Series is converted to DataFrame internally).
+    Transforms return ``TransformAccessor``; ``.plot()`` returns ``PlotResult``.
     """
 
     def __init__(self, pandas_obj: pd.DataFrame | pd.Series) -> None:
@@ -33,41 +33,41 @@ class ChartingAccessor:
         periods: int | None = None,
         freq: str | None = None,
     ) -> TransformAccessor:
-        """Variacao percentual entre periodos."""
+        """Percentage change between periods."""
         return TransformAccessor(self._obj).variation(horizon, periods, freq)
 
     def accum(
         self, window: int | None = None, freq: str | None = None
     ) -> TransformAccessor:
-        """Variacao acumulada via produto composto em janela movel."""
+        """Cumulative change via compound product in rolling window."""
         return TransformAccessor(self._obj).accum(window, freq)
 
     def diff(self, periods: int = 1) -> TransformAccessor:
-        """Diferenca absoluta entre periodos."""
+        """Absolute difference between periods."""
         return TransformAccessor(self._obj).diff(periods)
 
     def normalize(
         self, base: int | None = None, base_date: str | None = None
     ) -> TransformAccessor:
-        """Normaliza serie para um valor base em uma data especifica."""
+        """Normalize series to a base value at a specific date."""
         return TransformAccessor(self._obj).normalize(base, base_date)
 
     def annualize(
         self, periods: int | None = None, freq: str | None = None
     ) -> TransformAccessor:
-        """Anualiza taxa periodica via juros compostos."""
+        """Annualize periodic rate via compound interest."""
         return TransformAccessor(self._obj).annualize(periods, freq)
 
     def drawdown(self) -> TransformAccessor:
-        """Distancia percentual do pico historico."""
+        """Percentage distance from historical peak."""
         return TransformAccessor(self._obj).drawdown()
 
     def zscore(self, window: int | None = None) -> TransformAccessor:
-        """Padronizacao estatistica (z-score)."""
+        """Statistical standardization (z-score)."""
         return TransformAccessor(self._obj).zscore(window)
 
     def to_month_end(self) -> TransformAccessor:
-        """Normaliza indice temporal para fim do mes."""
+        """Normalize temporal index to month end."""
         return TransformAccessor(self._obj).to_month_end()
 
     def plot(
@@ -85,7 +85,7 @@ class ChartingAccessor:
         legend: bool | None = None,
         **kwargs,
     ) -> PlotResult:
-        """Cria grafico padronizado. Ver ``ChartingPlotter.plot()`` para docs completas."""
+        """Create standardized chart. See ``ChartingPlotter.plot()`` for full docs."""
         plotter = ChartingPlotter(self._obj)
         return plotter.plot(
             x=x,

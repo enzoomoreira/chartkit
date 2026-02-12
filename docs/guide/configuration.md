@@ -1,34 +1,34 @@
-# Configuracao
+# Configuration
 
-Guia completo do sistema de configuracao TOML e paths do chartkit.
+Complete guide to the TOML configuration system and paths in chartkit.
 
-## Ordem de Precedencia
+## Precedence Order
 
-O chartkit carrega configuracoes de multiplas fontes, mesclando-as em ordem de precedencia (maior para menor):
+chartkit loads configuration from multiple sources, merging them in order of precedence (highest to lowest):
 
-| Prioridade | Fonte | Descricao |
-|------------|-------|-----------|
-| 1 | `configure()` (init_settings) | Configuracao programatica em runtime |
-| 2 | Variaveis de ambiente (`CHARTKIT_*`) | Env vars com prefixo e nested delimiter `__` |
-| 3 | `configure(config_path=...)` | Arquivo TOML explicito |
-| 4 | `.charting.toml` / `charting.toml` | Arquivo na raiz do projeto |
-| 5 | `pyproject.toml [tool.charting]` | Secao no pyproject.toml |
-| 6 | `~/.config/charting/config.toml` | Config global do usuario (Linux/Mac) |
-| 7 | `%APPDATA%/charting/config.toml` | Config global do usuario (Windows) |
-| 8 | Defaults built-in | Valores default dos pydantic models |
+| Priority | Source | Description |
+|----------|--------|-------------|
+| 1 | `configure()` (init_settings) | Programmatic runtime configuration |
+| 2 | Environment variables (`CHARTKIT_*`) | Env vars with prefix and nested delimiter `__` |
+| 3 | `configure(config_path=...)` | Explicit TOML file |
+| 4 | `.charting.toml` / `charting.toml` | File at project root |
+| 5 | `pyproject.toml [tool.charting]` | Section in pyproject.toml |
+| 6 | `~/.config/charting/config.toml` | User global config (Linux/Mac) |
+| 7 | `%APPDATA%/charting/config.toml` | User global config (Windows) |
+| 8 | Built-in defaults | Default values from pydantic models |
 
-Configuracoes de maior prioridade sobrescrevem as de menor prioridade. O merge e profundo, permitindo sobrescrever apenas campos especificos sem perder o restante.
+Higher-priority configurations override lower-priority ones. The merge is deep, allowing you to override only specific fields without losing the rest.
 
-## Arquivo TOML
+## TOML File
 
-Crie um arquivo `.charting.toml` ou `charting.toml` na raiz do seu projeto:
+Create a `.charting.toml` or `charting.toml` file at your project root:
 
 ```toml
 # .charting.toml
 
 [branding]
-company_name = "Minha Empresa"
-default_source = ""  # Fonte padrao quando source=None no plot()
+company_name = "My Company"
+default_source = ""  # Default source when source=None in plot()
 footer_format = "Fonte: {source}, {company_name}"
 footer_format_no_source = "{company_name}"
 
@@ -47,7 +47,7 @@ negative = "#CC0000"
 moving_average = "#888888"
 
 [fonts]
-file = "fonts/MeuFont.ttf"  # Relativo a paths.assets_dir ou absoluto
+file = "fonts/MyFont.ttf"  # Relative to paths.assets_dir or absolute
 fallback = "sans-serif"
 
 [fonts.sizes]
@@ -59,14 +59,14 @@ axis_label = 11
 [layout]
 figsize = [12.0, 8.0]
 dpi = 150
-base_style = "seaborn-v0_8-white"  # Estilo base matplotlib
-grid = false                        # Mostrar grid no grafico
+base_style = "seaborn-v0_8-white"  # Base matplotlib style
+grid = false                        # Show grid on chart
 
 [layout.spines]
-top = false      # Borda superior
-right = false    # Borda direita
-left = true      # Borda esquerda
-bottom = true    # Borda inferior
+top = false      # Top border
+right = false    # Right border
+left = true      # Left border
+bottom = true    # Bottom border
 
 [layout.footer]
 x = 0.01
@@ -98,7 +98,7 @@ babel_locale = "pt_BR"
 ath = "ATH"
 atl = "ATL"
 avg = "AVG"
-moving_average_format = "MM{window}"
+moving_average_format = "MA{window}"
 target_format = "Meta: {value}"
 std_band_format = "BB({window}, {num_std})"
 
@@ -109,15 +109,15 @@ frameon = true
 
 [paths]
 charts_subdir = "charts"
-outputs_dir = ""    # Vazio = auto-discovery
-assets_dir = ""     # Vazio = auto-discovery
+outputs_dir = ""    # Empty = auto-discovery
+assets_dir = ""     # Empty = auto-discovery
 ```
 
-O chartkit detecta automaticamente o arquivo `.charting.toml` ou `charting.toml` na raiz do projeto ao importar a biblioteca.
+chartkit automatically detects the `.charting.toml` or `charting.toml` file at the project root when importing the library.
 
 ## Via pyproject.toml
 
-Voce pode integrar a configuracao diretamente no `pyproject.toml` do seu projeto usando a secao `[tool.charting]`:
+You can integrate the configuration directly into your project's `pyproject.toml` using the `[tool.charting]` section:
 
 ```toml
 # pyproject.toml
@@ -125,8 +125,8 @@ Voce pode integrar a configuracao diretamente no `pyproject.toml` do seu projeto
 [tool.charting]
 
 [tool.charting.branding]
-company_name = "Minha Empresa"
-footer_format = "Elaborado por {company_name} | Dados: {source}"
+company_name = "My Company"
+footer_format = "Prepared by {company_name} | Data: {source}"
 
 [tool.charting.colors]
 primary = "#003366"
@@ -145,150 +145,150 @@ outputs_dir = "data/outputs"
 assets_dir = "assets"
 ```
 
-Esta opcao e ideal para manter toda a configuracao do projeto centralizada em um unico arquivo.
+This option is ideal for keeping all project configuration centralized in a single file.
 
-## Configuracao Programatica
+## Programmatic Configuration
 
-Use a funcao `configure()` para definir configuracoes em tempo de execucao:
+Use the `configure()` function to set configurations at runtime:
 
 ```python
 from chartkit import configure
 
-# Customiza branding
-configure(branding={'company_name': 'Minha Empresa'})
+# Customize branding
+configure(branding={'company_name': 'My Company'})
 
-# Customiza cores
+# Customize colors
 configure(colors={'primary': '#FF0000', 'secondary': '#00FF00'})
 
-# Customiza layout
+# Customize layout
 configure(layout={'figsize': [12.0, 8.0], 'dpi': 150})
 
-# Combina multiplas secoes em uma chamada
+# Combine multiple sections in one call
 configure(
-    branding={'company_name': 'Banco XYZ'},
+    branding={'company_name': 'Bank XYZ'},
     colors={'primary': '#003366'},
     layout={'figsize': [14.0, 8.0]},
 )
 ```
 
-Configuracoes programaticas tem a maior prioridade e sobrescrevem qualquer valor definido em arquivos TOML.
+Programmatic configurations have the highest priority and override any value defined in TOML files.
 
-### Parametros da Funcao configure()
+### configure() Function Parameters
 
-| Parametro | Tipo | Descricao |
-|-----------|------|-----------|
-| `config_path` | `Path` | Caminho para arquivo TOML de configuracao |
-| `outputs_path` | `Path` | Caminho explicito para diretorio de outputs |
-| `assets_path` | `Path` | Caminho explicito para diretorio de assets |
-| `**overrides` | `dict` | Overrides para secoes especificas (branding, colors, etc) |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `config_path` | `Path` | Path to TOML configuration file |
+| `outputs_path` | `Path` | Explicit path to outputs directory |
+| `assets_path` | `Path` | Explicit path to assets directory |
+| `**overrides` | `dict` | Overrides for specific sections (branding, colors, etc) |
 
-## Arquivo de Configuracao Explicito
+## Explicit Configuration File
 
-Para carregar um arquivo TOML especifico, use o parametro `config_path`:
+To load a specific TOML file, use the `config_path` parameter:
 
 ```python
 from pathlib import Path
 from chartkit import configure
 
-# Carrega configuracao de arquivo especifico
-configure(config_path=Path('./configs/producao.toml'))
+# Load configuration from specific file
+configure(config_path=Path('./configs/production.toml'))
 
-# Combina arquivo com overrides
+# Combine file with overrides
 configure(
     config_path=Path('./configs/base.toml'),
-    branding={'company_name': 'Override Especifico'},
+    branding={'company_name': 'Specific Override'},
 )
 ```
 
-O arquivo especificado sera carregado e mesclado com os defaults. Overrides programaticos ainda tem prioridade sobre o arquivo.
+The specified file will be loaded and merged with the defaults. Programmatic overrides still take priority over the file.
 
-## Variaveis de Ambiente
+## Environment Variables
 
-O chartkit usa pydantic-settings com prefixo `CHARTKIT_` e nested delimiter `__`. Qualquer campo da configuracao pode ser definido via env var:
+chartkit uses pydantic-settings with prefix `CHARTKIT_` and nested delimiter `__`. Any configuration field can be set via env var:
 
-**Exemplos:**
+**Examples:**
 
 ```bash
-# Campos simples
+# Simple fields
 export CHARTKIT_LAYOUT__DPI=72
 export CHARTKIT_COLORS__PRIMARY="#FF0000"
 
 # Paths
-export CHARTKIT_PATHS__OUTPUTS_DIR="/caminho/para/outputs"
-export CHARTKIT_PATHS__ASSETS_DIR="/caminho/para/assets"
+export CHARTKIT_PATHS__OUTPUTS_DIR="/path/to/outputs"
+export CHARTKIT_PATHS__ASSETS_DIR="/path/to/assets"
 
 # Branding
-export CHARTKIT_BRANDING__COMPANY_NAME="Minha Empresa"
+export CHARTKIT_BRANDING__COMPANY_NAME="My Company"
 ```
 
 **PowerShell:**
 ```powershell
 $env:CHARTKIT_LAYOUT__DPI = "72"
-$env:CHARTKIT_PATHS__OUTPUTS_DIR = "C:/caminho/para/outputs"
+$env:CHARTKIT_PATHS__OUTPUTS_DIR = "C:/path/to/outputs"
 ```
 
-Env vars tem prioridade sobre TOML mas abaixo de `configure()`. Uteis para CI/CD ou ambientes onde nao se pode modificar arquivos.
+Env vars take priority over TOML but below `configure()`. Useful for CI/CD or environments where files cannot be modified.
 
-## Verificar Configuracao Atual
+## Inspecting Current Configuration
 
-Use `get_config()` para inspecionar a configuracao ativa:
+Use `get_config()` to inspect the active configuration:
 
 ```python
 from chartkit import get_config, CHARTS_PATH, OUTPUTS_PATH, ASSETS_PATH
 
-# Obtem configuracao completa
+# Get full configuration
 config = get_config()
 
-# Acessa campos especificos
+# Access specific fields
 print(f"Company: {config.branding.company_name}")
-print(f"Cor primaria: {config.colors.primary}")
+print(f"Primary color: {config.colors.primary}")
 print(f"Figsize: {config.layout.figsize}")
 print(f"DPI: {config.layout.dpi}")
-print(f"Fonte title: {config.fonts.sizes.title}")
+print(f"Title font: {config.fonts.sizes.title}")
 
-# Obtem ciclo de cores para graficos
-cores = config.colors.cycle()  # Lista das 6 cores primarias
+# Get color cycle for charts
+colors = config.colors.cycle()  # List of 6 primary colors
 
-# Verifica paths resolvidos
+# Check resolved paths
 print(f"Charts: {CHARTS_PATH}")
 print(f"Outputs: {OUTPUTS_PATH}")
 print(f"Assets: {ASSETS_PATH}")
 ```
 
-O objeto `ChartingConfig` retornado e um pydantic BaseSettings com acesso estruturado a todas as configuracoes.
+The returned `ChartingConfig` object is a pydantic BaseSettings with structured access to all settings.
 
-## Reset de Configuracao
+## Configuration Reset
 
-Para voltar as configuracoes para o estado inicial (defaults + arquivos auto-descobertos):
+To restore settings to their initial state (defaults + auto-discovered files):
 
 ```python
 from chartkit import reset_config
 
-# Reseta todas as configuracoes
+# Reset all settings
 reset_config()
 
-# Agora get_config() retornara defaults + arquivos TOML
+# Now get_config() will return defaults + TOML files
 ```
 
-O reset limpa:
-- Overrides programaticos
-- Path de config explicito
-- Paths de outputs/assets explicitos
-- Caches internos
+The reset clears:
+- Programmatic overrides
+- Explicit config path
+- Explicit outputs/assets paths
+- Internal caches
 
-## Auto-Discovery de Paths
+## Path Auto-Discovery
 
-O chartkit possui um sistema inteligente de auto-discovery para detectar automaticamente onde salvar graficos e onde encontrar assets.
+chartkit has an intelligent auto-discovery system to automatically detect where to save charts and where to find assets.
 
-### Cadeia de Precedencia para Paths
+### Path Precedence Chain
 
-1. **Configuracao explicita via API**: `configure(outputs_path=..., assets_path=...)`
-2. **Configuracao via TOML/env**: `[paths].outputs_dir`, `[paths].assets_dir` ou `CHARTKIT_PATHS__OUTPUTS_DIR`
-3. **Fallback**: `project_root/outputs` e `project_root/assets`
+1. **Explicit configuration via API**: `configure(outputs_path=..., assets_path=...)`
+2. **Configuration via TOML/env**: `[paths].outputs_dir`, `[paths].assets_dir` or `CHARTKIT_PATHS__OUTPUTS_DIR`
+3. **Fallback**: `project_root/outputs` and `project_root/assets`
 
-### Deteccao do Project Root
+### Project Root Detection
 
-O chartkit detecta a raiz do projeto buscando markers comuns:
+chartkit detects the project root by looking for common markers:
 
 ```
 .git
@@ -298,24 +298,24 @@ setup.cfg
 .project-root
 ```
 
-A busca sobe a arvore de diretorios a partir do diretorio atual ate encontrar um desses markers.
+The search walks up the directory tree from the current directory until one of these markers is found.
 
-## Configuracao Manual de Paths
+## Manual Path Configuration
 
-Para definir paths explicitamente, sem depender de auto-discovery:
+To set paths explicitly, without relying on auto-discovery:
 
 ```python
 from pathlib import Path
 from chartkit import configure
 
-# Define paths customizados
-configure(outputs_path=Path('./meus_outputs'))
-configure(assets_path=Path('./meus_assets'))
+# Set custom paths
+configure(outputs_path=Path('./my_outputs'))
+configure(assets_path=Path('./my_assets'))
 
-# Ou em uma unica chamada
+# Or in a single call
 configure(
-    outputs_path=Path('C:/dados/graficos'),
-    assets_path=Path('C:/recursos/fontes'),
+    outputs_path=Path('C:/data/charts'),
+    assets_path=Path('C:/resources/fonts'),
 )
 ```
 
@@ -323,29 +323,29 @@ configure(
 
 ```toml
 [paths]
-outputs_dir = "data/outputs"  # Relativo ao project root
+outputs_dir = "data/outputs"  # Relative to project root
 assets_dir = "assets"
 
-# Ou caminhos absolutos:
-# outputs_dir = "C:/caminho/absoluto/outputs"
-# assets_dir = "D:/recursos/assets"
+# Or absolute paths:
+# outputs_dir = "C:/absolute/path/outputs"
+# assets_dir = "D:/resources/assets"
 ```
 
-Paths relativos sao resolvidos a partir do project root detectado.
+Relative paths are resolved from the detected project root.
 
-## Verificar Paths Resolvidos
+## Checking Resolved Paths
 
-Para ver quais paths o chartkit esta usando:
+To see which paths chartkit is using:
 
 ```python
 from chartkit import CHARTS_PATH, OUTPUTS_PATH, ASSETS_PATH
 
-# Paths sao calculados dinamicamente
-print(f"Charts: {CHARTS_PATH}")   # Onde graficos sao salvos
-print(f"Outputs: {OUTPUTS_PATH}")  # Path base de outputs
-print(f"Assets: {ASSETS_PATH}")    # Path base de assets
+# Paths are computed dynamically
+print(f"Charts: {CHARTS_PATH}")   # Where charts are saved
+print(f"Outputs: {OUTPUTS_PATH}")  # Base outputs path
+print(f"Assets: {ASSETS_PATH}")    # Base assets path
 
-# Ou via funcoes explicitas
+# Or via explicit functions
 from chartkit import get_charts_path, get_outputs_path, get_assets_path
 
 charts = get_charts_path()
@@ -353,40 +353,40 @@ outputs = get_outputs_path()
 assets = get_assets_path()
 ```
 
-**Relacao entre os paths:**
-- `OUTPUTS_PATH`: Diretorio base para outputs do projeto
-- `CHARTS_PATH`: Subdiretorio de outputs para graficos (`OUTPUTS_PATH / charts_subdir`)
-- `ASSETS_PATH`: Diretorio para recursos como fontes e imagens
+**Relationship between paths:**
+- `OUTPUTS_PATH`: Base directory for project outputs
+- `CHARTS_PATH`: Subdirectory of outputs for charts (`OUTPUTS_PATH / charts_subdir`)
+- `ASSETS_PATH`: Directory for resources like fonts and images
 
-## Debug de Configuracao
+## Configuration Debugging
 
-Para depurar problemas de configuracao, ative o logging da biblioteca:
+To debug configuration issues, enable library logging:
 
 ```python
 from chartkit import configure_logging
 
-# Ativa logging em nivel DEBUG
+# Enable logging at DEBUG level
 configure_logging(level="DEBUG")
 
-# Agora todas as operacoes de configuracao serao logadas
+# Now all configuration operations will be logged
 from chartkit import get_config
 config = get_config()
 ```
 
-O log mostrara:
-- Quais arquivos de configuracao foram encontrados
-- Ordem de merge das configuracoes
-- Qual fonte foi usada para cada path
+The log will show:
+- Which configuration files were found
+- Configuration merge order
+- Which source was used for each path
 
-## Exemplos Completos
+## Full Examples
 
-### Setup Corporativo
+### Corporate Setup
 
 ```toml
 # .charting.toml
 [branding]
-company_name = "Banco XYZ"
-footer_format = "Elaborado por {company_name} | Fonte: {source}"
+company_name = "Bank XYZ"
+footer_format = "Prepared by {company_name} | Fonte: {source}"
 
 [colors]
 primary = "#003366"
@@ -403,7 +403,7 @@ figsize = [14.0, 8.0]
 dpi = 150
 ```
 
-### Configuracao para Apresentacoes
+### Presentation Configuration
 
 ```python
 from chartkit import configure
@@ -411,7 +411,7 @@ from chartkit import configure
 configure(
     layout={
         'figsize': [16.0, 9.0],  # Widescreen
-        'dpi': 100,  # Menor DPI para arquivos menores
+        'dpi': 100,  # Lower DPI for smaller files
     },
     fonts={
         'sizes': {
@@ -423,7 +423,7 @@ configure(
 )
 ```
 
-### Localizacao para Ingles
+### English Localization
 
 ```toml
 [formatters.locale]

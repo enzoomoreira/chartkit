@@ -4,7 +4,7 @@ from .registry import MetricRegistry
 
 
 def register_builtin_metrics() -> None:
-    """Registra metricas padrao no registry (chamado no import do package)."""
+    """Register built-in metrics in the registry (called on package import)."""
     from ..overlays import (
         add_ath_line,
         add_atl_line,

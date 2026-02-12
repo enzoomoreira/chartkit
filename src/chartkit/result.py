@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 @dataclass
 class PlotResult:
-    """Resultado de plotagem com method chaining.
+    """Plot result with method chaining.
 
-    Encapsula Figure/Axes do matplotlib. Use ``.save()``/``.show()``
-    para output e ``.axes``/``.figure`` para customizacao manual.
+    Wraps matplotlib Figure/Axes. Use ``.save()``/``.show()``
+    for output and ``.axes``/``.figure`` for manual customization.
     """
 
     fig: Figure
@@ -26,16 +26,16 @@ class PlotResult:
     plotter: ChartingPlotter
 
     def save(self, path: str, dpi: int | None = None) -> PlotResult:
-        """Salva o grafico em arquivo.
+        """Save the chart to a file.
 
         Args:
-            path: Se relativo, salva no diretorio de charts configurado.
+            path: If relative, saves to the configured charts directory.
         """
         self.plotter.save(path, dpi=dpi)
         return self
 
     def show(self) -> PlotResult:
-        """Exibe o grafico em janela interativa."""
+        """Display the chart in an interactive window."""
         logger.debug("PlotResult.show: '{}'", self.ax.get_title() or "Untitled")
         plt.show()
         return self

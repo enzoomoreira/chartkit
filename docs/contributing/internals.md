@@ -1,29 +1,29 @@
 # Internals
 
-Detalhes de implementacao interna do chartkit para desenvolvedores avancados.
+Internal implementation details for advanced chartkit developers.
 
-Este documento cobre decisoes de design, mecanismos de performance,
-e padroes internos que nao afetam a API publica mas sao importantes
-para contribuir com o codigo.
+This document covers design decisions, performance mechanisms,
+and internal patterns that don't affect the public API but are important
+for contributing to the codebase.
 
 ---
 
 ## Thread-Safety
 
-A biblioteca e thread-safe para uso concorrente. Todos os caches
-compartilhados usam locks para evitar race conditions.
+The library is thread-safe for concurrent usage. All shared caches
+use locks to prevent race conditions.
 
-### Locks Utilizados
+### Locks Used
 
-| Modulo | Lock | Protege |
-|--------|------|---------|
+| Module | Lock | Protects |
+|--------|------|----------|
 | `discovery.py` | `RLock` | `_project_root_cache` (LRUCache) |
 
-### Padrao de Uso
+### Usage Pattern
 
-Usamos `RLock` (reentrant lock) em vez de `Lock` simples porque:
-- Permite que a mesma thread adquira o lock multiplas vezes
-- Evita deadlocks em chamadas recursivas (ex: `get_config()` -> `find_project_root()`)
+We use `RLock` (reentrant lock) instead of a simple `Lock` because:
+- Allows the same thread to acquire the lock multiple times
+- Prevents deadlocks in recursive calls (e.g., `get_config()` -> `find_project_root()`)
 
 ```python
 from threading import RLock
@@ -37,9 +37,9 @@ def find_project_root(start_path: Path | None = None) -> Path | None:
     ...
 ```
 
-### Limpeza de Cache Thread-Safe
+### Thread-Safe Cache Clearing
 
-A funcao `reset_project_root_cache()` adquire o lock antes de limpar:
+The `reset_project_root_cache()` function acquires the lock before clearing:
 
 ```python
 def reset_project_root_cache() -> None:
@@ -47,10 +47,10 @@ def reset_project_root_cache() -> None:
         _project_root_cache.clear()
 ```
 
-Isso evita race conditions onde uma thread limpa o cache enquanto
-outra insere/le valores.
+This prevents race conditions where one thread clears the cache while
+another inserts/reads values.
 
-### Testando Thread-Safety
+### Testing Thread-Safety
 
 ```python
 import threading
@@ -78,15 +78,15 @@ def test_concurrent_access():
 
 ---
 
-## Sistema de Caching
+## Caching System
 
-### Niveis de Cache
+### Cache Levels
 
-A biblioteca usa cache simples com invalidacao por flag:
+The library uses simple caching with flag-based invalidation:
 
 ```
 +---------------------------+
-|  ConfigLoader._config     |  None flag (invalida via _invalidate())
+|  ConfigLoader._config     |  None flag (invalidates via _invalidate())
 +---------------------------+
             |
             v
@@ -96,36 +96,36 @@ A biblioteca usa cache simples com invalidacao por flag:
             |
             v
 +---------------------------+
-|  Filesystem               |  I/O real
+|  Filesystem               |  Real I/O
 +---------------------------+
 ```
 
-### Cache de Project Root
+### Project Root Cache
 
-**Tipo:** `LRUCache(maxsize=32)` com `RLock`
+**Type:** `LRUCache(maxsize=32)` with `RLock`
 
-**Chave:** Path absoluto normalizado (start_path ou cwd)
+**Key:** Normalized absolute path (start_path or cwd)
 
-**Razao:**
-- Evita traversal repetido do filesystem
-- Ganho de 45-85x em chamadas repetidas
-- 32 entries suficiente para maioria dos casos
+**Rationale:**
+- Avoids repeated filesystem traversal
+- 45-85x gain on repeated calls
+- 32 entries sufficient for most cases
 
 ```python
-# Primeira chamada: ~1-5ms (filesystem walk)
+# First call: ~1-5ms (filesystem walk)
 root = find_project_root()
 
-# Chamadas subsequentes: ~0.01ms (cache hit)
+# Subsequent calls: ~0.01ms (cache hit)
 root = find_project_root()
 ```
 
-### Cache de Config
+### Config Cache
 
-**Tipo:** Flag simples (`_config: ChartingConfig | None`)
+**Type:** Simple flag (`_config: ChartingConfig | None`)
 
-O `ConfigLoader` usa `_config = None` como flag de invalidacao. Quando
-`configure()` ou `reset()` sao chamados, `_invalidate()` seta `_config = None`
-e a proxima chamada a `get_config()` reconstroi o objeto pydantic:
+The `ConfigLoader` uses `_config = None` as an invalidation flag. When
+`configure()` or `reset()` are called, `_invalidate()` sets `_config = None`
+and the next call to `get_config()` rebuilds the pydantic object:
 
 ```python
 def _invalidate(self) -> None:
@@ -135,63 +135,63 @@ def _invalidate(self) -> None:
     ChartingConfig._toml_data = {}
 ```
 
-### Benchmarks Tipicos
+### Typical Benchmarks
 
-| Operacao | Primeiro acesso | Cached |
-|----------|-----------------|--------|
+| Operation | First access | Cached |
+|-----------|-------------|--------|
 | `find_project_root()` | 1-5ms | 0.01ms |
 | `get_config()` | 5-20ms | 0.01ms |
 | `get_outputs_path()` | 2-10ms | 0.01ms |
 
 ---
 
-## Sistema de Logging
+## Logging System
 
-### Biblioteca: loguru
+### Library: loguru
 
-Usamos `loguru` em vez de `logging` stdlib por:
-- API mais simples (`logger.debug()` vs `logging.getLogger().debug()`)
-- Lazy evaluation built-in (evita formatacao desnecessaria)
-- Melhor suporte a Unicode e cores no terminal
+We use `loguru` instead of `logging` stdlib because:
+- Simpler API (`logger.debug()` vs `logging.getLogger().debug()`)
+- Built-in lazy evaluation (avoids unnecessary formatting)
+- Better Unicode and terminal color support
 
-### Desabilitado por Padrao
+### Disabled by Default
 
-Seguindo best practices para bibliotecas Python, logging esta
-desabilitado por padrao:
+Following best practices for Python libraries, logging is
+disabled by default:
 
 ```python
-# Em _logging.py (importado por __init__.py)
+# In _logging.py (imported by __init__.py)
 from loguru import logger
 logger.disable("chartkit")
 ```
 
-### Ativando e Desativando Logs
+### Enabling and Disabling Logs
 
 ```python
 from chartkit import configure_logging, disable_logging
 
-# Ativa logs DEBUG
+# Enable DEBUG logs
 configure_logging(level="DEBUG")
 
-# Ativa logs INFO para stderr
+# Enable INFO logs to stderr
 configure_logging(level="INFO")
 
-# Direciona para arquivo
+# Direct to file
 configure_logging(level="DEBUG", sink=open("chartkit.log", "w"))
 
-# Desativa logging e remove handlers
+# Disable logging and remove handlers
 disable_logging()
 ```
 
-`configure_logging()` e idempotente: chamadas repetidas removem o handler anterior antes de adicionar o novo, evitando duplicacao de logs.
+`configure_logging()` is idempotent: repeated calls remove the previous handler before adding a new one, avoiding log duplication.
 
-### Implementacao de configure_logging()
+### configure_logging() Implementation
 
 ```python
 _handler_ids: list[int] = []
 
 def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int:
-    # Remove handlers anteriores
+    # Remove previous handlers
     for hid in _handler_ids:
         try:
             logger.remove(hid)
@@ -218,98 +218,98 @@ def disable_logging() -> None:
 
 ### Lazy Evaluation
 
-Usamos placeholders `{}` em vez de f-strings para evitar formatacao
-desnecessaria quando log esta desabilitado:
+We use `{}` placeholders instead of f-strings to avoid unnecessary
+formatting when logging is disabled:
 
 ```python
-# CORRETO: lazy evaluation
-logger.debug("find_project_root: encontrado {}", current)
+# CORRECT: lazy evaluation
+logger.debug("find_project_root: found {}", current)
 
-# INCORRETO: formata sempre, mesmo se DEBUG desabilitado
-logger.debug(f"find_project_root: encontrado {current}")
+# INCORRECT: always formats, even if DEBUG is disabled
+logger.debug(f"find_project_root: found {current}")
 ```
 
-### Niveis de Log por Modulo
+### Log Levels by Module
 
-| Modulo | DEBUG | WARNING |
+| Module | DEBUG | WARNING |
 |--------|-------|---------|
 | `engine.py` | Plot params, chart dispatch, highlight modes | - |
 | `collision.py` | Collision iteration counts, label movements | - |
 | `temporal.py` | Transform resolution (freq, periods) | - |
 | `_validation.py` | Auto-detected frequency, non-numeric columns filtered | - |
-| `discovery.py` | Cache hits/misses, paths encontrados | - |
-| `loader.py` | Config files merged, overrides aplicados | Erros de TOML parsing |
-| `fonts.py` | - | Fonte nao encontrada |
+| `discovery.py` | Cache hits/misses, paths found | - |
+| `loader.py` | Config files merged, overrides applied | TOML parsing errors |
+| `fonts.py` | - | Font not found |
 | `bar.py` / `stacked_bar.py` | - | Empty series, NaN values, data length mismatches |
 
-### Logging Conservador
+### Conservative Logging
 
-Logs excessivos dentro de loops foram removidos para reduzir ruido:
+Excessive logs inside loops were removed to reduce noise:
 
 ```python
-# ANTES (excessivo)
+# BEFORE (excessive)
 def dict_to_dataclass(cls, data):
     for field in fields(cls):
-        logger.debug("Convertendo campo {}", field.name)  # N logs por chamada
+        logger.debug("Converting field {}", field.name)  # N logs per call
         ...
 
-# DEPOIS (conservador)
+# AFTER (conservative)
 def dict_to_dataclass(cls, data):
-    logger.debug("Convertendo {} campos", len(fields(cls)))  # 1 log por chamada
+    logger.debug("Converting {} fields", len(fields(cls)))  # 1 log per call
     ...
 ```
 
 ---
 
-## Resolucao de Paths
+## Path Resolution
 
-O `ConfigLoader` resolve paths usando uma cadeia 3-tier inline:
+The `ConfigLoader` resolves paths using an inline 3-tier chain:
 
-1. **Configuracao explicita** via `configure(outputs_path=...)`
-2. **Config (TOML/env)** (`[paths].outputs_dir` ou `CHARTKIT_PATHS__OUTPUTS_DIR`)
+1. **Explicit configuration** via `configure(outputs_path=...)`
+2. **Config (TOML/env)** (`[paths].outputs_dir` or `CHARTKIT_PATHS__OUTPUTS_DIR`)
 3. **Fallback** (`project_root / subdir`)
 
 ```python
-# Em loader.py
+# In loader.py
 @property
 def outputs_path(self) -> Path:
     if self._outputs_path is not None:
-        return self._outputs_path                    # 1. Explicito
+        return self._outputs_path                    # 1. Explicit
     config = self.get_config()
     if config.paths.outputs_dir:
         return self._resolve_relative(Path(config.paths.outputs_dir))  # 2. Config
     return (find_project_root() or Path.cwd()) / "outputs"  # 3. Fallback
 ```
 
-Paths relativos sao resolvidos contra o project root via `_resolve_relative()`.
+Relative paths are resolved against the project root via `_resolve_relative()`.
 
 ---
 
-## Formatadores Babel
+## Babel Formatters
 
-O chartkit usa a biblioteca Babel para internacionalizacao de
-formatadores monetarios e numericos.
+chartkit uses the Babel library for internationalization of
+currency and numeric formatters.
 
-### Por que Babel?
+### Why Babel?
 
-- Suporte a qualquer codigo ISO 4217 (BRL, USD, EUR, GBP, JPY, etc.)
-- Formatacao correta por locale (separadores, posicao do simbolo)
-- Notacao compacta nativa (1k, 1mi, 1bi)
+- Support for any ISO 4217 code (BRL, USD, EUR, GBP, JPY, etc.)
+- Correct formatting by locale (separators, symbol position)
+- Native compact notation (1k, 1mi, 1bi)
 
-### Formatadores Disponiveis
+### Available Formatters
 
-| Formatador | Uso | Exemplo |
-|------------|-----|---------|
-| `currency_formatter('BRL')` | Valores monetarios | R$ 1.234,56 |
-| `currency_formatter('USD')` | Dolares | US$ 1,234.56 |
-| `compact_currency_formatter('BRL')` | Valores grandes | R$ 1,2 mi |
-| `percent_formatter()` | Porcentagens | 10,5% |
-| `human_readable_formatter()` | Notacao K/M/B | 1,5M |
-| `points_formatter()` | Numeros com milhar | 1.234.567 |
+| Formatter | Usage | Example |
+|-----------|-------|---------|
+| `currency_formatter('BRL')` | Monetary values | R$ 1.234,56 |
+| `currency_formatter('USD')` | Dollars | US$ 1,234.56 |
+| `compact_currency_formatter('BRL')` | Large values | R$ 1,2 mi |
+| `percent_formatter()` | Percentages | 10,5% |
+| `human_readable_formatter()` | K/M/B notation | 1,5M |
+| `points_formatter()` | Numbers with thousands | 1.234.567 |
 
-### Configuracao de Locale
+### Locale Configuration
 
-O locale e configurado via settings:
+Locale is configured via settings:
 
 ```toml
 # .charting.toml
@@ -320,12 +320,12 @@ thousands = "."
 ```
 
 ```python
-# Acesso programatico
+# Programmatic access
 config = get_config()
 locale = config.formatters.locale.babel_locale  # "pt_BR"
 ```
 
-### Implementacao de currency_formatter
+### currency_formatter Implementation
 
 ```python
 from babel.numbers import format_currency as babel_format_currency
@@ -334,13 +334,13 @@ from ..settings import get_config
 
 def currency_formatter(currency: str = "BRL"):
     """
-    Formatador para valores monetarios usando Babel.
+    Formatter for monetary values using Babel.
 
     Args:
-        currency: Codigo ISO 4217 da moeda.
+        currency: ISO 4217 currency code.
 
     Returns:
-        FuncFormatter para uso com matplotlib.
+        FuncFormatter for use with matplotlib.
     """
     config = get_config()
     locale = config.formatters.locale.babel_locale
@@ -359,50 +359,50 @@ def currency_formatter(currency: str = "BRL"):
     return FuncFormatter(_format)
 ```
 
-### Formatadores Compactos
+### Compact Formatters
 
-Para valores grandes (milhoes, bilhoes), use formatadores compactos:
+For large values (millions, billions), use compact formatters:
 
 ```python
 from chartkit.styling import compact_currency_formatter
 
-# R$ 1,2 mi (para 1.234.567)
+# R$ 1,2 mi (for 1,234,567)
 ax.yaxis.set_major_formatter(compact_currency_formatter('BRL'))
 ```
 
 ---
 
-## Decisoes de Design
+## Design Decisions
 
-### Por que cachetools em vez de functools.lru_cache?
+### Why cachetools instead of functools.lru_cache?
 
-| Aspecto | functools.lru_cache | cachetools |
-|---------|---------------------|------------|
-| Thread-safety | Nao built-in | Lock parameter |
-| TTL | Nao suporta | TTLCache |
-| Controle de cache | Limitado | clear(), maxsize, etc |
-| Typed keys | Nao | Sim |
+| Aspect | functools.lru_cache | cachetools |
+|--------|---------------------|------------|
+| Thread-safety | Not built-in | Lock parameter |
+| TTL | Not supported | TTLCache |
+| Cache control | Limited | clear(), maxsize, etc |
+| Typed keys | No | Yes |
 
-Para uma biblioteca que pode ser usada em contextos multi-thread
-(Jupyter notebooks, web servers), cachetools oferece garantias mais fortes.
+For a library that can be used in multi-threaded contexts
+(Jupyter notebooks, web servers), cachetools offers stronger guarantees.
 
-### Por que RLock em vez de Lock?
+### Why RLock instead of Lock?
 
-`RLock` permite reentrancia - a mesma thread pode adquirir o lock
-multiplas vezes. Necessario porque:
+`RLock` allows reentrancy - the same thread can acquire the lock
+multiple times. Necessary because:
 
 ```python
 def get_config():
-    # Pode chamar find_project_root() internamente
-    # que tambem usa lock pattern
+    # May call find_project_root() internally
+    # which also uses lock pattern
     ...
 ```
 
-Com `Lock` simples, isso causaria deadlock.
+With a simple `Lock`, this would cause a deadlock.
 
-### Por que nao usar singleton pattern classico?
+### Why not the classic singleton pattern?
 
-Em vez de:
+Instead of:
 
 ```python
 class ConfigLoader:
@@ -414,7 +414,7 @@ class ConfigLoader:
         return cls._instance
 ```
 
-Usamos module-level instance:
+We use a module-level instance:
 
 ```python
 _loader = ConfigLoader()
@@ -423,56 +423,57 @@ def get_config():
     return _loader.get_config()
 ```
 
-Razoes:
-- Mais simples e explicito
-- Facilita testes (pode criar instancias isoladas)
-- Evita problemas com heranca
+Reasons:
+- Simpler and more explicit
+- Easier to test (can create isolated instances)
+- Avoids inheritance issues
 
-### Por que loguru em vez de logging stdlib?
+### Why loguru instead of logging stdlib?
 
-- Menos boilerplate (um import, pronto para usar)
-- Lazy evaluation nativa com `{}`
-- Melhor formatacao default
-- Facil de desabilitar (`logger.disable()`)
+- Less boilerplate (one import, ready to use)
+- Native lazy evaluation with `{}`
+- Better default formatting
+- Easy to disable (`logger.disable()`)
 
 ---
 
-## Limpando Caches em Testes
+## Clearing Caches in Tests
 
-Testes que mudam diretorio de trabalho ou arquivos de config devem limpar caches:
+Tests that touch config or discovery must isolate state. The test suite uses
+autouse fixtures in module-specific `conftest.py` files:
 
 ```python
-import pytest
-from chartkit.settings import reset_config
-from chartkit.settings.discovery import reset_project_root_cache
-
+# tests/settings/conftest.py
 @pytest.fixture(autouse=True)
-def clean_state():
+def _isolate_config():
+    reset_config()
     yield
     reset_config()
-    reset_project_root_cache()
 ```
 
-### Quando Limpar Caches
+This runs `reset_config()` before AND after each test, ensuring no test
+leaks config state to another.
 
-- **Testes**: Sempre limpar entre testes
-- **Hot reload**: Chamar `reset_config()` se arquivos TOML mudarem
-- **Mudanca de cwd**: Chamar `reset_project_root_cache()`
+### When to Clear Caches
+
+- **Tests**: Handled automatically via autouse fixtures (see [Testing](testing.md))
+- **Hot reload**: Call `reset_config()` if TOML files change at runtime
+- **cwd change**: Call `reset_project_root_cache()`
 
 ---
 
 ## Performance
 
-### Otimizacoes Aplicadas
+### Applied Optimizations
 
-1. **Lazy init**: Nada e carregado ate primeiro uso
-2. **LRUCache**: `find_project_root()` cacheado com 32 entries
-3. **Flag simples**: `_config = None` evita reconstrucao desnecessaria do objeto pydantic
-4. **Lazy project_root**: Property no ConfigLoader com flag `_project_root_resolved`
+1. **Lazy init**: Nothing is loaded until first use
+2. **LRUCache**: `find_project_root()` cached with 32 entries
+3. **Simple flag**: `_config = None` avoids unnecessary pydantic object reconstruction
+4. **Lazy project_root**: Property in ConfigLoader with `_project_root_resolved` flag
 
-### Dicas para Contribuidores
+### Tips for Contributors
 
-- Use `get_config()` dentro de funcoes, nao no modulo level
-- Evite loops com I/O dentro de funcoes frequentes
-- Prefira lazy evaluation para valores opcionais
-- Documente complexidade (O(n)) quando relevante
+- Use `get_config()` inside functions, not at module level
+- Avoid loops with I/O inside frequently-called functions
+- Prefer lazy evaluation for optional values
+- Document complexity (O(n)) when relevant

@@ -1,10 +1,10 @@
-# Arquitetura
+# Architecture
 
-Documentacao da arquitetura interna do chartkit para contribuidores.
+Internal architecture documentation for chartkit contributors.
 
 ---
 
-## Diagrama de Componentes
+## Component Diagram
 
 ```
                     +-------------------+
@@ -37,38 +37,38 @@ Documentacao da arquitetura interna do chartkit para contribuidores.
 
 ---
 
-## Fluxo de Dados
+## Data Flow
 
-O fluxo principal de dados segue a cadeia:
+The main data flow follows the chain:
 
 ```
 DataFrame -> Accessor -> Plotter -> PlotResult
 ```
 
-### Descricao Detalhada
+### Detailed Description
 
-1. **DataFrame**: Dados de entrada (pandas DataFrame com DatetimeIndex)
+1. **DataFrame**: Input data (pandas DataFrame with DatetimeIndex)
 
-2. **ChartingAccessor**: Registrado via `@pd.api.extensions.register_dataframe_accessor("chartkit")` e `@pd.api.extensions.register_series_accessor("chartkit")`. Funciona como ponto de entrada para todas as operacoes. Series sao convertidas para DataFrame internamente.
+2. **ChartingAccessor**: Registered via `@pd.api.extensions.register_dataframe_accessor("chartkit")` and `@pd.api.extensions.register_series_accessor("chartkit")`. Works as the entry point for all operations. Series are converted to DataFrame internally.
 
-3. **TransformAccessor** (opcional): Quando o usuario chama transforms como `.variation()`, `.accum()`, etc., um TransformAccessor e retornado. Cada transform retorna um novo TransformAccessor, permitindo encadeamento.
+3. **TransformAccessor** (optional): When the user calls transforms like `.variation()`, `.accum()`, etc., a TransformAccessor is returned. Each transform returns a new TransformAccessor, enabling chaining.
 
-4. **ChartingPlotter**: Motor principal que orquestra a criacao do grafico:
-   - Aplica tema via `theme.apply()`
-   - Resolve dados X/Y
-   - Aplica formatadores de eixo
-   - Despacha via `ChartRegistry.get(kind)` para o chart type registrado
-   - Aplica metricas via `MetricRegistry.apply()`
-   - Aplica legenda via `_apply_legend()` (auto-detecta com 2+ artists)
-   - Resolve colisoes de labels
-   - Adiciona decoracoes (footer)
+4. **ChartingPlotter**: Main engine that orchestrates chart creation:
+   - Applies theme via `theme.apply()`
+   - Resolves X/Y data
+   - Applies axis formatters
+   - Dispatches via `ChartRegistry.get(kind)` to the registered chart type
+   - Applies metrics via `MetricRegistry.apply()`
+   - Applies legend via `_apply_legend()` (auto-detects with 2+ artists)
+   - Resolves label collisions
+   - Adds decorations (footer)
 
-5. **PlotResult**: Resultado encapsulado com:
-   - Referencia ao Figure e Axes
-   - Metodos `.save()` e `.show()` para encadeamento
-   - Properties `.axes` e `.figure` para acesso direto
+5. **PlotResult**: Encapsulated result with:
+   - Reference to Figure and Axes
+   - `.save()` and `.show()` methods for chaining
+   - `.axes` and `.figure` properties for direct access
 
-### Fluxo Visual Detalhado
+### Detailed Visual Flow
 
 ```mermaid
 flowchart TD
@@ -91,172 +91,181 @@ flowchart TD
 
 ---
 
-## Estrutura de Pastas
+## Folder Structure
 
 ```
 src/chartkit/
-├── __init__.py           # Entry point, exports publicos, __getattr__ lazy paths
+├── __init__.py           # Entry point, public exports, __getattr__ lazy paths
 ├── _logging.py           # Logging setup (loguru disable + configure_logging)
 ├── accessor.py           # Pandas DataFrame/Series accessor (.chartkit)
-├── engine.py             # ChartingPlotter - orquestrador principal
-├── result.py             # PlotResult - resultado encadeavel
-├── exceptions.py         # ChartKitError (base) e TransformError
+├── engine.py             # ChartingPlotter - main orchestrator
+├── result.py             # PlotResult - chainable result
+├── exceptions.py         # ChartKitError (base) and TransformError
 │
-├── settings/             # Sistema de configuracao (pydantic-settings)
+├── settings/             # Configuration system (pydantic-settings)
 │   ├── __init__.py       # Exports: configure, get_config, ChartingConfig
 │   ├── schema.py         # Pydantic BaseModel sub-configs + BaseSettings root
 │   ├── loader.py         # ConfigLoader singleton + TOML loading + path resolution
 │   └── discovery.py      # find_project_root (cached) + find_config_files
 │
-├── styling/              # Tema e formatadores
+├── styling/              # Theme and formatters
 │   ├── __init__.py       # Facade
-│   ├── theme.py          # ChartingTheme (usa settings)
-│   ├── formatters.py     # Formatadores de eixo Y (Babel i18n)
-│   └── fonts.py          # Carregamento de fontes customizadas
+│   ├── theme.py          # ChartingTheme (uses settings)
+│   ├── formatters.py     # Y-axis formatters (Babel i18n)
+│   └── fonts.py          # Custom font loading
 │
-├── charts/               # Tipos de graficos plugaveis
-│   ├── __init__.py       # Imports disparam registro automatico
+├── charts/               # Pluggable chart types
+│   ├── __init__.py       # Imports trigger automatic registration
 │   ├── registry.py       # ChartRegistry + ChartFunc Protocol
-│   ├── _helpers.py       # Utilitarios compartilhados (detect_bar_width)
-│   ├── line.py           # Grafico de linhas (@ChartRegistry.register("line"))
-│   ├── bar.py            # Grafico de barras (@ChartRegistry.register("bar"))
-│   └── stacked_bar.py    # Barras empilhadas (@ChartRegistry.register("stacked_bar"))
+│   ├── _helpers.py       # Shared utilities (detect_bar_width)
+│   ├── line.py           # Line chart (@ChartRegistry.register("line"))
+│   ├── bar.py            # Bar chart (@ChartRegistry.register("bar"))
+│   └── stacked_bar.py    # Stacked bars (@ChartRegistry.register("stacked_bar"))
 │
-├── overlays/             # Elementos visuais secundarios
+├── overlays/             # Secondary visual elements
 │   ├── __init__.py       # Facade
-│   ├── moving_average.py # Media movel
+│   ├── moving_average.py # Moving average
 │   ├── reference_lines.py# ATH, ATL, AVG, hlines, target
-│   ├── bands.py          # Bandas sombreadas
-│   ├── fill_between.py   # Area entre duas series
-│   ├── std_band.py       # Banda de desvio padrao (Bollinger Band)
-│   ├── vband.py          # Banda vertical entre datas
-│   └── markers.py        # HighlightStyle + add_highlight unificado
+│   ├── bands.py          # Shaded bands
+│   ├── fill_between.py   # Area between two series
+│   ├── std_band.py       # Standard deviation band (Bollinger Band)
+│   ├── vband.py          # Vertical band between dates
+│   └── markers.py        # HighlightStyle + unified add_highlight
 │
-├── decorations/          # Decoracoes visuais
+├── decorations/          # Visual decorations
 │   ├── __init__.py       # Facade: add_footer
-│   └── footer.py         # Rodape com branding
+│   └── footer.py         # Footer with branding
 │
-├── metrics/              # Sistema de metricas declarativas
-│   ├── __init__.py       # Exports, registra metricas builtin
-│   ├── registry.py       # MetricRegistry - registro e aplicacao
-│   └── builtin.py        # Metricas padrao (ath, atl, ma, hline, band, target, std_band, vband)
+├── metrics/              # Declarative metrics system
+│   ├── __init__.py       # Exports, registers builtin metrics
+│   ├── registry.py       # MetricRegistry - registration and application
+│   └── builtin.py        # Standard metrics (ath, atl, ma, hline, band, target, std_band, vband)
 │
-├── transforms/           # Transformacoes temporais
+├── transforms/           # Temporal transformations
 │   ├── __init__.py       # Facade: variation, accum, drawdown, zscore, etc.
-│   ├── temporal.py       # Implementacoes das funcoes de transformacao
-│   ├── _validation.py    # Validacao, coercao e resolucao de frequencia
-│   └── accessor.py       # TransformAccessor para encadeamento
+│   ├── temporal.py       # Transformation function implementations
+│   ├── _validation.py    # Validation, coercion, and frequency resolution
+│   └── accessor.py       # TransformAccessor for chaining
 │
-└── _internal/            # Utilitarios privados
+└── _internal/            # Private utilities
     ├── __init__.py       # Facade: register_moveable, register_fixed, register_passive, resolve_collisions
-    └── collision.py      # Engine generica de resolucao de colisao (bbox-based)
+    └── collision.py      # Generic collision resolution engine (bbox-based)
+
+tests/                    # Test suite (283 tests)
+├── conftest.py           # Shared fixtures (financial DataFrames, edge cases)
+├── test_formatters.py    # Formatter tests
+├── collision/            # Collision engine tests
+├── engine/               # Engine internals tests
+├── metrics/              # MetricRegistry tests
+├── settings/             # Configuration system tests
+└── transforms/           # Transform function tests (150 tests)
 ```
 
 ---
 
-## Responsabilidades de Cada Modulo
+## Module Responsibilities
 
 ### Core
 
-| Modulo | Responsabilidade |
-|--------|-----------------|
-| `_logging.py` | Setup de loguru (`logger.disable`) + `configure_logging()` |
-| `accessor.py` | Registra `.chartkit` em DataFrames e Series; delega para TransformAccessor ou ChartingPlotter |
-| `engine.py` | Orquestra criacao de graficos; gerencia Figure/Axes; aplica componentes |
-| `result.py` | Encapsula resultado; permite encadeamento com `.save()` e `.show()` |
+| Module | Responsibility |
+|--------|---------------|
+| `_logging.py` | loguru setup (`logger.disable`) + `configure_logging()` |
+| `accessor.py` | Registers `.chartkit` on DataFrames and Series; delegates to TransformAccessor or ChartingPlotter |
+| `engine.py` | Orchestrates chart creation; manages Figure/Axes; applies components |
+| `result.py` | Encapsulates result; enables chaining with `.save()` and `.show()` |
 
 ### Settings
 
-| Modulo | Responsabilidade |
-|--------|-----------------|
+| Module | Responsibility |
+|--------|---------------|
 | `schema.py` | Pydantic BaseModel sub-configs + ChartingConfig (BaseSettings) + _DictSource |
-| `loader.py` | ConfigLoader singleton; TOML loading + deep merge; path resolution 3-tier |
+| `loader.py` | ConfigLoader singleton; TOML loading + deep merge; 3-tier path resolution |
 | `discovery.py` | find_project_root (LRUCache) + find_config_files + get_user_config_dir |
 
 ### Styling
 
-| Modulo | Responsabilidade |
-|--------|-----------------|
-| `theme.py` | ChartingTheme; configura matplotlib com cores/fontes do settings |
-| `formatters.py` | Formatadores de eixo Y (BRL, USD, %, human, points) usando Babel |
-| `fonts.py` | Carrega fontes customizadas do assets_path |
+| Module | Responsibility |
+|--------|---------------|
+| `theme.py` | ChartingTheme; configures matplotlib with colors/fonts from settings |
+| `formatters.py` | Y-axis formatters (BRL, USD, %, human, points) using Babel |
+| `fonts.py` | Loads custom fonts from assets_path |
 
-### Charts e Overlays
+### Charts and Overlays
 
-| Modulo | Responsabilidade |
-|--------|-----------------|
+| Module | Responsibility |
+|--------|---------------|
 | `charts/registry.py` | ChartRegistry: decorator + dict + get/available |
-| `charts/_helpers.py` | Utilitarios compartilhados (detect_bar_width) |
-| `charts/line.py` | Renderiza grafico de linhas (registrado via @ChartRegistry.register) |
-| `charts/bar.py` | Renderiza grafico de barras (registrado via @ChartRegistry.register) |
-| `charts/stacked_bar.py` | Renderiza barras empilhadas (registrado via @ChartRegistry.register) |
-| `overlays/*` | Adiciona elementos secundarios (MA, ATH/ATL/AVG, bandas, markers, fill_between, std_band, vband) |
-| `decorations/footer.py` | Adiciona rodape com branding e fonte |
+| `charts/_helpers.py` | Shared utilities (detect_bar_width) |
+| `charts/line.py` | Renders line chart (registered via @ChartRegistry.register) |
+| `charts/bar.py` | Renders bar chart (registered via @ChartRegistry.register) |
+| `charts/stacked_bar.py` | Renders stacked bars (registered via @ChartRegistry.register) |
+| `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, fill_between, std_band, vband) |
+| `decorations/footer.py` | Adds footer with branding and source |
 
 ### Metrics
 
-| Modulo | Responsabilidade |
-|--------|-----------------|
-| `registry.py` | MetricRegistry para registrar e aplicar metricas |
-| `builtin.py` | Registra metricas padrao como wrappers dos overlays (ath, atl, avg, ma, hline, band, target, std_band, vband) |
+| Module | Responsibility |
+|--------|---------------|
+| `registry.py` | MetricRegistry for registering and applying metrics |
+| `builtin.py` | Registers standard metrics as overlay wrappers (ath, atl, avg, ma, hline, band, target, std_band, vband) |
 
 ### Transforms
 
-| Modulo | Responsabilidade |
-|--------|-----------------|
-| `temporal.py` | Funcoes puras de transformacao (variation, accum, drawdown, zscore, etc.) |
-| `accessor.py` | TransformAccessor para encadeamento de transforms |
+| Module | Responsibility |
+|--------|---------------|
+| `temporal.py` | Pure transformation functions (variation, accum, drawdown, zscore, etc.) |
+| `accessor.py` | TransformAccessor for transform chaining |
 
 ---
 
-## Ordem de Precedencia de Configuracao
+## Configuration Precedence Order
 
-A configuracao e carregada de multiplas fontes com merge:
+Configuration is loaded from multiple sources with merge:
 
-1. `configure()` init_settings - Overrides programaticos (maior prioridade)
+1. `configure()` init_settings - Programmatic overrides (highest priority)
 2. Env vars (`CHARTKIT_*`, nested `__`)
 3. TOML files (`.charting.toml` > `pyproject.toml [tool.charting]` > user config)
-4. Field defaults dos pydantic models (menor prioridade)
+4. Field defaults from pydantic models (lowest priority)
 
 ---
 
-## Convencoes de Codigo
+## Code Conventions
 
-### Acesso a Configuracoes
+### Accessing Configuration
 
-Sempre usar `get_config()` dentro de funcoes, nunca cachear globalmente:
+Always use `get_config()` inside functions, never cache globally:
 
 ```python
-# CORRETO
-def minha_funcao():
+# CORRECT
+def my_function():
     config = get_config()
-    cor = config.colors.primary
+    color = config.colors.primary
 
-# INCORRETO (nao reflete mudancas via configure())
+# INCORRECT (doesn't reflect changes via configure())
 config = get_config()  # Global
-def minha_funcao():
-    cor = config.colors.primary
+def my_function():
+    color = config.colors.primary
 ```
 
-### zorder (Camadas de Renderizacao)
+### zorder (Rendering Layers)
 
-| Camada | zorder | Elementos |
-|--------|--------|-----------|
-| Fundo | 0 | Bandas sombreadas |
-| Referencia | 1 | ATH, ATL, hlines |
-| Secundario | 2 | Media movel |
-| Dados | 3+ | Linhas, barras |
+| Layer | zorder | Elements |
+|-------|--------|----------|
+| Background | 0 | Shaded bands |
+| Reference | 1 | ATH, ATL, hlines |
+| Secondary | 2 | Moving average |
+| Data | 3+ | Lines, bars |
 
-### Retornos de Funcao
+### Function Returns
 
-- `plot_*()`: Nao retorna (modifica ax in-place)
-- `add_*()`: Nao retorna (modifica ax/fig in-place)
-- `ChartingPlotter.plot()`: Retorna `PlotResult`
-- Transforms: Retornam `TransformAccessor` (encadeavel)
+- `plot_*()`: No return (modifies ax in-place)
+- `add_*()`: No return (modifies ax/fig in-place)
+- `ChartingPlotter.plot()`: Returns `PlotResult`
+- Transforms: Return `TransformAccessor` (chainable)
 
 ---
 
-## Grafo de Dependencias Internas (Settings)
+## Internal Dependency Graph (Settings)
 
 ```
 __init__.py
@@ -266,5 +275,5 @@ __init__.py
     <- schema.py
 ```
 
-**Importante:** Evitar imports circulares. `loader.py` e o hub central.
-Novos modulos devem importar de `schema.py`, nunca de `loader.py`.
+**Important:** Avoid circular imports. `loader.py` is the central hub.
+New modules should import from `schema.py`, never from `loader.py`.

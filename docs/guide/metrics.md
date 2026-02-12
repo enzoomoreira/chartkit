@@ -1,85 +1,85 @@
-# Metricas
+# Metrics
 
-Sistema declarativo de metricas para adicionar elementos visuais sobre os dados principais.
+Declarative metrics system for adding visual elements on top of the main data.
 
-> **Nota:** Valores default como cores, espessuras e labels podem ser personalizados
-> via arquivo TOML. Veja [Configuration](configuration.md).
-
----
-
-## Resumo
-
-| Metrica | Sintaxe | Descricao |
-|---------|---------|-----------|
-| Media Movel | `'ma:N'` | Linha de media movel de N periodos |
-| ATH | `'ath'` | Linha no maximo historico (All-Time High) |
-| ATL | `'atl'` | Linha no minimo historico (All-Time Low) |
-| Media | `'avg'` | Linha horizontal na media (mean) dos dados |
-| Linha Horizontal | `'hline:V'` | Linha horizontal no valor V |
-| Banda | `'band:L:U'` | Area sombreada entre L e U |
-| Meta | `'target:V'` | Linha horizontal de meta no valor V |
-| Banda de Desvio Padrao | `'std_band:W:N'` | Banda de N desvios padrao com janela W |
-| Banda Vertical | `'vband:D1:D2'` | Area sombreada entre duas datas |
+> **Note:** Default values such as colors, line widths, and labels can be customized
+> via TOML file. See [Configuration](configuration.md).
 
 ---
 
-## Uso Basico
+## Summary
 
-Metricas sao passadas como string ou lista de strings no parametro `metrics`:
+| Metric | Syntax | Description |
+|--------|--------|-------------|
+| Moving Average | `'ma:N'` | Moving average line of N periods |
+| ATH | `'ath'` | Line at all-time high |
+| ATL | `'atl'` | Line at all-time low |
+| Average | `'avg'` | Horizontal line at the mean of the data |
+| Horizontal Line | `'hline:V'` | Horizontal line at value V |
+| Band | `'band:L:U'` | Shaded area between L and U |
+| Target | `'target:V'` | Target horizontal line at value V |
+| Standard Deviation Band | `'std_band:W:N'` | Band of N standard deviations with window W |
+| Vertical Band | `'vband:D1:D2'` | Shaded area between two dates |
+
+---
+
+## Basic Usage
+
+Metrics are passed as a string or list of strings in the `metrics` parameter:
 
 ```python
-# Uma metrica (string unica)
+# Single metric (single string)
 df.chartkit.plot(metrics='ath')
 
-# Multiplas metricas (lista)
+# Multiple metrics (list)
 df.chartkit.plot(metrics=['ath', 'atl', 'ma:12'])
 
-# Combinacao completa
+# Full combination
 df.chartkit.plot(metrics=['ath', 'ma:12', 'hline:3.0', 'band:1.5:4.5'])
 ```
 
-O sistema de metricas utiliza um registry centralizado que parseia as strings
-de especificacao e aplica as funcoes correspondentes ao grafico.
+The metrics system uses a centralized registry that parses specification strings
+and applies the corresponding functions to the chart.
 
 ---
 
-## Media Movel (ma:N)
+## Moving Average (ma:N)
 
-Adiciona linha de media movel sobre os dados usando a sintaxe `'ma:N'`, onde N
-e o numero de periodos.
+Adds a moving average line over the data using the syntax `'ma:N'`, where N
+is the number of periods.
 
 ```python
-df.chartkit.plot(title="Dados com MM12", metrics=['ma:12'])
+df.chartkit.plot(title="Data with MA12", metrics=['ma:12'])
 ```
 
-### Sintaxe
+### Syntax
 
-- `'ma:3'` - Media movel de 3 periodos
-- `'ma:12'` - Media movel de 12 periodos
-- `'ma:24'` - Media movel de 24 periodos
+- `'ma:3'` - 3-period moving average
+- `'ma:12'` - 12-period moving average
+- `'ma:24'` - 24-period moving average
 
-### Caracteristicas Visuais
+### Visual Properties
 
-| Propriedade | Valor | Configuracao TOML |
-|-------------|-------|-------------------|
-| Cor | Cinza (#888888) | `colors.moving_average` |
-| Estilo | Linha solida | - |
-| Espessura | 1.5 | `lines.overlay_width` |
-| Label | "MM{window}" | `labels.moving_average_format` |
-| zorder | 2 | Acima de referencias, abaixo dos dados |
+| Property | Value | TOML Configuration |
+|----------|-------|--------------------|
+| Color | Gray (#888888) | `colors.moving_average` |
+| Style | Solid line | - |
+| Width | 1.5 | `lines.overlay_width` |
+| Label | "MA{window}" | `labels.moving_average_format` |
+| zorder | 2 | Above reference lines, below data |
 
-### Exemplo
+### Example
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'valor': [10, 12, 11, 14, 13, 15, 14, 16, 15, 18, 17, 19]
+    'value': [10, 12, 11, 14, 13, 15, 14, 16, 15, 18, 17, 19]
 }, index=pd.date_range('2024-01', periods=12, freq='ME'))
 
 df.chartkit.plot(
-    title="Serie com Media Movel",
+    title="Series with Moving Average",
     metrics=['ma:3'],
     units='%'
 )
@@ -87,58 +87,58 @@ df.chartkit.plot(
 
 ---
 
-## ATH e ATL
+## ATH and ATL
 
-Linhas horizontais tracejadas nos extremos historicos da serie.
+Dashed horizontal lines at the historical extremes of the series.
 
 ### ATH (All-Time High)
 
-Linha no maximo historico dos dados.
+Line at the historical maximum of the data.
 
 ```python
-df.chartkit.plot(title="Grafico", metrics=['ath'])
+df.chartkit.plot(title="Chart", metrics=['ath'])
 ```
 
-| Propriedade | Valor | Configuracao TOML |
-|-------------|-------|-------------------|
-| Cor | Verde | `colors.positive` |
+| Property | Value | TOML Configuration |
+|----------|-------|--------------------|
+| Color | Green | `colors.positive` |
 | Label | "ATH" | `labels.ath` |
-| Estilo | Tracejado (--) | `lines.reference_style` |
-| zorder | 1 | Nivel de linhas de referencia |
+| Style | Dashed (--) | `lines.reference_style` |
+| zorder | 1 | Reference line level |
 
 ### ATL (All-Time Low)
 
-Linha no minimo historico dos dados.
+Line at the historical minimum of the data.
 
 ```python
-df.chartkit.plot(title="Grafico", metrics=['atl'])
+df.chartkit.plot(title="Chart", metrics=['atl'])
 ```
 
-| Propriedade | Valor | Configuracao TOML |
-|-------------|-------|-------------------|
-| Cor | Vermelho | `colors.negative` |
+| Property | Value | TOML Configuration |
+|----------|-------|--------------------|
+| Color | Red | `colors.negative` |
 | Label | "ATL" | `labels.atl` |
-| Estilo | Tracejado (--) | `lines.reference_style` |
-| zorder | 1 | Nivel de linhas de referencia |
+| Style | Dashed (--) | `lines.reference_style` |
+| zorder | 1 | Reference line level |
 
-### Ambos
+### Both
 
 ```python
-df.chartkit.plot(title="Extremos Historicos", metrics=['ath', 'atl'])
+df.chartkit.plot(title="Historical Extremes", metrics=['ath', 'atl'])
 ```
 
-### Exemplo
+### Example
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0]
+    'cpi': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0]
 }, index=pd.date_range('2024-01', periods=10, freq='ME'))
 
 df.chartkit.plot(
-    title="IPCA com Extremos",
+    title="CPI with Extremes",
     units='%',
     metrics=['ath', 'atl']
 )
@@ -146,33 +146,33 @@ df.chartkit.plot(
 
 ---
 
-## Media (avg)
+## Average (avg)
 
-Linha horizontal na media (mean) dos dados. Usa a cor `colors.grid` e estilo tracejado.
+Horizontal line at the mean of the data. Uses `colors.grid` color and dashed style.
 
 ```python
-df.chartkit.plot(title="Grafico com Media", metrics=['avg'])
+df.chartkit.plot(title="Chart with Average", metrics=['avg'])
 ```
 
-| Propriedade | Valor | Configuracao TOML |
-|-------------|-------|-------------------|
-| Cor | Grid (lightgray) | `colors.grid` |
+| Property | Value | TOML Configuration |
+|----------|-------|--------------------|
+| Color | Grid (lightgray) | `colors.grid` |
 | Label | "AVG" | `labels.avg` |
-| Estilo | Tracejado (--) | `lines.reference_style` |
-| zorder | 1 | Nivel de linhas de referencia |
+| Style | Dashed (--) | `lines.reference_style` |
+| zorder | 1 | Reference line level |
 
-### Exemplo
+### Example
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0]
+    'cpi': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0]
 }, index=pd.date_range('2024-01', periods=10, freq='ME'))
 
 df.chartkit.plot(
-    title="IPCA com Media",
+    title="CPI with Average",
     units='%',
     metrics=['avg', 'ath', 'atl']
 )
@@ -180,38 +180,38 @@ df.chartkit.plot(
 
 ---
 
-## Linhas Horizontais (hline:V)
+## Horizontal Lines (hline:V)
 
-Use a sintaxe `'hline:V'` para adicionar linhas de referencia em valores
-arbitrarios, onde V e o valor no eixo Y.
+Use the syntax `'hline:V'` to add reference lines at arbitrary values,
+where V is the value on the Y-axis.
 
 ```python
-# Linha simples
+# Single line
 df.chartkit.plot(metrics=['hline:3.0'])
 
-# Multiplas linhas
+# Multiple lines
 df.chartkit.plot(metrics=['hline:3.0', 'hline:4.5', 'hline:1.5'])
 ```
 
-### Sintaxe
+### Syntax
 
-- `'hline:3.0'` - Linha horizontal em y=3.0
-- `'hline:100'` - Linha horizontal em y=100
-- `'hline:-5.5'` - Linha horizontal em y=-5.5 (valores negativos suportados)
+- `'hline:3.0'` - Horizontal line at y=3.0
+- `'hline:100'` - Horizontal line at y=100
+- `'hline:-5.5'` - Horizontal line at y=-5.5 (negative values supported)
 
-### Exemplo: Meta de Inflacao
+### Example: Inflation Target
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8]
+    'cpi': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Linha central da meta (3.0%) e limites de tolerancia (1.5% e 4.5%)
+# Central target line (3.0%) and tolerance limits (1.5% and 4.5%)
 df.chartkit.plot(
-    title="IPCA vs Meta",
+    title="CPI vs Target",
     units='%',
     metrics=['hline:3.0', 'hline:4.5', 'hline:1.5']
 )
@@ -219,41 +219,41 @@ df.chartkit.plot(
 
 ---
 
-## Bandas Sombreadas (band:L:U)
+## Shaded Bands (band:L:U)
 
-Use a sintaxe `'band:L:U'` para adicionar areas sombreadas entre dois valores,
-onde L e o limite inferior e U e o limite superior.
+Use the syntax `'band:L:U'` to add shaded areas between two values,
+where L is the lower limit and U is the upper limit.
 
 ```python
 df.chartkit.plot(metrics=['band:1.5:4.5'])
 ```
 
-### Sintaxe
+### Syntax
 
-- `'band:1.5:4.5'` - Banda entre 1.5 e 4.5
-- `'band:0:100'` - Banda entre 0 e 100
-- `'band:-10:10'` - Banda entre -10 e 10
+- `'band:1.5:4.5'` - Band between 1.5 and 4.5
+- `'band:0:100'` - Band between 0 and 100
+- `'band:-10:10'` - Band between -10 and 10
 
-### Caracteristicas Visuais
+### Visual Properties
 
-| Propriedade | Valor |
-|-------------|-------|
-| Estilo | Area preenchida semi-transparente |
-| zorder | 0 | Mais ao fundo, atras de todos os outros elementos |
+| Property | Value |
+|----------|-------|
+| Style | Semi-transparent filled area |
+| zorder | 0 | Furthest back, behind all other elements |
 
-### Exemplo: Banda de Tolerancia
+### Example: Tolerance Band
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8]
+    'cpi': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Banda representando intervalo de tolerancia da meta de inflacao
+# Band representing the inflation target tolerance range
 df.chartkit.plot(
-    title="IPCA com Banda de Meta",
+    title="CPI with Target Band",
     units='%',
     metrics=['band:1.5:4.5']
 )
@@ -261,195 +261,195 @@ df.chartkit.plot(
 
 ---
 
-## Linha de Meta (target:V)
+## Target Line (target:V)
 
-Use a sintaxe `'target:V'` para adicionar uma linha horizontal de meta com estilo diferenciado
-(cor secondary, dash-dot). O label e gerado automaticamente com o valor formatado.
+Use the syntax `'target:V'` to add a target horizontal line with a distinctive style
+(secondary color, dash-dot). The label is automatically generated with the formatted value.
 
 ```python
-# Meta simples
+# Simple target
 df.chartkit.plot(metrics=['target:1000'])
 
-# Meta com formatacao de moeda
+# Target with currency formatting
 df.chartkit.plot(units='BRL', metrics=['target:1000'])
-# Label: "Meta: R$ 1.000,00"
+# Label: "Target: R$ 1.000,00"
 ```
 
-### Sintaxe
+### Syntax
 
-- `'target:1000'` - Linha de meta em 1000
-- `'target:3.0'` - Linha de meta em 3.0
+- `'target:1000'` - Target line at 1000
+- `'target:3.0'` - Target line at 3.0
 
-### Caracteristicas Visuais
+### Visual Properties
 
-| Propriedade | Valor | Configuracao TOML |
-|-------------|-------|-------------------|
-| Cor | Secondary | `colors.secondary` |
-| Estilo | Dash-dot (-.) | `lines.target_style` |
-| Espessura | 1.5 | `lines.overlay_width` |
+| Property | Value | TOML Configuration |
+|----------|-------|--------------------|
+| Color | Secondary | `colors.secondary` |
+| Style | Dash-dot (-.) | `lines.target_style` |
+| Width | 1.5 | `lines.overlay_width` |
 | Label | "Meta: {value}" | `labels.target_format` |
-| zorder | 1 | Nivel de linhas de referencia |
+| zorder | 1 | Reference line level |
 
-A linha de meta usa cor `secondary` e estilo dash-dot (`-.`) por default, distinguindo-se
-visualmente das linhas de referencia padrao (ATH, ATL, hline) que usam tracejado.
+The target line uses `secondary` color and dash-dot (`-.`) style by default, visually
+distinguishing it from standard reference lines (ATH, ATL, hline) that use dashed style.
 
 ---
 
-## Banda de Desvio Padrao (std_band:W:N)
+## Standard Deviation Band (std_band:W:N)
 
-Use a sintaxe `'std_band:W:N'` para adicionar uma banda de desvio padrao (Bollinger Band)
-com media movel central. W e a janela da media movel e N e o numero de desvios padrao.
+Use the syntax `'std_band:W:N'` to add a standard deviation band (Bollinger Band)
+with a central moving average. W is the moving average window and N is the number of standard deviations.
 
 ```python
-# Bollinger Band: janela 20, 2 desvios padrao
+# Bollinger Band: window 20, 2 standard deviations
 df.chartkit.plot(metrics=['std_band:20:2'])
 ```
 
-### Sintaxe
+### Syntax
 
-- `'std_band:20:2'` - Janela 20 periodos, 2 desvios padrao
-- `'std_band:12:1.5'` - Janela 12 periodos, 1.5 desvios padrao
+- `'std_band:20:2'` - 20-period window, 2 standard deviations
+- `'std_band:12:1.5'` - 12-period window, 1.5 standard deviations
 
-### Caracteristicas Visuais
+### Visual Properties
 
-| Propriedade | Valor | Configuracao TOML |
-|-------------|-------|-------------------|
-| Cor da banda | Grid (lightgray) | `colors.grid` |
-| Estilo da linha central | Tracejado (--) | `lines.reference_style` |
-| Espessura | 1.5 | `lines.overlay_width` |
+| Property | Value | TOML Configuration |
+|----------|-------|--------------------|
+| Band color | Grid (lightgray) | `colors.grid` |
+| Central line style | Dashed (--) | `lines.reference_style` |
+| Width | 1.5 | `lines.overlay_width` |
 | Label | "BB({window}, {num_std})" | `labels.std_band_format` |
 
-### Exemplo
+### Example
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'preco': [100, 102, 98, 105, 103, 107, 101, 108, 106, 110]
+    'price': [100, 102, 98, 105, 103, 107, 101, 108, 106, 110]
 }, index=pd.date_range('2024-01', periods=10, freq='ME'))
 
-# Bollinger Band com media movel de 5 periodos e 2 desvios padrao
+# Bollinger Band with 5-period moving average and 2 standard deviations
 df.chartkit.plot(
-    title="Preco com Bollinger Band",
+    title="Price with Bollinger Band",
     metrics=['std_band:5:2']
 )
 ```
 
 ---
 
-## Banda Vertical (vband:D1:D2)
+## Vertical Band (vband:D1:D2)
 
-Use a sintaxe `'vband:D1:D2'` para adicionar uma area sombreada vertical entre duas datas.
-Ideal para destacar periodos especificos como recessoes, crises ou eventos.
+Use the syntax `'vband:D1:D2'` to add a vertical shaded area between two dates.
+Ideal for highlighting specific periods such as recessions, crises, or events.
 
 ```python
-# Sombreia periodo entre duas datas
+# Shade period between two dates
 df.chartkit.plot(metrics=['vband:2020-03-01:2020-06-30'])
 ```
 
-### Sintaxe
+### Syntax
 
-- `'vband:2020-03-01:2020-06-30'` - Banda vertical entre marco e junho de 2020
-- `'vband:2008-09-01:2009-06-30'` - Banda vertical para a crise financeira
+- `'vband:2020-03-01:2020-06-30'` - Vertical band between March and June 2020
+- `'vband:2008-09-01:2009-06-30'` - Vertical band for the financial crisis
 
-### Exemplo
+### Example
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'pib': [100, 102, 104, 95, 88, 92, 98, 105, 108, 110]
+    'gdp': [100, 102, 104, 95, 88, 92, 98, 105, 108, 110]
 }, index=pd.date_range('2019-07', periods=10, freq='QE'))
 
-# Destaca periodo de recessao
+# Highlight recession period
 df.chartkit.plot(
-    title="PIB com Periodo de Crise",
+    title="GDP with Crisis Period",
     metrics=['vband:2020-01-01:2020-09-30']
 )
 ```
 
 ---
 
-## Combinando Metricas
+## Combining Metrics
 
-Todas as metricas podem ser combinadas livremente em uma unica lista.
-O sistema aplica cada metrica na ordem especificada, respeitando a hierarquia
-de zorder para sobreposicao visual.
-
-```python
-import pandas as pd
-import chartkit
-
-df = pd.DataFrame({
-    'valor': [10, 12, 11, 14, 13, 15, 14, 16, 15, 18, 17, 19]
-}, index=pd.date_range('2024-01', periods=12, freq='ME'))
-
-df.chartkit.plot(
-    title="Analise Completa",
-    units='%',
-    metrics=[
-        'ath',          # Maximo historico
-        'atl',          # Minimo historico
-        'ma:3',         # Media movel 3 periodos
-        'hline:15',     # Linha de referencia
-        'band:12:18'    # Banda sombreada
-    ]
-)
-```
-
-### Exemplo: Analise de Inflacao
+All metrics can be freely combined in a single list.
+The system applies each metric in the specified order, respecting the
+zorder hierarchy for visual layering.
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'ipca': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0, 3.8, 4.2]
+    'value': [10, 12, 11, 14, 13, 15, 14, 16, 15, 18, 17, 19]
 }, index=pd.date_range('2024-01', periods=12, freq='ME'))
 
 df.chartkit.plot(
-    title="IPCA - Analise Completa",
+    title="Complete Analysis",
     units='%',
     metrics=[
-        'band:1.5:4.5',  # Banda de tolerancia da meta
-        'hline:3.0',     # Centro da meta
-        'ma:3',          # Tendencia de curto prazo
-        'ath',           # Pico historico
-        'atl'            # Vale historico
+        'ath',          # All-time high
+        'atl',          # All-time low
+        'ma:3',         # 3-period moving average
+        'hline:15',     # Reference line
+        'band:12:18'    # Shaded band
+    ]
+)
+```
+
+### Example: Inflation Analysis
+
+```python
+import pandas as pd
+import chartkit
+
+df = pd.DataFrame({
+    'cpi': [4.2, 5.5, 3.8, 4.5, 6.0, 4.8, 3.5, 4.0, 5.5, 4.0, 3.8, 4.2]
+}, index=pd.date_range('2024-01', periods=12, freq='ME'))
+
+df.chartkit.plot(
+    title="CPI - Complete Analysis",
+    units='%',
+    metrics=[
+        'band:1.5:4.5',  # Target tolerance band
+        'hline:3.0',     # Target center
+        'ma:3',          # Short-term trend
+        'ath',           # Historical peak
+        'atl'            # Historical trough
     ]
 )
 ```
 
 ---
 
-## Ordem de Renderizacao (zorder)
+## Rendering Order (zorder)
 
-O sistema de metricas utiliza zorder para controlar a sobreposicao visual
-dos elementos. Elementos com zorder menor sao renderizados primeiro (mais
-ao fundo), enquanto elementos com zorder maior ficam mais a frente.
+The metrics system uses zorder to control visual layering
+of elements. Elements with lower zorder are rendered first (furthest back),
+while elements with higher zorder appear in front.
 
-| Elemento | zorder | Posicao |
-|----------|--------|---------|
-| Banda (`band`) | 0 | Mais ao fundo |
-| ATH/ATL/hlines | 1 | Linhas de referencia |
-| Media movel (`ma`) | 2 | Intermediario |
-| Dados principais | 3+ | Mais a frente |
+| Element | zorder | Position |
+|---------|--------|----------|
+| Band (`band`) | 0 | Furthest back |
+| ATH/ATL/hlines | 1 | Reference lines |
+| Moving average (`ma`) | 2 | Intermediate |
+| Main data | 3+ | Foremost |
 
-Esta hierarquia garante que:
+This hierarchy ensures that:
 
-1. Bandas sombreadas nao obscurecem outros elementos
-2. Linhas de referencia (ATH, ATL, hlines) ficam visiveis mas nao interferem nos dados
-3. Media movel acompanha os dados mas nao os sobrepoe
-4. Dados principais sempre ficam visiveis no topo
+1. Shaded bands don't obscure other elements
+2. Reference lines (ATH, ATL, hlines) are visible but don't interfere with data
+3. Moving average follows the data but doesn't overlap it
+4. Main data is always visible on top
 
 ---
 
-## Sintaxe @ (Direcionar para Coluna)
+## @ Syntax (Target Specific Column)
 
-Para DataFrames com multiplas colunas, use a sintaxe `@` para direcionar uma
-metrica a uma coluna especifica:
+For DataFrames with multiple columns, use the `@` syntax to direct a
+metric to a specific column:
 
 ```python
 df = pd.DataFrame({
@@ -457,64 +457,64 @@ df = pd.DataFrame({
     'costs': [80, 90, 85, 95],
 }, index=pd.date_range('2024-01', periods=4, freq='ME'))
 
-# ATH apenas na coluna revenue
+# ATH only on revenue column
 df.chartkit.plot(metrics=['ath@revenue'])
 
-# Media movel na coluna costs
+# Moving average on costs column
 df.chartkit.plot(metrics=['ma:12@costs'])
 
-# Combinacao
+# Combination
 df.chartkit.plot(metrics=['ath@revenue', 'atl@costs', 'ma:6@revenue'])
 ```
 
-### Sintaxe
+### Syntax
 
-- `'metrica@coluna'` - Aplica metrica apenas na coluna especificada
-- `'metrica:param@coluna'` - Com parametros: `'ma:12@revenue'`
-- Sem `@`: metrica usa a primeira coluna (ou a unica coluna para Series)
+- `'metric@column'` - Applies metric only to the specified column
+- `'metric:param@column'` - With parameters: `'ma:12@revenue'`
+- Without `@`: metric uses the first column (or the only column for Series)
 
-### Metricas Data-Independent
+### Data-Independent Metrics
 
-Metricas que nao dependem dos dados (`hline`, `band`) ignoram o `@`
-automaticamente, pois sao registradas com `uses_series=False`.
+Metrics that don't depend on data (`hline`, `band`) silently ignore the `@`,
+as they are registered with `uses_series=False`.
 
 ```python
-# hline ignora @coluna silenciosamente
+# hline silently ignores @column
 df.chartkit.plot(metrics=['hline:3.0', 'ath@revenue'])
 ```
 
 ---
 
-## Labels Customizados (sintaxe |)
+## Custom Labels (| syntax)
 
-Por padrao, cada metrica usa um label pre-definido (ex: "ATH", "MM12"). Para customizar
-o nome exibido na legenda, use a sintaxe `|` ao final da especificacao:
+By default, each metric uses a pre-defined label (e.g., "ATH", "MA12"). To customize
+the name displayed in the legend, use the `|` syntax at the end of the specification:
 
 ```python
-# Label customizado simples
-df.chartkit.plot(metrics=['ath|Maximo Historico'])
+# Simple custom label
+df.chartkit.plot(metrics=['ath|All-Time High'])
 
-# Com parametros
-df.chartkit.plot(metrics=['ma:12|Media 12 Meses'])
+# With parameters
+df.chartkit.plot(metrics=['ma:12|12-Month Average'])
 
-# Combinando com @coluna
-df.chartkit.plot(metrics=['ma:12@revenue|Media 12M'])
+# Combining with @column
+df.chartkit.plot(metrics=['ma:12@revenue|12M Average'])
 
-# Com caracteres especiais no label
-df.chartkit.plot(metrics=['hline:100|Meta: Q1'])
+# With special characters in label
+df.chartkit.plot(metrics=['hline:100|Target: Q1'])
 ```
 
-### Sintaxe
+### Syntax
 
-- `'metrica|label'` - Label customizado simples
-- `'metrica:param|label'` - Com parametros
-- `'metrica:param@coluna|label'` - Com parametros e coluna
-- Sem `|`: usa o label default da metrica
+- `'metric|label'` - Simple custom label
+- `'metric:param|label'` - With parameters
+- `'metric:param@column|label'` - With parameters and column
+- Without `|`: uses the metric's default label
 
-O `|` e extraido antes do `@` e `:`, permitindo caracteres especiais no label.
+The `|` is extracted before `@` and `:`, allowing special characters in the label.
 
 ---
 
-## Veja Tambem
+## See Also
 
-- [Configuration](configuration.md) - Personalizacao de cores, labels e estilos de metricas
+- [Configuration](configuration.md) - Customization of colors, labels, and metric styles

@@ -21,16 +21,16 @@ def add_std_band(
     show_center: bool = True,
     series: str | None = None,
 ) -> None:
-    """Adiciona banda de desvio padrao (Bollinger Bands) sobre os dados.
+    """Add standard deviation band (Bollinger Bands) over the data.
 
-    Calcula media movel e N desvios padrao em janela rolling, plotando
-    a area entre as bandas superior e inferior.
+    Computes moving average and N standard deviations in a rolling window,
+    plotting the area between upper and lower bands.
 
     Args:
-        window: Tamanho da janela para o calculo rolling.
-        num_std: Numero de desvios padrao para as bandas.
-        show_center: Se plota a linha central (media movel).
-        series: Coluna a usar se y_data for DataFrame (default: primeira).
+        window: Rolling window size.
+        num_std: Number of standard deviations for the bands.
+        show_center: Whether to plot the center line (moving average).
+        series: Column to use if y_data is DataFrame (default: first).
     """
     if window < 2:
         raise ValidationError(f"window must be >= 2, got {window}")

@@ -1,4 +1,4 @@
-"""Descoberta de project root e arquivos de configuracao."""
+"""Project root and config file discovery."""
 
 from __future__ import annotations
 
@@ -37,33 +37,33 @@ def _cache_key(start_path: Path | None = None) -> Path:
 
 @cached(cache=_project_root_cache, key=_cache_key, lock=_project_root_lock)
 def find_project_root(start_path: Path | None = None) -> Path | None:
-    """Sobe a arvore de diretorios procurando markers de projeto (cacheado)."""
+    """Walk up the directory tree looking for project markers (cached)."""
     if start_path is None:
         start_path = Path.cwd()
 
     current = start_path.resolve()
 
-    logger.debug("find_project_root: iniciando busca a partir de {}", current)
+    logger.debug("find_project_root: starting search from {}", current)
 
     while current != current.parent:
         for marker in PROJECT_ROOT_MARKERS:
             if (current / marker).exists():
-                logger.debug("find_project_root: encontrado {}", current)
+                logger.debug("find_project_root: found {}", current)
                 return current
         current = current.parent
 
-    logger.debug("find_project_root: nenhum project root encontrado")
+    logger.debug("find_project_root: no project root found")
     return None
 
 
 def reset_project_root_cache() -> None:
     with _project_root_lock:
         _project_root_cache.clear()
-    logger.debug("find_project_root: cache limpo")
+    logger.debug("find_project_root: cache cleared")
 
 
 def get_user_config_dir() -> Path | None:
-    """Retorna dir de config do usuario (Windows: %APPDATA%/charting, Linux: ~/.config/charting)."""
+    """Return user config dir (Windows: %APPDATA%/charting, Linux: ~/.config/charting)."""
     if sys.platform == "win32":
         appdata = os.environ.get("APPDATA")
         if appdata:
@@ -73,10 +73,10 @@ def get_user_config_dir() -> Path | None:
 
 
 def find_config_files(project_root: Path | None = None) -> list[Path]:
-    """Encontra arquivos de config em ordem de precedencia.
+    """Find config files in precedence order.
 
-    Busca: .charting.toml/charting.toml no projeto, pyproject.toml [tool.charting],
-    e config do usuario.
+    Searches: .charting.toml/charting.toml in project, pyproject.toml [tool.charting],
+    and user config.
     """
     config_files = []
 

@@ -17,10 +17,10 @@ def add_moving_average(
     label: str | None = None,
     series: str | None = None,
 ) -> None:
-    """Adiciona linha de media movel sobre os dados.
+    """Add moving average line over the data.
 
     Args:
-        series: Coluna a usar se y_data for DataFrame (default: primeira).
+        series: Column to use if y_data is DataFrame (default: first).
     """
     if window < 1:
         raise ValidationError(f"window must be >= 1, got {window}")

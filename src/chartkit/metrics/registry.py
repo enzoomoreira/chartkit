@@ -14,9 +14,9 @@ from ..exceptions import RegistryError, ValidationError
 
 @dataclass
 class MetricSpec:
-    """Especificacao parseada de uma metrica.
+    """Parsed metric specification.
 
-    Sintaxe de string: ``nome:param1:param2@coluna|label``
+    String syntax: ``name:param1:param2@column|label``
     """
 
     name: str
@@ -33,7 +33,7 @@ class _MetricEntry(NamedTuple):
 
 
 class MetricRegistry:
-    """Registro central de metricas com parse de string specs e aplicacao em batch."""
+    """Central metrics registry with string spec parsing and batch application."""
 
     _metrics: dict[str, _MetricEntry] = {}
 
@@ -44,14 +44,14 @@ class MetricRegistry:
         param_names: list[str] | None = None,
         uses_series: bool = True,
     ) -> Callable[[Callable], Callable]:
-        """Decorator para registrar uma metrica.
+        """Decorator to register a metric.
 
         Args:
-            name: Nome da metrica (usado na string spec).
-            param_names: Nomes dos parametros posicionais extraidos da string.
-                Ex: ``['window']`` faz ``'ma:12'`` virar ``{'window': 12}``.
-            uses_series: Se a metrica usa o parametro ``series`` para
-                selecionar coluna em DataFrames multi-serie.
+            name: Metric name (used in the string spec).
+            param_names: Names of positional parameters extracted from the string.
+                E.g.: ``['window']`` makes ``'ma:12'`` become ``{'window': 12}``.
+            uses_series: Whether the metric uses the ``series`` parameter to
+                select a column in multi-series DataFrames.
         """
         names = param_names or []
 
@@ -70,15 +70,15 @@ class MetricRegistry:
 
     @classmethod
     def parse(cls, spec: str | MetricSpec) -> MetricSpec:
-        """Converte string spec em MetricSpec.
+        """Convert string spec into MetricSpec.
 
-        Formatos: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``, ``'ath@revenue'``,
-        ``'ath|Maximo'``, ``'ma:12@revenue|Media 12M'``.
-        ``|`` separa label customizado; ``@`` seleciona coluna; ``:`` separa params.
+        Formats: ``'ath'``, ``'ma:12'``, ``'band:1.5:4.5'``, ``'ath@revenue'``,
+        ``'ath|Maximum'``, ``'ma:12@revenue|12M Average'``.
+        ``|`` separates custom label; ``@`` selects column; ``:`` separates params.
 
         Raises:
-            RegistryError: Metrica nao registrada.
-            ValidationError: Params obrigatorios ausentes ou series vazio apos ``@``.
+            RegistryError: Metric not registered.
+            ValidationError: Required params missing or empty series after ``@``.
         """
         if isinstance(spec, MetricSpec):
             return spec
@@ -93,8 +93,8 @@ class MetricRegistry:
             metric_part, series = spec.rsplit("@", 1)
             if not series:
                 raise ValidationError(
-                    f"Series vazio em '{spec}'. Use 'metrica@coluna' ou "
-                    f"MetricSpec(name, series=coluna) para colunas com '@'."
+                    f"Empty series in '{spec}'. Use 'metric@column' or "
+                    f"MetricSpec(name, series=column) for columns with '@'."
                 )
         else:
             metric_part = spec
@@ -104,9 +104,7 @@ class MetricRegistry:
 
         if name not in cls._metrics:
             available = ", ".join(sorted(cls._metrics.keys()))
-            raise RegistryError(
-                f"Metrica desconhecida: '{name}'. Disponiveis: {available}"
-            )
+            raise RegistryError(f"Unknown metric: '{name}'. Available: {available}")
 
         entry = cls._metrics[name]
         params: dict[str, Any] = {}
@@ -114,7 +112,7 @@ class MetricRegistry:
         raw_params = parts[1:]
         extra = raw_params[len(entry.param_names) :]
         if extra:
-            logger.warning("Parametros extras ignorados em '{}': {}", spec, extra)
+            logger.warning("Extra parameters ignored in '{}': {}", spec, extra)
 
         for i, value in enumerate(raw_params):
             if i < len(entry.param_names):
@@ -129,7 +127,7 @@ class MetricRegistry:
         missing = [p for p in entry.required_params if p not in params]
         if missing:
             raise ValidationError(
-                f"Metrica '{name}' requer parametro(s): {', '.join(missing)}. "
+                f"Metric '{name}' requires parameter(s): {', '.join(missing)}. "
                 f"Use '{name}:{':'.join('<' + p + '>' for p in entry.param_names)}'."
             )
 
@@ -143,7 +141,7 @@ class MetricRegistry:
         y_data: pd.Series | pd.DataFrame,
         specs: Sequence[str | MetricSpec],
     ) -> None:
-        """Aplica lista de metricas ao grafico."""
+        """Apply list of metrics to the chart."""
         for spec in specs:
             parsed = cls.parse(spec)
             entry = cls._metrics[parsed.name]
@@ -160,5 +158,5 @@ class MetricRegistry:
 
     @classmethod
     def clear(cls) -> None:
-        """Remove todas as metricas registradas."""
+        """Remove all registered metrics."""
         cls._metrics.clear()

@@ -1,4 +1,4 @@
-"""Overlays visuais para graficos (medias moveis, linhas de referencia, bandas, marcadores)."""
+"""Visual overlays for charts (moving averages, reference lines, bands, markers)."""
 
 from .bands import add_band
 from .fill_between import add_fill_between

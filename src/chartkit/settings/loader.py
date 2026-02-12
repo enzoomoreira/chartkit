@@ -1,4 +1,4 @@
-"""Carregador de configuracoes com TOML loading e path resolution."""
+"""Configuration loader with TOML loading and path resolution."""
 
 from __future__ import annotations
 
@@ -24,14 +24,14 @@ __all__ = [
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
-    """Carrega TOML, retorna {} em caso de erro."""
+    """Load TOML, return {} on error."""
     if not path.exists():
         return {}
     try:
         with open(path, "rb") as f:
             return tomllib.load(f)
     except (tomllib.TOMLDecodeError, OSError) as e:
-        logger.warning("Erro ao ler {}: {}", path, e)
+        logger.warning("Error reading {}: {}", path, e)
         return {}
 
 
@@ -50,7 +50,7 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 
 
 class ConfigLoader:
-    """Carregador de configuracoes com merge multi-fonte e path resolution."""
+    """Configuration loader with multi-source merge and path resolution."""
 
     def __init__(self) -> None:
         self._config: ChartingConfig | None = None
@@ -68,14 +68,14 @@ class ConfigLoader:
         assets_path: Path | None = None,
         **overrides: Any,
     ) -> ConfigLoader:
-        """Configura o carregador com opcoes explicitas.
+        """Configure the loader with explicit options.
 
         Args:
-            **overrides: Dicts aninhados merged na config.
+            **overrides: Nested dicts merged into the config.
                 Ex: ``branding={'company_name': 'Banco XYZ'}``
         """
         logger.debug(
-            "configure() chamado: config_path={}, outputs_path={}, assets_path={}",
+            "configure() called: config_path={}, outputs_path={}, assets_path={}",
             config_path,
             outputs_path,
             assets_path,
@@ -92,15 +92,15 @@ class ConfigLoader:
 
         if overrides:
             self._overrides = _deep_merge(self._overrides, overrides)
-            logger.debug("Overrides aplicados: {}", list(overrides.keys()))
+            logger.debug("Overrides applied: {}", list(overrides.keys()))
 
         self._invalidate()
 
         return self
 
     def reset(self) -> ConfigLoader:
-        """Reseta todas as configuracoes para o estado inicial."""
-        logger.debug("reset() chamado - limpando todas as configuracoes")
+        """Reset all settings to initial state."""
+        logger.debug("reset() called - clearing all settings")
 
         self._config_path = None
         self._overrides = {}
@@ -113,11 +113,11 @@ class ConfigLoader:
         return self
 
     def get_config(self) -> ChartingConfig:
-        """Retorna a configuracao atual, carregando e mergeando se necessario."""
+        """Return the current configuration, loading and merging if needed."""
         if self._config is not None:
             return self._config
 
-        logger.debug("Carregando configuracoes (cache miss)")
+        logger.debug("Loading settings (cache miss)")
 
         toml_data = self._load_merged_toml()
 
@@ -129,7 +129,7 @@ class ConfigLoader:
 
     @property
     def outputs_path(self) -> Path:
-        """Resolve outputs_path: API explicita > Config (TOML/env) > Fallback."""
+        """Resolve outputs_path: explicit API > Config (TOML/env) > Fallback."""
         if self._outputs_path is not None:
             return self._outputs_path
         config = self.get_config()
@@ -139,7 +139,7 @@ class ConfigLoader:
 
     @property
     def assets_path(self) -> Path:
-        """Resolve assets_path: API explicita > Config (TOML/env) > Fallback."""
+        """Resolve assets_path: explicit API > Config (TOML/env) > Fallback."""
         if self._assets_path is not None:
             return self._assets_path
         config = self.get_config()
@@ -166,12 +166,12 @@ class ConfigLoader:
         ChartingConfig._toml_data = {}
 
     def _load_merged_toml(self) -> dict[str, Any]:
-        """Descobre e mergeia todos os TOML files em ordem de precedencia."""
+        """Discover and merge all TOML files in precedence order."""
         config_files = find_config_files()
 
         if self._config_path and self._config_path.exists():
             config_files.insert(0, self._config_path)
-            logger.debug("Arquivo de config explicito: {}", self._config_path)
+            logger.debug("Explicit config file: {}", self._config_path)
 
         merged: dict[str, Any] = {}
 
@@ -183,7 +183,7 @@ class ConfigLoader:
 
             if file_config:
                 merged = _deep_merge(merged, file_config)
-                logger.debug("Config merged de: {}", config_file)
+                logger.debug("Config merged from: {}", config_file)
 
         return merged
 
@@ -205,10 +205,10 @@ def configure(
     assets_path: Path | None = None,
     **overrides: Any,
 ) -> ConfigLoader:
-    """Configura o chartkit com paths explicitos e/ou overrides de secoes.
+    """Configure chartkit with explicit paths and/or section overrides.
 
     Args:
-        **overrides: Dicts aninhados merged na config.
+        **overrides: Nested dicts merged into the config.
             Ex: ``branding={'company_name': 'Banco XYZ'}``
     """
     return _loader.configure(
@@ -220,7 +220,7 @@ def configure(
 
 
 def get_config() -> ChartingConfig:
-    """Retorna a configuracao atual (carrega automaticamente na primeira chamada)."""
+    """Return the current configuration (loads automatically on first call)."""
     return _loader.get_config()
 
 
@@ -237,5 +237,5 @@ def get_assets_path() -> Path:
 
 
 def reset_config() -> ConfigLoader:
-    """Reseta todas as configuracoes para o estado inicial."""
+    """Reset all settings to initial state."""
     return _loader.reset()

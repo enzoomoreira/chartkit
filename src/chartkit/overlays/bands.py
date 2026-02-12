@@ -13,7 +13,7 @@ def add_band(
     alpha: float | None = None,
     label: str | None = None,
 ) -> None:
-    """Adiciona area sombreada horizontal entre dois valores."""
+    """Add horizontal shaded area between two values."""
     config = get_config()
 
     patch = ax.axhspan(

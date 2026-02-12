@@ -1,90 +1,90 @@
-# Estendendo o chartkit
+# Extending chartkit
 
-Guia para desenvolvedores que querem estender a funcionalidade do chartkit.
+Guide for developers who want to extend chartkit's functionality.
 
 ---
 
-## MetricRegistry - Sistema de Metricas
+## MetricRegistry - Metrics System
 
-O chartkit usa um sistema declarativo de metricas que permite adicionar
-elementos visuais aos graficos via strings simples:
+chartkit uses a declarative metrics system that allows adding visual
+elements to charts via simple strings:
 
 ```python
 df.chartkit.plot(metrics=['ath', 'atl', 'ma:12', 'hline:5.0'])
 ```
 
-### Registrando Metricas Customizadas
+### Registering Custom Metrics
 
-Use o decorator `@MetricRegistry.register()` para criar novas metricas:
+Use the `@MetricRegistry.register()` decorator to create new metrics:
 
 ```python
 from chartkit.metrics import MetricRegistry
 
-@MetricRegistry.register('minha_metrica', param_names=['threshold'])
-def minha_metrica(ax, x_data, y_data, threshold: float):
+@MetricRegistry.register('my_metric', param_names=['threshold'])
+def my_metric(ax, x_data, y_data, threshold: float):
     """
-    Adiciona linha horizontal customizada.
+    Adds a custom horizontal line.
 
     Args:
         ax: Matplotlib Axes.
-        x_data: Dados do eixo X.
-        y_data: Dados do eixo Y (Series ou DataFrame).
-        threshold: Valor onde a linha sera desenhada.
+        x_data: X-axis data.
+        y_data: Y-axis data (Series or DataFrame).
+        threshold: Value where the line will be drawn.
     """
     ax.axhline(threshold, color='purple', linestyle='--', linewidth=1.5)
 
-# Uso:
-df.chartkit.plot(metrics=['minha_metrica:10.0'])
+# Usage:
+df.chartkit.plot(metrics=['my_metric:10.0'])
 ```
 
-### Anatomia do Decorator
+### Decorator Anatomy
 
 ```python
 @MetricRegistry.register(
-    name='nome_da_metrica',           # Nome usado na string de especificacao
-    param_names=['param1', 'param2'], # Nomes dos parametros posicionais
-    uses_series=True,                 # Se recebe 'series' para DataFrames multi-coluna
+    name='metric_name',                  # Name used in the spec string
+    param_names=['param1', 'param2'],    # Names of positional parameters
+    uses_series=True,                    # Whether it receives 'series' for multi-column DataFrames
 )
-def funcao(ax, x_data, y_data, param1, param2, **kwargs):
+def function(ax, x_data, y_data, param1, param2, **kwargs):
     ...
 ```
 
-**Parametros obrigatorios da funcao:**
-- `ax`: Matplotlib Axes onde desenhar
-- `x_data`: Dados do eixo X (indice do DataFrame)
-- `y_data`: Dados do eixo Y (Series ou DataFrame)
+**Required function parameters:**
+- `ax`: Matplotlib Axes to draw on
+- `x_data`: X-axis data (DataFrame index)
+- `y_data`: Y-axis data (Series or DataFrame)
 
-**Parametros adicionais:**
-- Definidos em `param_names`, serao extraidos da string de especificacao
-- Formato da string: `'nome:valor1:valor2'`
-- Valores sao automaticamente convertidos para numeros se possivel
-- Parametros sem default na funcao sao tratados como obrigatorios; `parse()` levanta `ValueError` se ausentes
+**Additional parameters:**
+- Defined in `param_names`, extracted from the spec string
+- String format: `'name:value1:value2'`
+- Values are automatically converted to numbers when possible
+- Parameters without a default in the function are treated as required; `parse()` raises `ValueError` if absent
 
 **`uses_series`:**
-- Default `True`: a metrica recebe `series=col` via kwargs quando o usuario
-  usa sintaxe `@` (ex: `'ath@revenue'`)
-- Use `False` para metricas que nao dependem dos dados (ex: `hline`, `band`)
+- Default `True`: the metric receives `series=col` via kwargs when the user
+  uses `@` syntax (e.g., `'ath@revenue'`)
+- Use `False` for metrics that don't depend on data (e.g., `hline`, `band`)
 
-### Exemplos de Metricas Complexas
+### Complex Metric Examples
 
-**Metrica com multiplos parametros:**
+**Metric with multiple parameters:**
 
 ```python
 @MetricRegistry.register('range', param_names=['min_val', 'max_val', 'color'])
 def range_metric(ax, x_data, y_data, min_val: float, max_val: float, color: str = 'gray'):
-    """Adiciona banda entre dois valores."""
+    """Adds a band between two values."""
     ax.axhspan(min_val, max_val, alpha=0.2, color=color)
 
-# Uso:
+# Usage:
 df.chartkit.plot(metrics=['range:1.5:4.5:blue'])
 ```
 
-**Metrica que calcula valores dinamicamente:**
+**Metric that calculates values dynamically:**
 
 ```python
 @MetricRegistry.register('percentile', param_names=['p'])
 def percentile_metric(ax, x_data, y_data, p: int):
-    """Adiciona linha no percentil especificado."""
+    """Adds a line at the specified percentile."""
     import numpy as np
 
     if hasattr(y_data, 'values'):
@@ -95,143 +95,143 @@ def percentile_metric(ax, x_data, y_data, p: int):
     percentile_value = np.nanpercentile(values, p)
     ax.axhline(percentile_value, color='orange', linestyle=':', label=f'P{p}')
 
-# Uso:
+# Usage:
 df.chartkit.plot(metrics=['percentile:90', 'percentile:10'])
 ```
 
-### API do MetricRegistry
+### MetricRegistry API
 
 ```python
 from chartkit.metrics import MetricRegistry, MetricSpec
 
-# Listar metricas disponiveis
+# List available metrics
 MetricRegistry.available()  # ['ath', 'atl', 'band', 'hline', 'ma', ...]
 
-# Parse manual de especificacao
+# Manual spec parsing
 spec = MetricRegistry.parse('ma:12')
 print(spec.name)    # 'ma'
 print(spec.params)  # {'window': 12}
 
-# Aplicar metricas manualmente
+# Apply metrics manually
 MetricRegistry.apply(ax, x_data, y_data, ['ath', 'ma:12'])
 
-# Limpar registro (util para testes)
+# Clear registry (useful for tests)
 MetricRegistry.clear()
 ```
 
 ---
 
-## Criando Transforms Customizados
+## Creating Custom Transforms
 
-Transforms sao funcoes que transformam DataFrames/Series e podem ser
-encadeadas via o accessor.
+Transforms are functions that transform DataFrames/Series and can be
+chained via the accessor.
 
-### Funcao Standalone
+### Standalone Function
 
-Crie uma funcao que aceita DataFrame/Series e retorna o mesmo tipo:
+Create a function that accepts DataFrame/Series and returns the same type:
 
 ```python
-# Em src/chartkit/transforms/meu_transform.py
+# In src/chartkit/transforms/my_transform.py
 
 import pandas as pd
 
-def meu_transform(
+def my_transform(
     df: pd.DataFrame | pd.Series,
     param1: int = 10
 ) -> pd.DataFrame | pd.Series:
     """
-    Descricao do transform.
+    Transform description.
 
     Args:
-        df: DataFrame ou Series com indice temporal.
-        param1: Descricao do parametro.
+        df: DataFrame or Series with temporal index.
+        param1: Parameter description.
 
     Returns:
-        DataFrame/Series transformado.
+        Transformed DataFrame/Series.
 
     Example:
-        >>> df_transformado = meu_transform(df)
+        >>> df_transformed = my_transform(df)
     """
-    # Sua logica aqui
+    # Your logic here
     return df.rolling(param1).mean()
 ```
 
-### Integrando ao TransformAccessor
+### Integrating with TransformAccessor
 
-Para permitir encadeamento via `.chartkit.meu_transform()`:
+To enable chaining via `.chartkit.my_transform()`:
 
-**1. Adicione o import em `transforms/__init__.py`:**
+**1. Add the import in `transforms/__init__.py`:**
 
 ```python
 from .temporal import (
-    # ... existentes ...
+    # ... existing ...
 )
-from .meu_transform import meu_transform
+from .my_transform import my_transform
 
 __all__ = [
-    # ... existentes ...
-    "meu_transform",
+    # ... existing ...
+    "my_transform",
 ]
 ```
 
-**2. Adicione o metodo em `transforms/accessor.py`:**
+**2. Add the method in `transforms/accessor.py`:**
 
 ```python
-from .meu_transform import meu_transform
+from .my_transform import my_transform
 
 class TransformAccessor:
-    # ... metodos existentes ...
+    # ... existing methods ...
 
-    def meu_transform(self, param1: int = 10) -> TransformAccessor:
+    def my_transform(self, param1: int = 10) -> TransformAccessor:
         """
-        Descricao do transform.
+        Transform description.
 
         Args:
-            param1: Descricao do parametro.
+            param1: Parameter description.
 
         Returns:
-            Novo TransformAccessor com dados transformados.
+            New TransformAccessor with transformed data.
 
         Example:
-            >>> df.chartkit.meu_transform().plot()
+            >>> df.chartkit.my_transform().plot()
         """
-        return TransformAccessor(meu_transform(self._df, param1))
+        return TransformAccessor(my_transform(self._df, param1))
 ```
 
-**3. Opcional - Exponha no ChartingAccessor (`accessor.py`):**
+**3. Optional - Expose in ChartingAccessor (`accessor.py`):**
 
 ```python
-def meu_transform(self, param1: int = 10) -> TransformAccessor:
+def my_transform(self, param1: int = 10) -> TransformAccessor:
     """..."""
-    return TransformAccessor(self._obj).meu_transform(param1)
+    return TransformAccessor(self._obj).my_transform(param1)
 ```
 
-Agora voce pode usar:
+Now you can use:
 
 ```python
 # Standalone
-from chartkit import meu_transform
-df_novo = meu_transform(df)
+from chartkit import my_transform
+df_new = my_transform(df)
 
-# Encadeado
-df.chartkit.meu_transform().plot()
-df.chartkit.meu_transform().variation(horizon='year').plot()
+# Chained
+df.chartkit.my_transform().plot()
+df.chartkit.my_transform().variation(horizon='year').plot()
 ```
 
 ---
 
-## Criando Novos Tipos de Grafico
+## Creating New Chart Types
 
-Novos chart types sao registrados via `@ChartRegistry.register()`. O engine
-despacha automaticamente via `ChartRegistry.get(kind)` -- nao e necessario
-modificar o `engine.py`.
+New chart types are registered via `@ChartRegistry.register()`. The engine
+dispatches automatically via `ChartRegistry.get(kind)` -- no need to
+modify `engine.py`.
 
-### 1. Crie o arquivo do chart
+### 1. Create the chart file
 
-A funcao deve seguir o protocolo `ChartFunc`:
+The function must follow the `ChartFunc` protocol:
 
 ```python
-# Em src/chartkit/charts/scatter.py
+# In src/chartkit/charts/scatter.py
 
 from __future__ import annotations
 
@@ -281,28 +281,28 @@ def plot_scatter(
         ax.legend()
 ```
 
-### 2. Importe em `charts/__init__.py`
+### 2. Import in `charts/__init__.py`
 
-O import dispara o registro automatico via decorator:
+The import triggers automatic registration via decorator:
 
 ```python
 from .registry import ChartRegistry
 from .bar import plot_bar
 from .line import plot_line
-from .scatter import plot_scatter  # Import dispara @ChartRegistry.register("scatter")
+from .scatter import plot_scatter  # Import triggers @ChartRegistry.register("scatter")
 
 __all__ = ["ChartRegistry", "plot_bar", "plot_line", "plot_scatter"]
 ```
 
-Nao e necessario modificar `engine.py`. O dispatch e automatico:
+No need to modify `engine.py`. Dispatch is automatic:
 
 ```python
-# engine.py (ja existente)
+# engine.py (already existing)
 chart_fn = ChartRegistry.get(kind)
 chart_fn(ax, x_data, y_data, highlight=highlight, **kwargs)
 ```
 
-Uso:
+Usage:
 
 ```python
 df.chartkit.plot(kind='scatter', size=100, alpha=0.5)
@@ -310,14 +310,14 @@ df.chartkit.plot(kind='scatter', size=100, alpha=0.5)
 
 ---
 
-## Criando Novos Overlays
+## Creating New Overlays
 
-Overlays sao elementos visuais secundarios (medias moveis, linhas de referencia, etc.).
+Overlays are secondary visual elements (moving averages, reference lines, etc.).
 
-### 1. Crie o arquivo do overlay
+### 1. Create the overlay file
 
 ```python
-# Em src/chartkit/overlays/trend_line.py
+# In src/chartkit/overlays/trend_line.py
 
 import numpy as np
 from ..settings import get_config
@@ -331,23 +331,23 @@ def add_trend_line(
     **kwargs
 ) -> None:
     """
-    Adiciona linha de tendencia linear.
+    Adds a linear trend line.
 
     Args:
         ax: Matplotlib Axes.
-        x_data: Dados do eixo X.
-        y_data: Dados do eixo Y.
-        color: Cor da linha.
-        linestyle: Estilo da linha.
+        x_data: X-axis data.
+        y_data: Y-axis data.
+        color: Line color.
+        linestyle: Line style.
     """
     config = get_config()
     color = color or config.colors.secondary
 
-    # Converte x para numerico se necessario
+    # Convert x to numeric if needed
     x_numeric = np.arange(len(x_data))
     y_values = y_data.values.flatten() if hasattr(y_data, 'values') else y_data
 
-    # Remove NaNs para fit
+    # Remove NaNs for fit
     mask = ~np.isnan(y_values)
     coeffs = np.polyfit(x_numeric[mask], y_values[mask], 1)
     trend = np.poly1d(coeffs)(x_numeric)
@@ -358,75 +358,74 @@ def add_trend_line(
         color=color,
         linestyle=linestyle,
         zorder=2,
-        label='Tendencia',
+        label='Trend',
         **kwargs
     )
 ```
 
-### 2. Exporte em `overlays/__init__.py`
+### 2. Export in `overlays/__init__.py`
 
 ```python
-from .trend_line import add_trend_line  # Novo
+from .trend_line import add_trend_line  # New
 
 __all__ = [
-    # ... existentes ...
+    # ... existing ...
     "add_trend_line",
 ]
 ```
 
-### 3. Integre com a Collision Engine
+### 3. Integrate with the Collision Engine
 
-Overlays que criam elementos visuais devem registra-los na collision engine
-para que labels sejam reposicionados automaticamente. Use a categoria
-apropriada:
+Overlays that create visual elements should register them with the collision engine
+so that labels are automatically repositioned. Use the appropriate category:
 
 ```python
 from .._internal.collision import register_fixed, register_moveable, register_passive
 
-# Linhas de referencia: obstaculos que labels devem evitar
+# Reference lines: obstacles that labels must avoid
 line = ax.axhline(y=value, ...)
 register_fixed(ax, line)
 
-# Labels de texto: podem ser reposicionados
+# Text labels: can be repositioned
 text = ax.text(x, y, "Label", ...)
 register_moveable(ax, text)
 
-# Areas de fundo: existem visualmente mas nao sao obstaculos
+# Background areas: exist visually but are not obstacles
 patch = ax.axhspan(lower, upper, alpha=0.1, ...)
 register_passive(ax, patch)
 ```
 
-Overlays que existem visualmente mas nao devem bloquear labels (como medias moveis)
-devem ser registrados como passive:
+Overlays that exist visually but shouldn't block labels (like moving averages)
+should be registered as passive:
 
 ```python
 lines = ax.plot(x, ma_values, color=line_color, ...)
 register_passive(ax, lines[0])
 ```
 
-Para mais detalhes, veja o [guia da collision engine](../guide/collision.md).
+For more details, see the [collision engine guide](../guide/collision.md).
 
-### 4. Opcional - Crie uma metrica para o overlay
+### 4. Optional - Create a metric for the overlay
 
 ```python
-# Em src/chartkit/metrics/builtin.py (ou novo arquivo)
+# In src/chartkit/metrics/builtin.py (or new file)
 
 from ..overlays import add_trend_line
 
 @MetricRegistry.register("trend")
 def metric_trend(ax, x_data, y_data, **kwargs) -> None:
     """
-    Adiciona linha de tendencia.
+    Adds a trend line.
 
-    Uso: metrics=['trend']
+    Usage: metrics=['trend']
     """
     add_trend_line(ax, x_data, y_data, **kwargs)
 ```
 
-Agora voce pode usar:
+Now you can use:
 
 ```python
-# Via API direta
+# Via direct API
 from chartkit.overlays import add_trend_line
 add_trend_line(ax, x_data, y_data)
 
@@ -436,68 +435,68 @@ df.chartkit.plot(metrics=['ath', 'trend'])
 
 ---
 
-## Hooks de Configuracao
+## Configuration Hooks
 
-### Adicionando Novas Secoes de Config
+### Adding New Config Sections
 
-**1. Defina o model em `settings/schema.py`:**
+**1. Define the model in `settings/schema.py`:**
 
 ```python
 from pydantic import BaseModel, Field
 
-class MeuConfig(BaseModel):
+class MyConfig(BaseModel):
     enabled: bool = True
     threshold: float = 0.5
     color: str = "#FF0000"
 ```
 
-**2. Adicione a `ChartingConfig`:**
+**2. Add to `ChartingConfig`:**
 
 ```python
 class ChartingConfig(BaseSettings):
-    # ... existentes ...
-    meu_config: MeuConfig = Field(default_factory=MeuConfig)
+    # ... existing ...
+    my_config: MyConfig = Field(default_factory=MyConfig)
 ```
 
-Defaults sao definidos nos proprios campos do pydantic model -- nao existe
-arquivo `defaults.py` separado.
+Defaults are defined in the pydantic model fields themselves -- there is no
+separate `defaults.py` file.
 
 **3. Use via `get_config()`:**
 
 ```python
 from chartkit.settings import get_config
 
-def minha_funcao():
+def my_function():
     config = get_config()
-    if config.meu_config.enabled:
-        threshold = config.meu_config.threshold
+    if config.my_config.enabled:
+        threshold = config.my_config.threshold
         # ...
 ```
 
-**5. Configure via TOML:**
+**4. Configure via TOML:**
 
 ```toml
 # .charting.toml
-[meu_config]
+[my_config]
 enabled = true
 threshold = 0.75
 color = "#00FF00"
 ```
 
-### Adicionando Novos Formatadores
+### Adding New Formatters
 
-**1. Implemente em `styling/formatters.py`:**
+**1. Implement in `styling/formatters.py`:**
 
 ```python
 def my_formatter(prefix: str = ""):
     """
-    Formatador customizado.
+    Custom formatter.
 
     Args:
-        prefix: Prefixo para valores.
+        prefix: Prefix for values.
 
     Returns:
-        FuncFormatter para uso com matplotlib.
+        FuncFormatter for use with matplotlib.
     """
     config = get_config()
     locale = config.formatters.locale
@@ -510,19 +509,19 @@ def my_formatter(prefix: str = ""):
     return FuncFormatter(_format)
 ```
 
-**2. Adicione ao mapa em `engine.py`:**
+**2. Add to the map in `engine.py`:**
 
 ```python
 from .styling import my_formatter
 
 _FORMATTERS = {
-    # ... existentes ...
+    # ... existing ...
     'custom': my_formatter,
     'prefix_R': lambda: my_formatter('R '),
 }
 ```
 
-Uso:
+Usage:
 
 ```python
 df.chartkit.plot(units='custom')
@@ -531,43 +530,33 @@ df.chartkit.plot(units='prefix_R')
 
 ---
 
-## Boas Praticas
+## Best Practices
 
 ### Imports
 
-- Use imports relativos dentro do package (`from ..settings import get_config`)
-- Evite imports circulares (consulte o grafo de dependencias em architecture.md)
+- Use relative imports within the package (`from ..settings import get_config`)
+- Avoid circular imports (consult the dependency graph in architecture.md)
 
-### Documentacao
+### Documentation
 
-- Docstrings em formato Google
-- Type hints em todas as funcoes
-- Exemplos de uso nos docstrings
+- Docstrings in Google format
+- Type hints on all functions
+- Usage examples in docstrings
 
-### Testes
+### Tests
 
-- Limpe caches entre testes:
+- The test suite uses autouse fixtures for state isolation (see [Testing](testing.md))
+- Group tests by category using classes (`TestCorrectness`, `TestEdgeCases`, `TestErrors`)
+- Use known-value fixtures with pre-calculated expected results
+- Use `pytest.approx()` for float comparisons
+- Use `pytest.raises(ExceptionType, match="pattern")` for error tests
 
-```python
-import pytest
-from chartkit.settings import reset_config
-from chartkit.settings.discovery import reset_project_root_cache
-from chartkit.metrics import MetricRegistry
+### Parameter Defaults
 
-@pytest.fixture(autouse=True)
-def clean_state():
-    yield
-    reset_config()
-    reset_project_root_cache()
-    MetricRegistry.clear()
-```
-
-### Defaults de Parametros
-
-Quando um parametro pode vir da config, use `None` como default:
+When a parameter can come from config, use `None` as default:
 
 ```python
-def minha_funcao(alpha=None):
+def my_function(alpha=None):
     config = get_config()
-    alpha = alpha if alpha is not None else config.minha_secao.alpha
+    alpha = alpha if alpha is not None else config.my_section.alpha
 ```

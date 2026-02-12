@@ -1,9 +1,9 @@
-"""Sistema declarativo de metricas para graficos.
+"""Declarative metrics system for charts.
 
-Sintaxe: ``metrics=['ath', 'ma:12', 'band:1.5:4.5', 'ath@revenue']``
+Syntax: ``metrics=['ath', 'ma:12', 'band:1.5:4.5', 'ath@revenue']``
 
-Use ``|`` para label customizado na legenda: ``'ath|Maximo'``, ``'ma:12@col|Media 12M'``.
-Use ``@coluna`` para selecionar coluna alvo em DataFrames multi-serie.
+Use ``|`` for custom legend label: ``'ath|Maximum'``, ``'ma:12@col|12M Average'``.
+Use ``@column`` to select target column in multi-series DataFrames.
 """
 
 from .builtin import register_builtin_metrics

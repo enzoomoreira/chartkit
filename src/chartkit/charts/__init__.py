@@ -1,4 +1,4 @@
-"""Chart types plugaveis via ChartRegistry. Imports disparam registro automatico."""
+"""Pluggable chart types via ChartRegistry. Imports trigger automatic registration."""
 
 from .registry import ChartRegistry
 from .bar import plot_bar

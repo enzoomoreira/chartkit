@@ -14,7 +14,7 @@ __all__ = ["ChartFunc", "ChartRegistry"]
 
 
 class ChartFunc(Protocol):
-    """Assinatura padrao para funcoes de chart type."""
+    """Standard signature for chart type functions."""
 
     def __call__(
         self,
@@ -27,16 +27,16 @@ class ChartFunc(Protocol):
 
 
 class ChartRegistry:
-    """Registro central de chart types com dispatch por nome."""
+    """Central chart type registry with name-based dispatch."""
 
     _charts: dict[str, ChartFunc] = {}
 
     @classmethod
     def register(cls, name: str) -> Callable[[ChartFunc], ChartFunc]:
-        """Decorator para registrar um chart type.
+        """Decorator to register a chart type.
 
         Args:
-            name: Identificador usado em ``kind='name'``.
+            name: Identifier used in ``kind='name'``.
         """
 
         def decorator(func: ChartFunc) -> ChartFunc:
@@ -47,15 +47,15 @@ class ChartRegistry:
 
     @classmethod
     def get(cls, name: str) -> ChartFunc:
-        """Retorna a funcao de rendering para o chart type.
+        """Return the rendering function for a chart type.
 
         Raises:
-            RegistryError: Chart type nao registrado.
+            RegistryError: Unregistered chart type.
         """
         if name not in cls._charts:
             available = ", ".join(sorted(cls._charts.keys()))
             raise RegistryError(
-                f"Chart type '{name}' nao suportado. Disponiveis: {available}"
+                f"Chart type '{name}' not supported. Available: {available}"
             )
         return cls._charts[name]
 

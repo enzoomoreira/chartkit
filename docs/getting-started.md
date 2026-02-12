@@ -1,85 +1,85 @@
 # Getting Started
 
-Seu primeiro grafico em 2 minutos.
+Your first chart in 2 minutes.
 
-## Pre-requisitos
+## Prerequisites
 
 - Python >= 3.12
 - pandas >= 2.2.0
 
-## Instalacao
+## Installation
 
 ```bash
 uv add chartkit
 ```
 
-## Primeiro Grafico
+## First Chart
 
 ```python
 import pandas as pd
-import chartkit  # Registra o accessor .chartkit
+import chartkit  # Registers the .chartkit accessor
 
-# Dados de exemplo
+# Sample data
 df = pd.DataFrame({
-    'valor': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
+    'value': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Grafico basico
-df.chartkit.plot(title="Meu Primeiro Grafico")
+# Basic chart
+df.chartkit.plot(title="My First Chart")
 ```
 
-O import do `chartkit` registra automaticamente o accessor `.chartkit` em todos os DataFrames e Series.
+Importing `chartkit` automatically registers the `.chartkit` accessor on all DataFrames and Series.
 
 ```python
-# Funciona tanto com DataFrame quanto com Series
+# Works with both DataFrame and Series
 df.chartkit.plot(title="DataFrame")
-df["valor"].chartkit.plot(title="Series")
+df["value"].chartkit.plot(title="Series")
 ```
 
-### Adicionando Formatacao
+### Adding Formatting
 
 ```python
-# Com unidade de medida e fonte
+# With unit format and source
 df.chartkit.plot(
-    title="Taxa de Juros",
+    title="Interest Rate",
     units='%',
     source='BCB'
 )
 ```
 
-### Salvando o Grafico
+### Saving the Chart
 
 ```python
-# Salvar e mostrar
-df.chartkit.plot(title="Grafico").save("grafico.png").show()
+# Save and show
+df.chartkit.plot(title="Chart").save("chart.png").show()
 
-# Apenas salvar
-df.chartkit.plot(title="Grafico").save("grafico.png")
+# Save only
+df.chartkit.plot(title="Chart").save("chart.png")
 ```
 
-### Usando Transforms
+### Using Transforms
 
 ```python
-# Calcular variacao anual e plotar
-df.chartkit.variation(horizon='year').plot(title="Variacao Anual", units='%')
+# Calculate annual variation and plot
+df.chartkit.variation(horizon='year').plot(title="Annual Variation", units='%')
 
-# Encadeamento multiplo
+# Multiple chaining
 df.chartkit.annualize().plot(metrics=['ath']).save('chart.png')
 ```
 
-### Adicionando Metricas
+### Adding Metrics
 
 ```python
-# Maximo historico e media movel
+# All-time high and moving average
 df.chartkit.plot(metrics=['ath', 'ma:12'])
 
-# Banda de meta
+# Target band
 df.chartkit.plot(metrics=['band:1.5:4.5', 'hline:3.0'])
 ```
 
-## Proximos Passos
+## Next Steps
 
-- [Plotting](guide/plotting.md) - Tipos de grafico e opcoes de formatacao
-- [Metrics](guide/metrics.md) - Sistema de metricas declarativas
-- [Transforms](guide/transforms.md) - Funcoes de transformacao temporal
-- [Configuration](guide/configuration.md) - Personalizacao via TOML
+- [Plotting](guide/plotting.md) - Chart types and formatting options
+- [Metrics](guide/metrics.md) - Declarative metrics system
+- [Transforms](guide/transforms.md) - Temporal transformation functions
+- [Configuration](guide/configuration.md) - Customization via TOML

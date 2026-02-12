@@ -25,10 +25,10 @@ __all__ = [
 
 @dataclass(frozen=True)
 class HighlightStyle:
-    """Estrategia de posicionamento para highlight por chart type."""
+    """Positioning strategy for highlight by chart type."""
 
     ha: str
-    va: str | None  # None = auto-detect pelo sinal do valor
+    va: str | None  # None = auto-detect by value sign
     label_prefix: str
     show_scatter: bool
 
@@ -44,9 +44,9 @@ HIGHLIGHT_STYLES: dict[str, HighlightStyle] = {
 def _resolve_target(
     valid_series: pd.Series, mode: HighlightMode
 ) -> tuple[Any, float] | None:
-    """Resolve o (indice, valor) alvo para um modo de highlight.
+    """Resolve the target (index, value) for a highlight mode.
 
-    Retorna ``None`` se o valor nao for finito.
+    Returns ``None`` if the value is not finite.
     """
     if mode == "last":
         idx = valid_series.index[-1]
@@ -75,10 +75,10 @@ def _render_point(
     show_scatter: bool,
     color: str,
 ) -> None:
-    """Renderiza scatter marker + text label para um ponto de highlight."""
+    """Render scatter marker + text label for a highlight point."""
     config = get_config()
 
-    # Resolve posicao X
+    # Resolve X position
     if x is not None and hasattr(x, "get_loc"):
         try:
             loc_idx = x.get_loc(idx)
@@ -129,18 +129,18 @@ def add_highlight(
     x: pd.Index | pd.Series | None = None,
     modes: list[HighlightMode] | None = None,
 ) -> None:
-    """Destaca pontos de dados com label formatado.
+    """Highlight data points with formatted label.
 
-    Suporta multiplos modos de selecao (last, max, min). Indices duplicados
-    sao renderizados apenas uma vez. Ignora silenciosamente series vazias,
-    toda NaN, ou com valores nao-finitos.
+    Supports multiple selection modes (last, max, min). Duplicate indices
+    are rendered only once. Silently ignores empty series, all-NaN,
+    or series with non-finite values.
 
     Args:
-        style: Nome de um style registrado em ``HIGHLIGHT_STYLES`` ou
-            instancia de ``HighlightStyle``.
-        x: Dados X explicitos. Necessario quando a posicao X requer
-            resolucao (ex: bar charts com DatetimeIndex).
-        modes: Modos de highlight a aplicar. ``None`` = ``["last"]``.
+        style: Name of a style registered in ``HIGHLIGHT_STYLES`` or
+            a ``HighlightStyle`` instance.
+        x: Explicit X data. Required when X position needs
+            resolution (e.g.: bar charts with DatetimeIndex).
+        modes: Highlight modes to apply. ``None`` = ``["last"]``.
     """
     if series.empty:
         logger.warning("Highlight skipped: series is empty")
@@ -161,7 +161,7 @@ def add_highlight(
         if style not in HIGHLIGHT_STYLES:
             available = ", ".join(sorted(HIGHLIGHT_STYLES))
             raise RegistryError(
-                f"Highlight style '{style}' nao suportado. Disponiveis: {available}"
+                f"Highlight style '{style}' not supported. Available: {available}"
             )
         style = HIGHLIGHT_STYLES[style]
 
@@ -177,7 +177,7 @@ def add_highlight(
             continue
         seen_indices.add(idx)
 
-        # Posicionamento: max/min usam centro acima/abaixo; last usa chart-type style
+        # Positioning: max/min use center above/below; last uses chart-type style
         if mode in ("max", "min"):
             ha = "center"
             va = "bottom" if mode == "max" else "top"

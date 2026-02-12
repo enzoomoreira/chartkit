@@ -1,4 +1,4 @@
-"""Helpers internos compartilhados entre chart types."""
+"""Internal helpers shared between chart types."""
 
 from typing import cast
 
@@ -10,7 +10,7 @@ __all__ = ["detect_bar_width"]
 
 
 def detect_bar_width(x: pd.Index | pd.Series, bars: BarsConfig) -> float:
-    """Largura automatica de barras baseada na frequencia dos dados."""
+    """Automatic bar width based on data frequency."""
     width: float = bars.width_default
     if pd.api.types.is_datetime64_any_dtype(x):
         if len(x) > 1:

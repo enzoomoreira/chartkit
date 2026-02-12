@@ -1,286 +1,286 @@
-# Tipos de Grafico e Formatacao
+# Chart Types and Formatting
 
-Guia completo sobre os tipos de grafico disponiveis no chartkit e opcoes de formatacao.
+Complete guide to the chart types available in chartkit and formatting options.
 
-## Grafico de Linhas
+## Line Chart
 
-O grafico de linhas e o tipo padrao do chartkit. Ideal para visualizar tendencias temporais.
+The line chart is chartkit's default type. Ideal for visualizing temporal trends.
 
-### Linha Simples
+### Single Line
 
 ```python
 import pandas as pd
 import chartkit
 
-# Dados de exemplo
+# Sample data
 df = pd.DataFrame({
-    'taxa': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
+    'rate': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Grafico de linha basico
-df.chartkit.plot(title="Taxa de Juros")
+# Basic line chart
+df.chartkit.plot(title="Interest Rate")
 ```
 
-### Multiplas Series
+### Multiple Series
 
-Para plotar varias series no mesmo grafico, basta incluir multiplas colunas no DataFrame:
+To plot multiple series on the same chart, simply include multiple columns in the DataFrame:
 
 ```python
 df = pd.DataFrame({
-    'serie_a': [10, 12, 11, 14, 13, 15],
-    'serie_b': [8, 9, 10, 11, 12, 13],
-    'serie_c': [12, 11, 13, 12, 14, 13],
+    'series_a': [10, 12, 11, 14, 13, 15],
+    'series_b': [8, 9, 10, 11, 12, 13],
+    'series_c': [12, 11, 13, 12, 14, 13],
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Plota todas as colunas numericas
-df.chartkit.plot(title="Comparativo de Series")
+# Plots all numeric columns
+df.chartkit.plot(title="Series Comparison")
 
-# Ou selecione colunas especificas
-df.chartkit.plot(y=['serie_a', 'serie_b'], title="Series A e B")
+# Or select specific columns
+df.chartkit.plot(y=['series_a', 'series_b'], title="Series A and B")
 ```
 
-### Selecao de Colunas
+### Column Selection
 
-Use o parametro `y` para especificar quais colunas plotar:
+Use the `y` parameter to specify which columns to plot:
 
 ```python
-# Uma unica coluna (passa como string)
-df.chartkit.plot(y='serie_a', title="Apenas Serie A")
+# A single column (pass as string)
+df.chartkit.plot(y='series_a', title="Series A Only")
 
-# Multiplas colunas (passa como lista)
-df.chartkit.plot(y=['serie_a', 'serie_b'], title="Series Selecionadas")
+# Multiple columns (pass as list)
+df.chartkit.plot(y=['series_a', 'series_b'], title="Selected Series")
 ```
 
-Se `y` nao for especificado, todas as colunas numericas serao plotadas.
+If `y` is not specified, all numeric columns will be plotted.
 
 ---
 
-## Grafico de Barras
+## Bar Chart
 
-Use `kind='bar'` para criar graficos de barras. Ideal para comparacoes entre categorias ou visualizacao de valores positivos e negativos.
+Use `kind='bar'` to create bar charts. Ideal for comparisons between categories or visualizing positive and negative values.
 
-### Barras Basicas
-
-```python
-df = pd.DataFrame({
-    'vendas': [150, 200, 180, 220, 250, 230]
-}, index=pd.date_range('2024-01', periods=6, freq='ME'))
-
-df.chartkit.plot(kind='bar', title="Vendas Mensais")
-```
-
-### Barras com Valores Positivos e Negativos
-
-O chartkit lida automaticamente com valores positivos e negativos:
+### Basic Bars
 
 ```python
 df = pd.DataFrame({
-    'saldo': [100, -50, 200, -75, 150, -25]
+    'sales': [150, 200, 180, 220, 250, 230]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-df.chartkit.plot(kind='bar', title="Saldo Mensal", units='BRL')
+df.chartkit.plot(kind='bar', title="Monthly Sales")
 ```
 
-### Origem do Eixo Y (y_origin)
+### Bars with Positive and Negative Values
 
-O parametro `y_origin` e especifico de graficos de barras e passado via `**kwargs`:
+chartkit automatically handles positive and negative values:
 
 ```python
-# Origem no zero (padrao) - mostra a magnitude completa
-df.chartkit.plot(kind='bar', title="Saldo Mensal", y_origin='zero')
+df = pd.DataFrame({
+    'balance': [100, -50, 200, -75, 150, -25]
+}, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Origem automatica - foca na variacao dos dados
-df.chartkit.plot(kind='bar', title="Saldo Mensal", y_origin='auto')
+df.chartkit.plot(kind='bar', title="Monthly Balance", units='BRL')
 ```
 
-| Valor | Comportamento |
-|-------|---------------|
-| `'zero'` | Eixo Y sempre comeca do zero. Mostra magnitude real. |
-| `'auto'` | Matplotlib define os limites. Foca na variacao dos dados. |
+### Y-Axis Origin (y_origin)
 
-Use `y_origin='zero'` quando a magnitude absoluta for importante. Use `y_origin='auto'` quando quiser destacar variacoes pequenas em valores grandes.
+The `y_origin` parameter is specific to bar charts and passed via `**kwargs`:
+
+```python
+# Zero origin (default) - shows full magnitude
+df.chartkit.plot(kind='bar', title="Monthly Balance", y_origin='zero')
+
+# Auto origin - focuses on data variation
+df.chartkit.plot(kind='bar', title="Monthly Balance", y_origin='auto')
+```
+
+| Value | Behavior |
+|-------|----------|
+| `'zero'` | Y-axis always starts from zero. Shows real magnitude. |
+| `'auto'` | Matplotlib defines limits. Focuses on data variation. |
+
+Use `y_origin='zero'` when absolute magnitude matters. Use `y_origin='auto'` when you want to highlight small variations in large values.
 
 ---
 
-## Grafico de Barras Empilhadas
+## Stacked Bar Chart
 
-Use `kind='stacked_bar'` para criar graficos de barras empilhadas. Ideal para mostrar a composicao de um total ao longo do tempo.
+Use `kind='stacked_bar'` to create stacked bar charts. Ideal for showing the composition of a total over time.
 
-### Barras Empilhadas Basicas
+### Basic Stacked Bars
 
 ```python
 df = pd.DataFrame({
-    'produto_a': [100, 120, 130, 140],
-    'produto_b': [80, 90, 85, 95],
-    'produto_c': [50, 60, 55, 70],
+    'product_a': [100, 120, 130, 140],
+    'product_b': [80, 90, 85, 95],
+    'product_c': [50, 60, 55, 70],
 }, index=pd.date_range('2024-01', periods=4, freq='QE'))
 
-df.chartkit.plot(kind='stacked_bar', title="Receita por Produto")
+df.chartkit.plot(kind='stacked_bar', title="Revenue by Product")
 ```
 
-Cada coluna do DataFrame se torna uma camada da barra, usando cores da paleta configurada. A legenda e gerada automaticamente para DataFrames com multiplas colunas, e a largura das barras e ajustada automaticamente pela frequencia dos dados.
+Each DataFrame column becomes a layer of the bar, using colors from the configured palette. The legend is automatically generated for DataFrames with multiple columns, and bar widths are automatically adjusted by data frequency.
 
 ---
 
-## Area Entre Series (fill_between)
+## Area Between Series (fill_between)
 
-O parametro `fill_between` sombreia a area entre duas colunas do DataFrame. Util para visualizar spreads, intervalos de confianca ou diferencas entre series.
+The `fill_between` parameter shades the area between two DataFrame columns. Useful for visualizing spreads, confidence intervals, or differences between series.
 
 ```python
 df = pd.DataFrame({
     'selic': [13.75, 13.25, 12.75, 12.25, 11.75, 11.25],
-    'ipca': [5.5, 5.2, 4.8, 4.5, 4.2, 3.9],
+    'cpi': [5.5, 5.2, 4.8, 4.5, 4.2, 3.9],
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-# Sombreia area entre Selic e IPCA
+# Shade area between Selic and CPI
 df.chartkit.plot(
-    title="Spread Selic - IPCA",
+    title="Selic - CPI Spread",
     units='%',
-    fill_between=('selic', 'ipca')
+    fill_between=('selic', 'cpi')
 )
 ```
 
-O parametro recebe uma tupla com os nomes de duas colunas: `(col1, col2)`.
+The parameter receives a tuple with two column names: `(col1, col2)`.
 
 ---
 
-## Formatacao do Eixo Y
+## Y-Axis Formatting
 
-O parametro `units` controla como os valores do eixo Y sao formatados. O chartkit oferece varios formatadores pre-definidos.
+The `units` parameter controls how Y-axis values are formatted. chartkit offers several pre-defined formatters.
 
-### Moedas
+### Currencies
 
 ```python
-# Real brasileiro: R$ 1.234,56
-df.chartkit.plot(title="Valores em BRL", units='BRL')
+# Brazilian Real: R$ 1.234,56
+df.chartkit.plot(title="Values in BRL", units='BRL')
 
-# Dolar americano: $ 1,234.56
-df.chartkit.plot(title="Valores em USD", units='USD')
+# US Dollar: $ 1,234.56
+df.chartkit.plot(title="Values in USD", units='USD')
 ```
 
-### Moedas Compactas
+### Compact Currencies
 
-Para valores grandes, use os formatos compactos:
+For large values, use compact formats:
 
 ```python
-# Real compacto: R$ 1,2 mi (milhoes), R$ 1,2 bi (bilhoes)
-df.chartkit.plot(title="PIB", units='BRL_compact')
+# Compact Real: R$ 1,2 mi (millions), R$ 1,2 bi (billions)
+df.chartkit.plot(title="GDP", units='BRL_compact')
 
-# Dolar compacto: $1.2M, $1.2B
+# Compact Dollar: $1.2M, $1.2B
 df.chartkit.plot(title="Revenue", units='USD_compact')
 ```
 
-### Percentual
+### Percentage
 
 ```python
-# Percentual: 10,5%
-df.chartkit.plot(title="Taxa de Inflacao", units='%')
+# Percentage: 10.5%
+df.chartkit.plot(title="Inflation Rate", units='%')
 ```
 
-O formatador de percentual usa locale brasileiro (virgula como separador decimal).
+The percentage formatter uses the configured locale (decimal separator based on `babel_locale`).
 
-### Inteiros (Points)
+### Integers (Points)
 
 ```python
-# Inteiros com separador de milhar brasileiro: 1.234.567
-df.chartkit.plot(title="Numero de Clientes", units='points')
+# Integers with locale-aware thousand separators: 1.234.567
+df.chartkit.plot(title="Number of Customers", units='points')
 ```
 
-Ideal para valores inteiros grandes como populacao, numero de clientes, etc.
+Ideal for large integer values such as population, number of customers, etc.
 
-### Notacao Humana (Human)
+### Human-Readable Notation
 
 ```python
-# Notacao compacta: 1,2M (milhoes), 1,2B (bilhoes)
+# Compact notation: 1.2M (millions), 1.2B (billions)
 df.chartkit.plot(title="Volume", units='human')
 ```
 
-O formato `human` e similar ao `BRL_compact`, mas sem o simbolo de moeda. Util para valores numericos gerais.
+The `human` format is similar to `BRL_compact`, but without the currency symbol. Useful for general numeric values.
 
-### Tabela de Formatadores
+### Formatters Table
 
-| Valor | Formato | Exemplo |
-|-------|---------|---------|
-| `'BRL'` | Real brasileiro | R$ 1.234,56 |
-| `'USD'` | Dolar americano | $ 1,234.56 |
-| `'BRL_compact'` | Real compacto | R$ 1,2 mi |
-| `'USD_compact'` | Dolar compacto | $1.2M |
-| `'%'` | Percentual | 10,5% |
-| `'points'` | Inteiros BR | 1.234.567 |
-| `'human'` | Notacao compacta | 1,2M |
+| Value | Format | Example |
+|-------|--------|---------|
+| `'BRL'` | Brazilian Real | R$ 1.234,56 |
+| `'USD'` | US Dollar | $ 1,234.56 |
+| `'BRL_compact'` | Compact Real | R$ 1,2 mi |
+| `'USD_compact'` | Compact Dollar | $1.2M |
+| `'%'` | Percentage | 10,5% |
+| `'points'` | Locale-aware integers | 1.234.567 |
+| `'human'` | Compact notation | 1,2M |
 
-Os formatadores de moeda utilizam a biblioteca [Babel](https://babel.pocoo.org/) e suportam qualquer codigo de moeda ISO 4217.
+Currency formatters use the [Babel](https://babel.pocoo.org/) library and support any ISO 4217 currency code.
 
 ---
 
-## Rodape com Fonte
+## Footer with Source
 
-O parametro `source` adiciona um rodape com a fonte dos dados:
+The `source` parameter adds a footer with the data source:
 
 ```python
 df.chartkit.plot(
-    title="Taxa Selic",
+    title="Selic Rate",
     units='%',
-    source='Banco Central do Brasil'
+    source='Central Bank of Brazil'
 )
 ```
 
-Quando `source` nao e fornecido, o chartkit usa `branding.default_source` da configuracao como fallback. Se ambos estiverem vazios, o rodape exibe apenas o `company_name`.
+When `source` is not provided, chartkit uses `branding.default_source` from the configuration as a fallback. If both are empty, the footer displays only the `company_name`.
 
-O texto do rodape segue o formato configurado em `branding.footer_format`. O padrao e:
+The footer text follows the format configured in `branding.footer_format`. The default is:
 
 ```
 Fonte: {source}, {company_name}
 ```
 
-### Customizando o Formato do Rodape
+### Customizing the Footer Format
 
-Via arquivo TOML:
+Via TOML file:
 
 ```toml
 [branding]
-company_name = "Minha Empresa"
-footer_format = "Fonte: {source} | Elaboracao: {company_name}"
+company_name = "My Company"
+footer_format = "Fonte: {source} | By: {company_name}"
 ```
 
-Via codigo:
+Via code:
 
 ```python
 from chartkit import configure
 
 configure(branding={
-    'company_name': 'Minha Empresa',
-    'footer_format': 'Fonte: {source} | Elaboracao: {company_name}'
+    'company_name': 'My Company',
+    'footer_format': 'Fonte: {source} | By: {company_name}'
 })
 ```
 
 ---
 
-## Destacar Valores (highlight)
+## Highlighting Values (highlight)
 
-O parametro `highlight` adiciona marcadores e labels em pontos especificos de cada serie. Aceita `bool`, string ou lista de modos:
+The `highlight` parameter adds markers and labels at specific points of each series. Accepts `bool`, string, or list of modes:
 
-| Valor | Comportamento |
-|-------|---------------|
-| `True` / `'last'` | Destaca o ultimo valor de cada serie |
-| `'max'` | Destaca o valor maximo de cada serie |
-| `'min'` | Destaca o valor minimo de cada serie |
-| `['max', 'min']` | Combina multiplos modos |
-| `False` | Sem destaque (default) |
+| Value | Behavior |
+|-------|----------|
+| `True` / `'last'` | Highlights the last value of each series |
+| `'max'` | Highlights the maximum value of each series |
+| `'min'` | Highlights the minimum value of each series |
+| `['max', 'min']` | Combines multiple modes |
+| `False` | No highlight (default) |
 
 ```python
-# Destacar ultimo valor (equivalentes)
-df.chartkit.plot(title="Taxa de Juros", highlight=True)
-df.chartkit.plot(title="Taxa de Juros", highlight='last')
+# Highlight last value (equivalent)
+df.chartkit.plot(title="Interest Rate", highlight=True)
+df.chartkit.plot(title="Interest Rate", highlight='last')
 
-# Destacar maximo e minimo
-df.chartkit.plot(title="Taxa de Juros", highlight=['max', 'min'])
+# Highlight max and min
+df.chartkit.plot(title="Interest Rate", highlight=['max', 'min'])
 
-# Destacar todos: ultimo, maximo e minimo
-df.chartkit.plot(title="Taxa de Juros", highlight=['last', 'max', 'min'])
+# Highlight all: last, max, and min
+df.chartkit.plot(title="Interest Rate", highlight=['last', 'max', 'min'])
 ```
 
-### Exemplo Completo
+### Full Example
 
 ```python
 import pandas as pd
@@ -291,7 +291,7 @@ df = pd.DataFrame({
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
 df.chartkit.plot(
-    title="Taxa Selic",
+    title="Selic Rate",
     units='%',
     source='BCB',
     highlight=['last', 'max']
@@ -300,107 +300,107 @@ df.chartkit.plot(
 
 ---
 
-## Method Chaining com PlotResult
+## Method Chaining with PlotResult
 
-O metodo `plot()` retorna um objeto `PlotResult` que permite encadeamento de operacoes.
+The `plot()` method returns a `PlotResult` object that allows operation chaining.
 
-### Salvar Grafico
+### Saving a Chart
 
 ```python
-# Salva no diretorio de charts configurado
-df.chartkit.plot(title="Grafico").save('meu_grafico.png')
+# Saves to the configured charts directory
+df.chartkit.plot(title="Chart").save('my_chart.png')
 
-# Salva com DPI customizado
-df.chartkit.plot(title="Grafico").save('meu_grafico.png', dpi=150)
+# Saves with custom DPI
+df.chartkit.plot(title="Chart").save('my_chart.png', dpi=150)
 
-# Path absoluto
-df.chartkit.plot(title="Grafico").save('C:/temp/grafico.png')
+# Absolute path
+df.chartkit.plot(title="Chart").save('C:/temp/chart.png')
 ```
 
-Se o path for relativo, o grafico e salvo em `CHARTS_PATH` (configuravel).
+If the path is relative, the chart is saved to `CHARTS_PATH` (configurable).
 
-### Mostrar Grafico
+### Showing a Chart
 
 ```python
-# Exibe em janela interativa
-df.chartkit.plot(title="Grafico").show()
+# Displays in interactive window
+df.chartkit.plot(title="Chart").show()
 ```
 
-### Encadeamento Completo
+### Full Chaining
 
 ```python
-# Salvar e mostrar na mesma chamada
-df.chartkit.plot(title="Grafico").save('grafico.png').show()
+# Save and show in the same call
+df.chartkit.plot(title="Chart").save('chart.png').show()
 
-# Salvar com DPI alto, depois mostrar
-df.chartkit.plot(title="Grafico").save('grafico.png', dpi=300).show()
+# Save with high DPI, then show
+df.chartkit.plot(title="Chart").save('chart.png', dpi=300).show()
 ```
 
-### Acesso ao Axes e Figure
+### Accessing Axes and Figure
 
-O `PlotResult` expoe o `Axes` e `Figure` do matplotlib para customizacoes avancadas:
+`PlotResult` exposes the matplotlib `Axes` and `Figure` for advanced customizations:
 
 ```python
-result = df.chartkit.plot(title="Grafico")
+result = df.chartkit.plot(title="Chart")
 
-# Acesso ao Axes
+# Access the Axes
 result.axes.set_xlim(['2024-01-01', '2024-12-31'])
 result.axes.axhline(5, color='red', linestyle='--')
-result.axes.set_ylabel('Meu Label')
+result.axes.set_ylabel('My Label')
 
-# Acesso ao Figure
+# Access the Figure
 result.figure.set_size_inches(14, 8)
-result.figure.suptitle('Titulo Superior')
+result.figure.suptitle('Super Title')
 
-# Salvar apos customizacoes
-result.save('grafico_customizado.png')
+# Save after customizations
+result.save('custom_chart.png')
 ```
 
-### API do PlotResult
+### PlotResult API
 
-| Metodo/Propriedade | Retorno | Descricao |
-|--------------------|---------|-----------|
-| `save(path, dpi=None)` | `PlotResult` | Salva o grafico e retorna self |
-| `show()` | `PlotResult` | Exibe o grafico e retorna self |
-| `axes` | `Axes` | Acesso ao matplotlib Axes |
-| `figure` | `Figure` | Acesso ao matplotlib Figure |
+| Method/Property | Return | Description |
+|-----------------|--------|-------------|
+| `save(path, dpi=None)` | `PlotResult` | Saves the chart and returns self |
+| `show()` | `PlotResult` | Displays the chart and returns self |
+| `axes` | `Axes` | Access to matplotlib Axes |
+| `figure` | `Figure` | Access to matplotlib Figure |
 
 ---
 
-## Exemplos Completos
+## Full Examples
 
-### Dashboard Financeiro
+### Financial Dashboard
 
 ```python
 import pandas as pd
 import chartkit
 
-# Taxa Selic
+# Selic Rate
 selic = pd.DataFrame({
-    'taxa': [13.75, 13.25, 12.75, 12.25, 11.75, 11.25]
+    'rate': [13.75, 13.25, 12.75, 12.25, 11.75, 11.25]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
 selic.chartkit.plot(
-    title="Taxa Selic",
+    title="Selic Rate",
     units='%',
-    source='Banco Central do Brasil',
+    source='Central Bank of Brazil',
     highlight=True
 ).save('selic.png')
 
-# Variacao do Dolar
-dolar = pd.DataFrame({
-    'cotacao': [4.95, 5.02, 4.98, 5.15, 5.08, 5.22]
+# Dollar Exchange Rate
+dollar = pd.DataFrame({
+    'exchange_rate': [4.95, 5.02, 4.98, 5.15, 5.08, 5.22]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
-dolar.chartkit.plot(
-    title="Cotacao do Dolar",
+dollar.chartkit.plot(
+    title="Dollar Exchange Rate",
     units='BRL',
     source='BCB',
     highlight=True
-).save('dolar.png')
+).save('dollar.png')
 ```
 
-### Comparativo de Investimentos
+### Investment Comparison
 
 ```python
 import pandas as pd
@@ -413,36 +413,36 @@ df = pd.DataFrame({
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
 df.chartkit.plot(
-    title="Comparativo de Investimentos (Base 100)",
+    title="Investment Comparison (Base 100)",
     units='points',
     source='Bloomberg',
     highlight=True
-).save('comparativo.png')
+).save('comparison.png')
 ```
 
-### Saldo Mensal com Barras
+### Monthly Balance with Bars
 
 ```python
 import pandas as pd
 import chartkit
 
 df = pd.DataFrame({
-    'saldo': [15000, -8000, 22000, -5000, 18000, 25000]
+    'balance': [15000, -8000, 22000, -5000, 18000, 25000]
 }, index=pd.date_range('2024-01', periods=6, freq='ME'))
 
 df.chartkit.plot(
     kind='bar',
-    title="Saldo Mensal",
+    title="Monthly Balance",
     units='BRL_compact',
-    source='Contabilidade',
+    source='Accounting',
     y_origin='zero'
-).save('saldo_mensal.png')
+).save('monthly_balance.png')
 ```
 
 ---
 
-## Proximos Passos
+## Next Steps
 
-- [Transforms](transforms.md) - Transformacoes temporais (YoY, MoM, etc.)
-- [Metricas](metrics.md) - Overlays declarativos (ATH, medias moveis, bandas)
-- [Configuracao](../reference/configuration.md) - Personalizacao completa
+- [Transforms](transforms.md) - Temporal transformations (YoY, MoM, etc.)
+- [Metrics](metrics.md) - Declarative overlays (ATH, moving averages, bands)
+- [Configuration](../reference/configuration.md) - Full customization
