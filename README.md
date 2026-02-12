@@ -38,6 +38,7 @@ df.chartkit.variation().plot(title="Monthly Variation").show()
 
 - **Pandas Accessor**: Use `df.chartkit.plot()` directly on any DataFrame
 - **Charts**: Line, bar, and stacked bar charts with professional styling
+- **Chart Composition**: Combine multiple layers with dual-axis support via `compose()` for complex multi-series charts
 - **Formatters**: BRL, USD, BRL_compact, USD_compact, %, points, human-readable notation (1k, 1M)
 - **Declarative Metrics**: `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5', 'target:1000', 'std_band:20:2', 'vband:2020-03:2020-06']`
 - **Chained Transforms**: `df.chartkit.variation(horizon='year').drawdown().plot()` with method chaining and frequency auto-detection
@@ -56,7 +57,7 @@ df.chartkit.variation().plot(title="Monthly Variation").show()
 
 | Guide | Description |
 |-------|-------------|
-| [Plotting](docs/guide/plotting.md) | Chart types, formatting, and PlotResult |
+| [Plotting](docs/guide/plotting.md) | Chart types, formatting, composition, and PlotResult |
 | [Metrics](docs/guide/metrics.md) | Declarative metrics system |
 | [Transforms](docs/guide/transforms.md) | Temporal transformations and chaining |
 | [Configuration](docs/guide/configuration.md) | TOML, paths, and auto-discovery |

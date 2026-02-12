@@ -16,6 +16,8 @@ from .temporal import (
 )
 
 if TYPE_CHECKING:
+    from ..composing.layer import AxisSide, Layer
+    from ..engine import ChartKind, HighlightInput, UnitFormat
     from ..result import PlotResult
 
 
@@ -74,7 +76,7 @@ class TransformAccessor:
         return TransformAccessor(zscore(self._df, window))
 
     def to_month_end(self) -> TransformAccessor:
-        """Normalize temporal index to month end."""
+        """Align index to month-end keeping the last observation per month."""
         return TransformAccessor(to_month_end(self._df))
 
     def plot(self, **kwargs) -> PlotResult:
@@ -83,6 +85,35 @@ class TransformAccessor:
 
         plotter = ChartingPlotter(self._df)
         return plotter.plot(**kwargs)
+
+    def layer(
+        self,
+        kind: ChartKind = "line",
+        x: str | None = None,
+        y: str | list[str] | None = None,
+        *,
+        units: UnitFormat | None = None,
+        highlight: HighlightInput = False,
+        metrics: str | list[str] | None = None,
+        fill_between: tuple[str, str] | None = None,
+        axis: AxisSide = "left",
+        **kwargs,
+    ) -> Layer:
+        """Create a Layer from the transformed DataFrame for use with ``compose()``."""
+        from ..composing import create_layer
+
+        return create_layer(
+            self._df,
+            kind,
+            x,
+            y,
+            units=units,
+            highlight=highlight,
+            metrics=metrics,
+            fill_between=fill_between,
+            axis=axis,
+            **kwargs,
+        )
 
     @property
     def df(self) -> pd.DataFrame:

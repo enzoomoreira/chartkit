@@ -8,6 +8,7 @@ df.chartkit.variation(horizon='year').plot(title='YoY Variation').save('chart.pn
 from ._internal import register_fixed, register_moveable, register_passive
 from ._logging import configure_logging, disable_logging
 from .accessor import ChartingAccessor
+from .composing import AxisSide, Layer, compose
 from .charts import ChartRegistry
 from .engine import ChartingPlotter, ChartKind, HighlightInput, UnitFormat
 from .overlays.markers import HighlightMode
@@ -75,6 +76,10 @@ __all__ = [
     "HighlightInput",
     "HighlightMode",
     "UnitFormat",
+    # Composition
+    "AxisSide",
+    "Layer",
+    "compose",
     # Main classes
     "ChartingAccessor",
     "ChartingPlotter",

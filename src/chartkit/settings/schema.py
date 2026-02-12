@@ -1,6 +1,6 @@
 """Configuration schema with pydantic models."""
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field, PositiveInt
 from pydantic.fields import FieldInfo
@@ -162,10 +162,11 @@ class BandsConfig(BaseModel):
 class MarkersConfig(BaseModel):
     scatter_size: int = 30
     font_weight: str = "bold"
+    label_offset_fraction: float = 0.015
 
 
 class CollisionConfig(BaseModel):
-    movement: str = "y"
+    movement: Literal["x", "y", "xy"] = "y"
     obstacle_padding_px: float = 8.0
     label_padding_px: float = 4.0
     max_iterations: int = 50

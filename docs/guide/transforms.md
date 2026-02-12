@@ -364,7 +364,9 @@ daily_cdi.chartkit.annualize().plot(
 
 ### to_month_end() - Normalize to Month-End
 
-Normalizes temporal index to last day of the month. Useful for aligning series with different frequencies before operations. Raises `TypeError` if the index is not a `DatetimeIndex`.
+Normalizes temporal index to the last day of the month, consolidating monthly observations. Each timestamp is mapped to the last day of its respective month. If multiple rows fall in the same month (e.g., daily data), keeps only the last chronological observation of that month -- the resulting index has no duplicates.
+
+Raises `TypeError` if the index is not a `DatetimeIndex`.
 
 ```python
 def to_month_end(df) -> DataFrame | Series
@@ -378,6 +380,9 @@ def to_month_end(df) -> DataFrame | Series
 
 ```python
 from chartkit import to_month_end
+
+# Daily data -> one row per month (last observation)
+monthly = to_month_end(daily_prices)
 
 # Align series before operations
 selic = to_month_end(selic)

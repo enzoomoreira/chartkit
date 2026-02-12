@@ -13,7 +13,7 @@ from ..exceptions import RegistryError
 from ..settings import get_config
 from ..styling.theme import theme
 
-HighlightMode = Literal["last", "max", "min"]
+HighlightMode = Literal["last", "max", "min", "all"]
 
 __all__ = [
     "HighlightMode",
@@ -64,6 +64,35 @@ def _resolve_target(
     return idx, float(val)
 
 
+def _resolve_x_position(x: pd.Index | pd.Series, idx: Any) -> Any:
+    """Map an index label to its X-axis coordinate.
+
+    Handles duplicated indices by returning the first matching scalar.
+    """
+    if isinstance(x, pd.Series):
+        result = x.loc[idx]
+        return result.iloc[0] if isinstance(result, pd.Series) else result
+    if hasattr(x, "get_loc"):
+        loc = x.get_loc(idx)
+        if isinstance(loc, int):
+            return x[loc]
+        # Duplicated index: get_loc returns slice or mask
+        return idx
+    return idx
+
+
+def _apply_label_offset(ax: Axes, y_pos: float, va: str, fraction: float) -> float:
+    """Add vertical breathing room between label and its data point."""
+    if va not in ("bottom", "top") or fraction <= 0:
+        return y_pos
+    y0, y1 = ax.get_ylim()
+    y_range = y1 - y0
+    if y_range <= 0:
+        return y_pos
+    offset = y_range * fraction
+    return y_pos + offset if va == "bottom" else y_pos - offset
+
+
 def _render_point(
     ax: Axes,
     idx: Any,
@@ -79,14 +108,16 @@ def _render_point(
     config = get_config()
 
     # Resolve X position
-    if x is not None and hasattr(x, "get_loc"):
+    if x is not None:
         try:
-            loc_idx = x.get_loc(idx)
-            x_val = x[loc_idx]
-        except KeyError:
+            x_val = _resolve_x_position(x, idx)
+        except (KeyError, IndexError):
             x_val = idx
     else:
         x_val = idx
+
+    if isinstance(x_val, str):
+        x_val = ax.convert_xunits(x_val)
 
     x_pos = cast(float, x_val)
     y_pos = cast(float, val)
@@ -106,9 +137,11 @@ def _render_point(
     if not label_text:
         label_text = f"{val:.2f}"
 
+    label_y = _apply_label_offset(ax, y_pos, va, config.markers.label_offset_fraction)
+
     text = ax.text(
         x_pos,
-        y_pos,
+        label_y,
         f"{label_prefix}{label_text}",
         ha=ha,
         va=va,
@@ -168,6 +201,32 @@ def add_highlight(
     seen_indices: set[object] = set()
 
     for mode in modes:
+        if mode == "all":
+            for idx_val in valid_series.index:
+                val = valid_series[idx_val]
+                if not np.isfinite(val):
+                    continue
+                if idx_val in seen_indices:
+                    continue
+                seen_indices.add(idx_val)
+                va = (
+                    style.va
+                    if style.va is not None
+                    else ("bottom" if val >= 0 else "top")
+                )
+                _render_point(
+                    ax,
+                    idx_val,
+                    float(val),
+                    x,
+                    style.ha,
+                    va,
+                    style.label_prefix,
+                    style.show_scatter,
+                    color,
+                )
+            continue
+
         target = _resolve_target(valid_series, mode)
         if target is None:
             continue

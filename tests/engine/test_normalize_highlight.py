@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from chartkit.engine import _normalize_highlight
+from chartkit._internal import normalize_highlight as _normalize_highlight
 from chartkit.exceptions import ValidationError
 
 

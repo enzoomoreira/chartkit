@@ -20,6 +20,7 @@ and three participation categories:
 | **Moveable** | `register_moveable(ax, artist)` | Can be repositioned to resolve collisions |
 | **Fixed** | `register_fixed(ax, artist)` | Immutable obstacle that others must avoid |
 | **Passive** | `register_passive(ax, artist)` | Exists visually but doesn't participate in collision |
+| **Line Obstacle** | `register_line_obstacle(ax, line)` | Line2D whose data path repels labels via point sampling |
 
 Each external module decides how to classify its own elements. The engine
 provides the building blocks; modules handle the integration.
@@ -51,6 +52,7 @@ directly:
 
 ```python
 from chartkit import register_moveable, register_fixed, register_passive
+from chartkit._internal.collision import register_line_obstacle
 
 # Create a label that can be moved
 text = ax.text(x, y, "My label", ha="left", va="center")
@@ -63,6 +65,10 @@ register_fixed(ax, line)
 # Create a background area that is NOT an obstacle
 patch = ax.axhspan(50, 150, alpha=0.1, color="gray")
 register_passive(ax, patch)
+
+# Register a line whose visible path should repel labels
+(plot_line,) = ax.plot(x, y, color="blue")
+register_line_obstacle(ax, plot_line)
 ```
 
 > **Important**: Use `ax.text()`, not `ax.annotate()`. `ax.text()` natively uses
@@ -86,83 +92,87 @@ in module-level `WeakKeyDictionary` indexed by `Axes`. This means:
 
 ### Rendering Pipeline
 
-The collision engine runs at step 6 of the pipeline, after all elements
+The collision engine runs at step 7 of the pipeline, after all elements
 are created and before final decorations:
 
 ```
 1. Style           theme.apply()
-2. Data            resolve x_data, y_data
-3. Y Formatter     ax.yaxis.set_major_formatter(...)
+2. Data            extract_plot_data()
+3. Y Formatter     FORMATTERS[units]()
 4. Plot Core       ChartRegistry dispatch + highlights (register_moveable)
 5. Metrics         ATH/ATL/hline (register_fixed) + MA (register_passive) + band (register_passive)
-6. Collisions      resolve_collisions(ax)
-7. Title/Footer    ax.set_title(), fig.text()
-8. Output          PlotResult
+6. Legend           _apply_legend() + register_fixed(ax, legend_artist)
+7. Collisions      resolve_collisions(ax) or resolve_composed_collisions(axes)
+8. Decorations     add_title(ax), add_footer(fig)
+9. Output          PlotResult
 ```
 
-### 3-Phase Algorithm
+For composed charts, `resolve_composed_collisions(axes)` replaces step 7,
+merging labels from all axes (left + right) into a single pool.
 
-#### Phase 1: Moveables vs Fixed
+### Unified Resolution Algorithm
 
-For each moveable, checks collision against all fixed obstacles.
-If there's a collision, calculates the **smallest possible displacement** among up to 4 directions:
+The engine uses a unified algorithm that handles both fixed obstacles and
+inter-label collisions in a single iterative pass:
+
+1. **For each label**, build the full obstacle list: all fixed obstacles (padded)
+   plus all other labels (padded)
+2. **Identify collisions** between the label's padded bbox and each obstacle
+3. **Generate displacement candidates** from each colliding obstacle (up, down, left, right)
+4. **Sort candidates** by preference: Y-only first, X-only second, diagonal last (by distance within each group)
+5. **Filter by movement preference** (`"y"`, `"x"`, or `"xy"`)
+6. **Validate** each candidate against ALL obstacles (not just the colliding one)
+7. **Fallback**: if no single-axis solution exists, try diagonal combinations (best Y + best X)
 
 ```
 Example with movement="y" (default):
 
-    Label collides with ATH line.
+    Label collides with ATH line and another label.
 
-    UP:   move label above the line   -> 15px
-    DOWN: move label below the line   -> 42px
+    Candidates from ATH: UP +15px, DOWN -42px
+    Candidates from label: UP +8px, DOWN -20px
 
-    Smallest: UP (15px). Label moves up 15px.
+    Sorted: UP +8px, UP +15px, DOWN -20px, DOWN -42px
+
+    Validate +8px against ALL obstacles -> still collides with ATH
+    Validate +15px against ALL obstacles -> free! Apply.
 ```
 
 Constraints respected:
 - **Movement axis**: configurable (`"y"`, `"x"`, or `"xy"`)
 - **Axes limits**: label never leaves the visible chart area
+- **Global validation**: each candidate is tested against every obstacle
 
-If no direction is valid (label trapped between obstacles and axes border),
-the label remains at its original position.
+The outer loop repeats until no label moves or `max_iterations` is reached.
 
-#### Phase 2: Moveables vs Moveables
-
-Iterative push-apart between label pairs. When two labels collide, both
-are pushed in opposite directions by half the overlap + padding:
-
-```
-    Label A and Label B overlapping on Y by 20px:
-
-    shift = 20/2 + padding/2 = 12px
-
-    Label A (higher): moves up 12px
-    Label B (lower): moves down 12px
-```
-
-Repeats until convergence (no pair collides) or `max_iterations` is reached.
-
-#### Phase 3: Connectors
+### Connectors
 
 If a label was displaced beyond `connector_threshold_px` (default: 30px)
 from its original position, a guide line is drawn connecting the original data point
-to the repositioned label. Preserves the data-label visual association.
+to the repositioned label. Connectors are grouped by parent axes to ensure
+correct coordinate transforms in composed charts.
 
 ### Obstacle Collection
 
-The engine combines two obstacle sources:
+The engine combines multiple obstacle sources:
 
-1. **Explicit**: elements registered via `register_fixed()` (ATH, ATL, hline lines)
-2. **Auto-detected**: all `ax.patches` (bar chart bars)
+1. **Explicit**: elements registered via `register_fixed()` (ATH, ATL, hline lines, legend)
+2. **Auto-detected patches**: `ax.patches` on all sibling axes sharing the X-axis (bars, boxes, etc.)
+3. **Cross-axis labels**: labels from twinx sibling axes act as obstacles for each other
+4. **Line path samples**: registered lines (`register_line_obstacle()`) are sampled at each data point, creating point-sized virtual obstacles along the visible path
 
-Auto-detection exists so that bars are automatically obstacles without
-manual registration. However, not every patch is an obstacle - shaded bands
-(`ax.axhspan`) also create patches, but are transparent background elements.
+Line2D bounding boxes span the entire data area and are useless as collision targets.
+Instead, `_LineSampleObstacle` creates small obstacles at each data point so labels
+can be pushed away from the visible line path.
 
-To exclude a patch from auto-detection, use `register_passive()`. The engine
-filters:
+Auto-detection traverses all sibling axes (via `get_shared_x_axes().get_siblings(ax)`),
+enabling cross-axis collision avoidance in composed charts with `twinx()`.
+
+The engine filters:
 - Patches registered as moveable (labels are not obstacles to themselves)
 - Patches registered as passive (bands, background areas)
 - Patches already registered as fixed (avoids duplication)
+- Invisible artists (`get_visible() == False`)
 
 ---
 
@@ -290,13 +300,29 @@ The alternative would be for the engine to check types (`isinstance(patch, Polyg
 properties (`alpha < 0.5`), but this would break agnosticism. The correct solution:
 the module that creates the element knows what it is and self-classifies.
 
+### Why line path sampling instead of Line2D bboxes?
+
+A Line2D's bounding box spans the entire data area (from min to max X and Y).
+Using it as a collision obstacle would push labels far away from the chart,
+even when the line is nowhere near the label. Sampling at each data point
+creates precise, localized obstacles that only repel labels near the actual
+visible path.
+
 ### Why isn't `resolve_collisions` public?
 
 Resolution is orchestrated by the `engine.py` pipeline. Custom metrics
-register elements and the engine resolves automatically at step 6. Exposing
+register elements and the engine resolves automatically at step 7. Exposing
 `resolve_collisions` in the public API would encourage manual calls at the wrong
 moments in the pipeline (before all elements are registered, for example).
 
 `register_moveable`, `register_fixed`, and `register_passive` are public because
 custom metrics need to register their elements. Resolution itself is the
 orchestrator's responsibility.
+
+### Why unified resolution instead of separate phases?
+
+The previous 3-phase design (fixed vs moveables, moveables vs moveables, connectors)
+could produce cascading collisions: resolving against a fixed obstacle could push
+a label into another label that was already resolved. The unified approach evaluates
+each displacement candidate against ALL obstacles simultaneously, producing better
+placements in fewer iterations.

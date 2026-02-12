@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import matplotlib.pyplot as plt
 from loguru import logger
@@ -10,7 +10,12 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 
-    from .engine import ChartingPlotter
+
+class Saveable(Protocol):
+    def save(self, path: str, dpi: int | None = None) -> None: ...
+
+
+__all__ = ["PlotResult", "Saveable"]
 
 
 @dataclass
@@ -23,7 +28,7 @@ class PlotResult:
 
     fig: Figure
     ax: Axes
-    plotter: ChartingPlotter
+    plotter: Saveable
 
     def save(self, path: str, dpi: int | None = None) -> PlotResult:
         """Save the chart to a file.

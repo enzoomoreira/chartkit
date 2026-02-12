@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError as PydanticValidationError
 
-from chartkit.engine import _PlotParams
+from chartkit._internal.plot_validation import PlotParamsModel as _PlotParams
 
 
 class TestValidatePlotParams:

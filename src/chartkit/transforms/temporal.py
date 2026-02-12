@@ -443,10 +443,11 @@ def to_month_end(df: pd.Series) -> pd.Series: ...
 def to_month_end(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
 ) -> pd.DataFrame | pd.Series:
-    """Normalize temporal index to month end.
+    """Normalize temporal index to month end, consolidating monthly observations.
 
     Each timestamp is mapped to the last day of its respective month.
-    Sub-monthly data (e.g. daily) will result in duplicate indices.
+    If multiple rows fall in the same month (e.g. daily data), keeps
+    only the last chronological observation of that month.
 
     Args:
         df: Input data. Index must be DatetimeIndex.
@@ -466,4 +467,5 @@ def to_month_end(
 
     result = data.copy()
     result.index = result.index.to_period("M").to_timestamp("M")  # type: ignore[attr-defined]
-    return result
+    result = result.sort_index()
+    return result.groupby(level=0).last()

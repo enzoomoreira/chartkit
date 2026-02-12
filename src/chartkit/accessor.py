@@ -8,6 +8,7 @@ from .engine import ChartingPlotter
 from .transforms.accessor import TransformAccessor
 
 if TYPE_CHECKING:
+    from .composing.layer import AxisSide, Layer
     from .engine import ChartKind, HighlightInput, UnitFormat
     from .result import PlotResult
 
@@ -67,7 +68,7 @@ class ChartingAccessor:
         return TransformAccessor(self._obj).zscore(window)
 
     def to_month_end(self) -> TransformAccessor:
-        """Normalize temporal index to month end."""
+        """Align index to month-end keeping the last observation per month."""
         return TransformAccessor(self._obj).to_month_end()
 
     def plot(
@@ -98,5 +99,38 @@ class ChartingAccessor:
             metrics=metrics,
             fill_between=fill_between,
             legend=legend,
+            **kwargs,
+        )
+
+    def layer(
+        self,
+        kind: ChartKind = "line",
+        x: str | None = None,
+        y: str | list[str] | None = None,
+        *,
+        units: UnitFormat | None = None,
+        highlight: HighlightInput = False,
+        metrics: str | list[str] | None = None,
+        fill_between: tuple[str, str] | None = None,
+        axis: AxisSide = "left",
+        **kwargs,
+    ) -> Layer:
+        """Create a Layer for use with ``compose()``.
+
+        Same parameters as ``plot()`` but without chart-level options
+        (title, source, legend). Those are passed to ``compose()`` instead.
+        """
+        from .composing import create_layer
+
+        return create_layer(
+            self._obj,
+            kind,
+            x,
+            y,
+            units=units,
+            highlight=highlight,
+            metrics=metrics,
+            fill_between=fill_between,
+            axis=axis,
             **kwargs,
         )

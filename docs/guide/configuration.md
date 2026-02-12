@@ -89,6 +89,11 @@ width_monthly = 20
 width_annual = 300
 warning_threshold = 500
 
+[markers]
+scatter_size = 30
+font_weight = "bold"
+label_offset_fraction = 0.015  # Vertical breathing room between label and data point
+
 [formatters.locale]
 decimal = ","
 thousands = "."

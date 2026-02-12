@@ -2,75 +2,35 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Literal, cast, get_args
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from loguru import logger
-from pydantic import BaseModel, StrictBool
-from pydantic import ValidationError as PydanticValidationError
+from matplotlib.axes import Axes
 
-from ._internal import resolve_collisions
+from ._internal import (
+    FORMATTERS,
+    extract_plot_data,
+    normalize_highlight,
+    register_fixed,
+    resolve_collisions,
+    save_figure,
+    should_show_legend,
+    validate_plot_params,
+)
+from ._internal.plot_validation import UnitFormat
 from .charts import ChartRegistry
-from .decorations import add_footer
-from .exceptions import StateError, ValidationError
+from .decorations import add_footer, add_title
+from .exceptions import StateError
 from .metrics import MetricRegistry
 from .overlays import HighlightMode, add_fill_between
 from .result import PlotResult
-from .settings import get_charts_path, get_config
-from .styling import (
-    compact_currency_formatter,
-    currency_formatter,
-    human_readable_formatter,
-    percent_formatter,
-    points_formatter,
-    theme,
-)
+from .settings import get_config
+from .styling import theme
 
 ChartKind = Literal["line", "bar", "stacked_bar"]
-UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
 HighlightInput = bool | HighlightMode | list[HighlightMode]
-
-_FORMATTERS = {
-    "BRL": lambda: currency_formatter("BRL"),
-    "USD": lambda: currency_formatter("USD"),
-    "BRL_compact": lambda: compact_currency_formatter("BRL"),
-    "USD_compact": lambda: compact_currency_formatter("USD"),
-    "%": percent_formatter,
-    "human": human_readable_formatter,
-    "points": points_formatter,
-}
-
-_VALID_HIGHLIGHT_MODES: set[str] = set(get_args(HighlightMode))
-
-
-def _normalize_highlight(highlight: HighlightInput) -> list[HighlightMode]:
-    if highlight is True:
-        return ["last"]
-    if highlight is False:
-        return []
-    if isinstance(highlight, str):
-        if highlight not in _VALID_HIGHLIGHT_MODES:
-            available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
-            raise ValidationError(
-                f"Highlight mode '{highlight}' invalid. Available: {available}"
-            )
-        return [cast(HighlightMode, highlight)]
-    modes: list[HighlightMode] = []
-    for m in highlight:
-        if m not in _VALID_HIGHLIGHT_MODES:
-            available = ", ".join(sorted(_VALID_HIGHLIGHT_MODES))
-            raise ValidationError(
-                f"Highlight mode '{m}' invalid. Available: {available}"
-            )
-        modes.append(cast(HighlightMode, m))
-    return modes
-
-
-class _PlotParams(BaseModel):
-    units: UnitFormat | None = None
-    legend: StrictBool | None = None
 
 
 class ChartingPlotter:
@@ -118,7 +78,7 @@ class ChartingPlotter:
             **kwargs: Chart-specific parameters (e.g.: ``y_origin='auto'`` for bars)
                 and matplotlib parameters passed directly to the renderer.
         """
-        highlight_modes = _normalize_highlight(highlight)
+        highlight_modes = normalize_highlight(highlight)
         self._validate_params(units=units, legend=legend)
         config = get_config()
 
@@ -137,14 +97,7 @@ class ChartingPlotter:
         self._ax = ax
 
         # 2. Data
-        x_data: pd.Index | pd.Series = (
-            self.df.index if x is None else cast(pd.Series, self.df[x])
-        )
-
-        if y is None:
-            y_data = self.df.select_dtypes(include=["number"])
-        else:
-            y_data = self.df[y]
+        x_data, y_data = extract_plot_data(self.df, x, y)
 
         y_cols = (
             list(y_data.columns) if isinstance(y_data, pd.DataFrame) else [y_data.name]
@@ -157,7 +110,8 @@ class ChartingPlotter:
         )
 
         # 3. Y formatter
-        self._apply_y_formatter(ax, units)
+        if units:
+            ax.yaxis.set_major_formatter(FORMATTERS[units]())
 
         # 4. Plot
         chart_fn = ChartRegistry.get(kind)
@@ -179,64 +133,35 @@ class ChartingPlotter:
         # 6. Legend
         self._apply_legend(ax, legend)
 
+        legend_artist = ax.get_legend()
+        if legend_artist is not None:
+            register_fixed(ax, legend_artist)
+
         # 7. Collision resolution
         resolve_collisions(ax)
 
         # 8. Decorations
-        self._apply_title(ax, title)
-        self._apply_decorations(fig, source)
+        add_title(ax, title)
+        add_footer(fig, source)
 
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
 
     @staticmethod
     def _validate_params(units: UnitFormat | None, legend: bool | None) -> None:
-        try:
-            _PlotParams(units=units, legend=legend)
-        except PydanticValidationError as exc:
-            errors = exc.errors()
-            msgs = [
-                f"  {e['loc'][0]}: {e['msg']}" if e.get("loc") else f"  {e['msg']}"
-                for e in errors
-            ]
-            raise ValidationError(
-                "Invalid plot parameters:\n" + "\n".join(msgs)
-            ) from exc
+        validate_plot_params(units=units, legend=legend)
 
-    def _apply_y_formatter(self, ax, units: UnitFormat | None) -> None:
-        if units:
-            ax.yaxis.set_major_formatter(_FORMATTERS[units]())
-
-    def _apply_title(self, ax, title: str | None) -> None:
-        if title:
-            config = get_config()
-            ax.set_title(
-                title,
-                loc="center",
-                pad=config.layout.title.padding,
-                fontproperties=theme.font,
-                size=config.fonts.sizes.title,
-                color=theme.colors.text,
-                weight=config.layout.title.weight,
-            )
-
-    def _apply_legend(self, ax, legend: bool | None) -> None:
+    def _apply_legend(self, ax: Axes, legend: bool | None) -> None:
         _, labels = ax.get_legend_handles_labels()
 
-        if legend is None:
-            show = len(labels) > 1
-        else:
-            show = legend
+        if not should_show_legend(labels, legend) or not labels:
+            return
 
-        if show and labels:
-            config = get_config()
-            ax.legend(
-                loc=config.legend.loc,
-                frameon=config.legend.frameon,
-                framealpha=config.legend.alpha,
-            )
-
-    def _apply_decorations(self, fig, source: str | None) -> None:
-        add_footer(fig, source)
+        config = get_config()
+        ax.legend(
+            loc=config.legend.loc,
+            frameon=config.legend.frameon,
+            framealpha=config.legend.alpha,
+        )
 
     def save(self, path: str, dpi: int | None = None) -> None:
         """Save chart to file.
@@ -246,17 +171,4 @@ class ChartingPlotter:
         """
         if self._fig is None:
             raise StateError("No chart generated yet. Call plot() first.")
-
-        config = get_config()
-
-        if dpi is None:
-            dpi = config.layout.dpi
-
-        path_obj = Path(path)
-        if not path_obj.is_absolute():
-            charts_path = get_charts_path()
-            charts_path.mkdir(parents=True, exist_ok=True)
-            path_obj = charts_path / path_obj
-
-        logger.info("Saving: {} (dpi={})", path_obj, dpi)
-        self._fig.savefig(path_obj, bbox_inches="tight", dpi=dpi)
+        save_figure(self._fig, path, dpi)

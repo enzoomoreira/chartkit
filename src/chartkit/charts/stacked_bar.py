@@ -7,11 +7,16 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
-from ..exceptions import ValidationError
 from ..overlays.markers import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
-from ._helpers import detect_bar_width
+from ._helpers import (
+    apply_y_origin,
+    detect_bar_width,
+    is_categorical_index,
+    prepare_categorical_axis,
+    validate_y_origin,
+)
 from .registry import ChartRegistry
 
 if TYPE_CHECKING:
@@ -25,7 +30,7 @@ def plot_stacked_bar(
     ax: Axes,
     x: pd.Index | pd.Series,
     y_data: pd.Series | pd.DataFrame,
-    highlight: list[HighlightMode] | None = None,
+    highlight: list[HighlightMode],
     y_origin: Literal["zero", "auto"] = "zero",
     **kwargs,
 ) -> None:
@@ -38,8 +43,7 @@ def plot_stacked_bar(
         y_origin: ``'zero'`` includes zero in the Y axis (default),
             ``'auto'`` adjusts limits to focus on data with margin.
     """
-    if y_origin not in ("zero", "auto"):
-        raise ValidationError(f"y_origin must be 'zero' or 'auto', got: {y_origin!r}")
+    y_origin = validate_y_origin(y_origin)
 
     config = get_config()
     bars = config.bars
@@ -55,7 +59,14 @@ def plot_stacked_bar(
 
     user_color = kwargs.pop("color", None)
     colors = theme.colors.cycle()
-    width = detect_bar_width(x, bars)
+
+    categorical = is_categorical_index(x)
+    if categorical:
+        x_plot = np.arange(len(x))
+        width = bars.width_default
+    else:
+        x_plot = x
+        width = detect_bar_width(x, bars)
 
     bottom = np.zeros(len(y_data))
     for i, col in enumerate(y_data.columns):
@@ -63,7 +74,7 @@ def plot_stacked_bar(
         vals = y_data[col].fillna(0)
 
         ax.bar(
-            x,
+            x_plot,
             vals,
             width=width,
             bottom=bottom,
@@ -74,21 +85,12 @@ def plot_stacked_bar(
         )
         bottom = bottom + vals.values
 
-    if y_origin == "auto":
-        total = y_data.sum(axis=1)
-        total_clean = total.dropna()
-        if not total_clean.empty:
-            ymin, ymax = total_clean.min(), total_clean.max()
-            margin = (ymax - ymin) * bars.auto_margin
-            ax.set_ylim(ymin - margin, ymax + margin)
-    else:
-        ymin, ymax = ax.get_ylim()
-        if ymin > 0:
-            ax.set_ylim(0, ymax)
-        elif ymax < 0:
-            ax.set_ylim(ymin, 0)
+    if categorical:
+        prepare_categorical_axis(ax, x)
+
+    total = y_data.sum(axis=1)
+    apply_y_origin(ax, y_origin, total, bars.auto_margin)
 
     if highlight:
-        total = y_data.sum(axis=1)
         color = user_color if user_color is not None else theme.colors.primary
-        add_highlight(ax, total, style="bar", color=color, x=x, modes=highlight)
+        add_highlight(ax, total, style="bar", color=color, x=x_plot, modes=highlight)

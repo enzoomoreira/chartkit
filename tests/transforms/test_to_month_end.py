@@ -22,10 +22,18 @@ class TestToMonthEnd:
         assert result.index[1].day == 28  # Feb 28
         assert result.index[2].day == 31  # Mar 31
 
-    def test_daily_data_creates_duplicates(self, daily_prices: pd.DataFrame) -> None:
+    def test_daily_data_collapses_to_last_per_month(
+        self, daily_prices: pd.DataFrame
+    ) -> None:
         result = to_month_end(daily_prices)
-        # Multiple daily dates map to same month-end
-        assert result.index.duplicated().any()
+        assert not result.index.duplicated().any()
+        expected = (
+            daily_prices.sort_index()
+            .groupby(daily_prices.index.to_period("M"))
+            .last()
+        )
+        expected.index = expected.index.to_timestamp("M")
+        pd.testing.assert_frame_equal(result, expected, check_freq=False)
 
 
 class TestToMonthEndValidation:

@@ -1,5 +1,64 @@
 # Project Changelog
 
+## [2026-02-12 17:52]
+### Added
+- **Chart composition system** (`composing/`): Nova funcao `compose()` que combina multiplos `Layer` em um unico grafico com suporte a dual-axis
+  - `Layer` (frozen dataclass) captura intent de plotagem sem renderizar; `create_layer()` valida eagerly
+  - `AxisSide = Literal["left", "right"]` para controle de eixo por layer
+  - `df.chartkit.layer()` em `ChartingAccessor` e `TransformAccessor` para criar layers
+  - `compose(*layers, title, source, legend, figsize)` renderiza todas as layers, consolida legenda de ambos os eixos, e retorna `PlotResult`
+  - `_ComposePlotter` satisfaz o `Saveable` Protocol para integrar com `PlotResult`
+  - Validacao: exige pelo menos uma layer, rejeita todas no eixo direito, warning para unidades conflitantes no mesmo eixo
+  - Margem direita automatica quando ha highlights (evita labels cortados na borda)
+- **`Saveable` Protocol** (`result.py`): Interface estrutural para objetos que salvam figuras -- `PlotResult.plotter` aceita `ChartingPlotter` ou `_ComposePlotter`
+- **Cross-axis collision resolution** (`resolve_composed_collisions`): Merge labels de todos os axes em pool unico e resolve em pixel space, respeitando transforms individuais por axes
+- **Line path obstacle sampling**: `_LineSampleObstacle` cria obstaculos virtuais em cada data point de linhas registradas, permitindo que labels evitem o caminho visivel da linha (bboxes de Line2D abrangem a area inteira e sao inuteis como alvo de colisao)
+- **`register_line_obstacle()`**: Nova API para registrar Line2D como obstaculo de colisao via amostragem de pontos
+- **Highlight mode `"all"`** em `markers.py`: Anota cada data point (nao apenas last/max/min), com posicionamento vertical automatico por sinal do valor
+- **Label offset** (`_apply_label_offset`): Respiro vertical configuravel entre label e data point via `markers.label_offset_fraction`
+- **`add_title()` como decoration reutilizavel** (`decorations/title.py`): Titulo extraido do engine para modulo proprio, disponivel para composicao e plotagem simples
+- **Modulos `_internal` compartilhados**: Logica extraida do engine para reuso entre `engine.py` e `compose.py`
+  - `extraction.py`: `extract_plot_data()` e `should_show_legend()` -- data selection e legend logic
+  - `formatting.py`: tabela `FORMATTERS` de dispatch para formatadores de eixo Y
+  - `highlight.py`: `normalize_highlight()` para normalizacao de input de destaque
+  - `plot_validation.py`: `validate_plot_params()`, `PlotParamsModel` e `UnitFormat`
+  - `saving.py`: `save_figure()` com resolucao de paths relativos para diretorio de charts
+- **Categorical index support** em bar/stacked_bar: `is_categorical_index()` e `prepare_categorical_axis()` para indices textuais
+- **Bar chart `sort`**: Ordenacao ascending/descending para graficos de barra single-column
+- **Bar chart `color='cycle'`**: Cycling de cor por barra individual usando paleta do tema (single-column only)
+- **`MarkersConfig.label_offset_fraction`**: Novo campo de config para controle do respiro vertical dos labels
+- **`CollisionConfig.movement` tipado como `Literal["x", "y", "xy"]`**: Validacao estatica em vez de string livre
+
+### Changed
+- **Collision engine reescrita**:
+  - `_resolve_all()` unifica resolucao contra obstaculos fixos e entre labels (substitui `_resolve_against_fixed` + `_resolve_between_moveables`)
+  - `_find_free_position()` gera candidatos de todos os obstaculos colidentes, valida contra todos, com fallback diagonal
+  - `_pad_bbox()` substitui `_get_padded_bbox()` (padding fixo, mais simples)
+  - `_compute_displacement_options()` retorna todas as opcoes (substitui `_best_displacement()` que retornava apenas a melhor)
+  - `_shift_label()` usa `label.axes` em vez de receber ax explicito
+  - `_add_connectors()` agrupa labels por axes pai para transforms corretos
+  - `_collect_obstacles()` percorre sibling axes (twinx) para colisao cross-axis -- detecta patches, labels e line samples de todos os eixos compartilhados
+  - `fig.canvas.draw()` substituido por `fig.draw_without_rendering()` (mais leve)
+- **`bar.py` renderiza multi-coluna como grouped bars**: Chamadas individuais `ax.bar()` com color cycling, offsets calculados por coluna (substitui pandas `.plot(kind="bar")` que usava eixo categorico)
+- **`highlight` obrigatorio em `bar.py`/`stacked_bar.py`**: Tipo mudou de `list | None = None` para `list` (normalizacao feita pelo caller)
+- **`engine.py` simplificado**: Metodos privados extraidos para `_internal` e `decorations`, engine agora delega
+- **Legend registrada como obstaculo fixo** para resolucao de colisao
+- **`to_month_end()` consolida observacoes mensais**: Mantem apenas a ultima observacao cronologica por mes em vez de permitir indices duplicados
+- **`detect_bar_width()` mais robusto**: `_coerce_datetime_index()` trata object-dtype e indices nao-datetime graciosamente
+- **`_resolve_x_position()` em markers**: Trata indices duplicados retornando o primeiro match escalar
+- **Testes atualizados**: matplotlib backend `Agg` forcado em conftest, imports atualizados para novos paths em `_internal`
+
+### Removed
+- **`_best_displacement()`**: Substituido por `_compute_displacement_options()` + `_find_free_position()`
+- **`_get_padded_bbox()`**: Substituido por `_pad_bbox()`
+- **`_resolve_against_fixed()` e `_resolve_between_moveables()`**: Unificados em `_resolve_all()`
+- **`_FORMATTERS`, `_normalize_highlight()`, `_PlotParams`, `UnitFormat` do engine**: Movidos para `_internal/`
+- **`_apply_title()` do engine**: Movido para `decorations/title.py`
+- **`_apply_decorations()` do engine**: Substituido por chamadas diretas a `add_footer()` e `add_title()`
+- **Logica de save do engine**: Movido para `_internal/saving.py`
+- **`plot_lines` acumulador em `line.py`**: Lista nao utilizada removida
+- **Testes `test_best_displacement.py` e `test_get_padded_bbox.py`**: API substituida pela nova collision engine
+
 ## [2026-02-12 00:53]
 ### Added
 - **Suite de testes com 283 tests**: Cobertura completa dos modulos com logica propria, preparando a lib para open-source

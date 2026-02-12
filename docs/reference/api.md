@@ -62,7 +62,7 @@ Metrics support custom labels via `|` syntax: `'ath|Maximum'`, `'ma:12@col|12M A
 ```python
 ChartKind = Literal["line", "bar", "stacked_bar"]
 UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
-HighlightMode = Literal["last", "max", "min"]
+HighlightMode = Literal["last", "max", "min", "all"]
 HighlightInput = bool | HighlightMode | list[HighlightMode]
 ```
 
@@ -70,14 +70,17 @@ HighlightInput = bool | HighlightMode | list[HighlightMode]
 
 ## PlotResult
 
-Plot result with method chaining.
+Plot result with method chaining. The `plotter` field accepts any object satisfying the `Saveable` Protocol (either `ChartingPlotter` or composed chart plotter).
 
 ```python
+class Saveable(Protocol):
+    def save(self, path: str, dpi: int | None = None) -> None: ...
+
 @dataclass
 class PlotResult:
     fig: Figure
     ax: Axes
-    plotter: ChartingPlotter
+    plotter: Saveable
 ```
 
 ### Methods and Properties
@@ -119,9 +122,78 @@ Chainable accessor for transformations. Each method returns a new `TransformAcce
 | `drawdown()` | `drawdown() -> TransformAccessor` | Percentage distance from historical peak |
 | `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Statistical standardization (global or rolling, window >= 2) |
 | `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Annualize periodic rate via compound interest (frequency auto-detection) |
-| `to_month_end()` | `to_month_end() -> TransformAccessor` | Normalize index to month-end |
+| `to_month_end()` | `to_month_end() -> TransformAccessor` | Normalize index to month-end (consolidates duplicates) |
+| `layer()` | `layer(kind, x, y, *, units, highlight, metrics, fill_between, axis, **kwargs) -> Layer` | Create a Layer for `compose()` |
 | `plot()` | `plot(**kwargs) -> PlotResult` | Finalize chain and plot |
 | `df` | `@property -> pd.DataFrame` | Access to transformed DataFrame |
+
+---
+
+## Chart Composition
+
+### compose()
+
+```python
+def compose(
+    *layers: Layer,
+    title: str | None = None,
+    source: str | None = None,
+    legend: bool | None = None,
+    figsize: tuple[float, float] | None = None,
+) -> PlotResult
+```
+
+Compose multiple layers into a single chart with optional dual axes.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `*layers` | `Layer` | - | One or more Layer objects |
+| `title` | `str \| None` | `None` | Chart title |
+| `source` | `str \| None` | `None` | Data source for footer |
+| `legend` | `bool \| None` | `None` | Legend control |
+| `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
+
+Raises `ValidationError` if no layers are provided or all layers are on the right axis.
+
+### Layer
+
+```python
+AxisSide = Literal["left", "right"]
+
+@dataclass(frozen=True)
+class Layer:
+    df: pd.DataFrame
+    kind: ChartKind = "line"
+    x: str | None = None
+    y: str | list[str] | None = None
+    units: UnitFormat | None = None
+    highlight: HighlightInput = False
+    metrics: str | list[str] | None = None
+    fill_between: tuple[str, str] | None = None
+    axis: AxisSide = "left"
+    kwargs: dict[str, Any] = field(default_factory=dict)
+```
+
+Create layers via `df.chartkit.layer()` or `df.chartkit.variation().layer()`. The `create_layer()` function validates eagerly (units, highlight, kind, axis) before constructing the Layer.
+
+### df.chartkit.layer()
+
+```python
+def layer(
+    kind: ChartKind = "line",
+    x: str | None = None,
+    y: str | list[str] | None = None,
+    *,
+    units: UnitFormat | None = None,
+    highlight: HighlightInput = False,
+    metrics: str | list[str] | None = None,
+    fill_between: tuple[str, str] | None = None,
+    axis: AxisSide = "left",
+    **kwargs,
+) -> Layer
+```
+
+Same parameters as `plot()` but without chart-level options (title, source, legend).
 
 ---
 
@@ -420,12 +492,13 @@ class ChartingConfig(BaseSettings):
 |-------|------|---------|
 | `scatter_size` | `int` | `30` |
 | `font_weight` | `str` | `"bold"` |
+| `label_offset_fraction` | `float` | `0.015` |
 
 #### CollisionConfig
 
 | Field | Type | Default |
 |-------|------|---------|
-| `movement` | `str` | `"y"` |
+| `movement` | `Literal["x", "y", "xy"]` | `"y"` |
 | `obstacle_padding_px` | `float` | `8.0` |
 | `label_padding_px` | `float` | `4.0` |
 | `max_iterations` | `int` | `50` |
@@ -539,6 +612,11 @@ from chartkit import (
     register_fixed,
     register_moveable,
     register_passive,
+
+    # Composition
+    AxisSide,
+    Layer,
+    compose,
 
     # Types
     ChartKind,

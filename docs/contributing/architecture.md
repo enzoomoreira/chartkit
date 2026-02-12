@@ -15,24 +15,28 @@ Internal architecture documentation for chartkit contributors.
                     +-------------------+
                     | ChartingAccessor  |  (df.chartkit)
                     +-------------------+
-                        |         |
-            +-----------+         +-----------+
-            v                                 v
-    +-------------------+           +-------------------+
-    | TransformAccessor |           |  ChartingPlotter  |
-    +-------------------+           +-------------------+
-            |                               |
-            v                               v
-    +-------------------+           +-------------------+
-    |   Transforms      |           |     PlotResult    |
-    +-------------------+           +-------------------+
-                                            |
-                    +-----------------------+
-                    v
-        +-------------------+
-        |    matplotlib     |
-        |  (Figure/Axes)    |
-        +-------------------+
+                      |       |       |
+          +-----------+       |       +-----------+
+          v                   v                   v
+  +-------------------+ +-----------+ +-------------------+
+  | TransformAccessor | |  .layer() | |  ChartingPlotter  |
+  +-------------------+ +-----------+ +-------------------+
+          |                   |               |
+          v                   v               v
+  +-------------------+ +-----------+ +-------------------+
+  |   Transforms      | |   Layer   | |     PlotResult    |
+  +-------------------+ +-----------+ +-------------------+
+                              |               ^
+                              v               |
+                        +-----------+         |
+                        | compose() |---------+
+                        +-----------+
+                              |
+                    +---------+---------+
+                    v                   v
+            +------------+      +------------+
+            | ax (left)  |      | ax (right) |
+            +------------+      +------------+
 ```
 
 ---
@@ -53,18 +57,31 @@ DataFrame -> Accessor -> Plotter -> PlotResult
 
 3. **TransformAccessor** (optional): When the user calls transforms like `.variation()`, `.accum()`, etc., a TransformAccessor is returned. Each transform returns a new TransformAccessor, enabling chaining.
 
-4. **ChartingPlotter**: Main engine that orchestrates chart creation:
+4. **Two rendering paths**:
+
+   - **Direct** (`plot()`): `ChartingPlotter` orchestrates single-chart creation on one axes
+   - **Composed** (`layer()` + `compose()`): `Layer` captures intent without rendering; `compose()` orchestrates multi-layer rendering with optional dual axes via `twinx()`
+
+5. **ChartingPlotter**: Main engine for direct plotting:
    - Applies theme via `theme.apply()`
-   - Resolves X/Y data
-   - Applies axis formatters
+   - Extracts data via `extract_plot_data()`
+   - Applies axis formatters via `FORMATTERS` dispatch table
    - Dispatches via `ChartRegistry.get(kind)` to the registered chart type
    - Applies metrics via `MetricRegistry.apply()`
-   - Applies legend via `_apply_legend()` (auto-detects with 2+ artists)
-   - Resolves label collisions
-   - Adds decorations (footer)
+   - Applies legend and registers it as fixed obstacle
+   - Resolves label collisions via `resolve_collisions(ax)`
+   - Adds decorations via `add_title(ax)` and `add_footer(fig)`
 
-5. **PlotResult**: Encapsulated result with:
+6. **compose()**: Orchestrator for multi-layer charts:
+   - Creates figure with optional twinx for right axis
+   - Renders each layer on its target axes
+   - Consolidates legend from both axes
+   - Resolves cross-axis collisions via `resolve_composed_collisions(axes)`
+   - Returns `PlotResult` with `_ComposePlotter` (satisfies `Saveable` Protocol)
+
+7. **PlotResult**: Encapsulated result with:
    - Reference to Figure and Axes
+   - `plotter: Saveable` (Protocol-based, works with both ChartingPlotter and _ComposePlotter)
    - `.save()` and `.show()` methods for chaining
    - `.axes` and `.figure` properties for direct access
 
@@ -78,14 +95,14 @@ flowchart TD
 
     D --> D1["1. get_config()"]
     D1 --> D2["2. theme.apply()"]
-    D2 --> D3["3. Resolve X/Y data"]
-    D3 --> D4["4. _apply_y_formatter()"]
+    D2 --> D3["3. extract_plot_data()"]
+    D3 --> D4["4. FORMATTERS[units]()"]
     D4 --> D5["5. ChartRegistry.get(kind)()"]
     D5 --> D6["6. MetricRegistry.apply()"]
-    D6 --> D6b["7. _apply_legend()"]
+    D6 --> D6b["7. _apply_legend() + register_fixed(legend)"]
     D6b --> D7["8. resolve_collisions()"]
-    D7 --> D8["9. _apply_title()"]
-    D8 --> D9["10. _apply_decorations()"]
+    D7 --> D8["9. add_title()"]
+    D8 --> D9["10. add_footer()"]
     D9 --> E["PlotResult"]
 ```
 
@@ -117,10 +134,15 @@ src/chartkit/
 ├── charts/               # Pluggable chart types
 │   ├── __init__.py       # Imports trigger automatic registration
 │   ├── registry.py       # ChartRegistry + ChartFunc Protocol
-│   ├── _helpers.py       # Shared utilities (detect_bar_width)
+│   ├── _helpers.py       # Shared utilities (detect_bar_width, categorical, y_origin)
 │   ├── line.py           # Line chart (@ChartRegistry.register("line"))
-│   ├── bar.py            # Bar chart (@ChartRegistry.register("bar"))
-│   └── stacked_bar.py    # Stacked bars (@ChartRegistry.register("stacked_bar"))
+│   ├── bar.py            # Bar chart (grouped bars, sort, color='cycle')
+│   └── stacked_bar.py    # Stacked bars (categorical support)
+│
+├── composing/            # Multi-layer chart composition
+│   ├── __init__.py       # Facade: compose, Layer, AxisSide, create_layer
+│   ├── layer.py          # Layer (frozen dataclass) + AxisSide + create_layer()
+│   └── compose.py        # compose() orchestrator + _ComposePlotter (Saveable)
 │
 ├── overlays/             # Secondary visual elements
 │   ├── __init__.py       # Facade
@@ -130,11 +152,12 @@ src/chartkit/
 │   ├── fill_between.py   # Area between two series
 │   ├── std_band.py       # Standard deviation band (Bollinger Band)
 │   ├── vband.py          # Vertical band between dates
-│   └── markers.py        # HighlightStyle + unified add_highlight
+│   └── markers.py        # HighlightStyle + unified add_highlight (last/max/min/all)
 │
 ├── decorations/          # Visual decorations
-│   ├── __init__.py       # Facade: add_footer
-│   └── footer.py         # Footer with branding
+│   ├── __init__.py       # Facade: add_footer, add_title
+│   ├── footer.py         # Footer with branding
+│   └── title.py          # Styled title on axes
 │
 ├── metrics/              # Declarative metrics system
 │   ├── __init__.py       # Exports, registers builtin metrics
@@ -147,18 +170,28 @@ src/chartkit/
 │   ├── _validation.py    # Validation, coercion, and frequency resolution
 │   └── accessor.py       # TransformAccessor for chaining
 │
-└── _internal/            # Private utilities
-    ├── __init__.py       # Facade: register_moveable, register_fixed, register_passive, resolve_collisions
-    └── collision.py      # Generic collision resolution engine (bbox-based)
+└── _internal/            # Private utilities (shared between engine and compose)
+    ├── __init__.py       # Facade: collision, extraction, formatting, highlight, saving, validation
+    ├── collision.py      # Collision engine (single-axis + composed cross-axis)
+    ├── extraction.py     # extract_plot_data(), should_show_legend()
+    ├── formatting.py     # FORMATTERS dispatch table for Y-axis
+    ├── highlight.py      # normalize_highlight()
+    ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat
+    └── saving.py         # save_figure() with path resolution
 
-tests/                    # Test suite (283 tests)
-├── conftest.py           # Shared fixtures (financial DataFrames, edge cases)
+tests/                    # Test suite
+├── conftest.py           # Shared fixtures (financial DataFrames, edge cases, Agg backend)
 ├── test_formatters.py    # Formatter tests
+├── test_accessor_layer.py # Accessor .layer() tests
+├── charts/               # Chart rendering tests
 ├── collision/            # Collision engine tests
+├── composing/            # Composition system tests
+├── decorations/          # Title and footer tests
 ├── engine/               # Engine internals tests
+├── internal/             # _internal module tests
 ├── metrics/              # MetricRegistry tests
 ├── settings/             # Configuration system tests
-└── transforms/           # Transform function tests (150 tests)
+└── transforms/           # Transform function tests
 ```
 
 ---
@@ -170,9 +203,9 @@ tests/                    # Test suite (283 tests)
 | Module | Responsibility |
 |--------|---------------|
 | `_logging.py` | loguru setup (`logger.disable`) + `configure_logging()` |
-| `accessor.py` | Registers `.chartkit` on DataFrames and Series; delegates to TransformAccessor or ChartingPlotter |
-| `engine.py` | Orchestrates chart creation; manages Figure/Axes; applies components |
-| `result.py` | Encapsulates result; enables chaining with `.save()` and `.show()` |
+| `accessor.py` | Registers `.chartkit` on DataFrames and Series; delegates to TransformAccessor, ChartingPlotter, or create_layer |
+| `engine.py` | Orchestrates single-chart creation; delegates to `_internal` and `decorations` |
+| `result.py` | Encapsulates result (`Saveable` Protocol); enables chaining with `.save()` and `.show()` |
 
 ### Settings
 
@@ -195,12 +228,15 @@ tests/                    # Test suite (283 tests)
 | Module | Responsibility |
 |--------|---------------|
 | `charts/registry.py` | ChartRegistry: decorator + dict + get/available |
-| `charts/_helpers.py` | Shared utilities (detect_bar_width) |
-| `charts/line.py` | Renders line chart (registered via @ChartRegistry.register) |
-| `charts/bar.py` | Renders bar chart (registered via @ChartRegistry.register) |
-| `charts/stacked_bar.py` | Renders stacked bars (registered via @ChartRegistry.register) |
+| `charts/_helpers.py` | Shared utilities (detect_bar_width, categorical index, y_origin, validate_y_origin) |
+| `charts/line.py` | Renders line chart + registers line obstacles for collision |
+| `charts/bar.py` | Renders bar chart (grouped bars, sort, color='cycle', categorical) |
+| `charts/stacked_bar.py` | Renders stacked bars (categorical support) |
+| `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |
+| `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions, _ComposePlotter |
 | `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, fill_between, std_band, vband) |
 | `decorations/footer.py` | Adds footer with branding and source |
+| `decorations/title.py` | Adds styled title on axes |
 
 ### Metrics
 

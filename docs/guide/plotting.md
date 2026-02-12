@@ -69,6 +69,53 @@ df = pd.DataFrame({
 df.chartkit.plot(kind='bar', title="Monthly Sales")
 ```
 
+### Multiple Columns (Grouped Bars)
+
+When a DataFrame has multiple numeric columns, bar charts render as grouped bars with automatic color cycling and offset calculation:
+
+```python
+df = pd.DataFrame({
+    'revenue': [100, 120, 140, 160],
+    'expenses': [80, 95, 110, 120],
+}, index=pd.date_range('2024-01', periods=4, freq='QE'))
+
+df.chartkit.plot(kind='bar', title="Revenue vs Expenses", units='BRL_compact')
+```
+
+### Categorical Axes
+
+Bar charts support string/categorical indices (not just temporal):
+
+```python
+df = pd.DataFrame({
+    'score': [85, 92, 78, 95, 88]
+}, index=['Team A', 'Team B', 'Team C', 'Team D', 'Team E'])
+
+df.chartkit.plot(kind='bar', title="Team Scores")
+```
+
+### Sorting Bars
+
+Single-column bar charts can be sorted via the `sort` keyword argument:
+
+```python
+# Ascending order
+df.chartkit.plot(kind='bar', title="Ranked", sort='ascending')
+
+# Descending order
+df.chartkit.plot(kind='bar', title="Ranked", sort='descending')
+```
+
+`sort` accepts `None` (default, keeps original order), `'ascending'`, or `'descending'`. Not supported for multi-column charts.
+
+### Per-Bar Color Cycling
+
+Use `color='cycle'` to apply a different color from the theme palette to each bar (single-column only):
+
+```python
+df.chartkit.plot(kind='bar', title="Categories", color='cycle')
+```
+
 ### Bars with Positive and Negative Values
 
 chartkit automatically handles positive and negative values:
@@ -265,6 +312,7 @@ The `highlight` parameter adds markers and labels at specific points of each ser
 | `True` / `'last'` | Highlights the last value of each series |
 | `'max'` | Highlights the maximum value of each series |
 | `'min'` | Highlights the minimum value of each series |
+| `'all'` | Annotates every data point with its value |
 | `['max', 'min']` | Combines multiple modes |
 | `False` | No highlight (default) |
 
@@ -278,6 +326,9 @@ df.chartkit.plot(title="Interest Rate", highlight=['max', 'min'])
 
 # Highlight all: last, max, and min
 df.chartkit.plot(title="Interest Rate", highlight=['last', 'max', 'min'])
+
+# Annotate every data point
+df.chartkit.plot(kind='bar', title="Monthly Sales", highlight='all')
 ```
 
 ### Full Example
@@ -364,6 +415,77 @@ result.save('custom_chart.png')
 | `show()` | `PlotResult` | Displays the chart and returns self |
 | `axes` | `Axes` | Access to matplotlib Axes |
 | `figure` | `Figure` | Access to matplotlib Figure |
+
+---
+
+## Chart Composition (Multi-Layer)
+
+For complex charts that combine different chart types or need dual Y-axes, use the composition system. Create layers independently and render them together with `compose()`.
+
+### Basic Composition
+
+```python
+from chartkit import compose
+
+# Two DataFrames with different data
+price = pd.DataFrame({'close': [100, 105, 102, 110]}, index=dates)
+volume = pd.DataFrame({'vol': [1e6, 1.2e6, 0.8e6, 1.5e6]}, index=dates)
+
+# Create layers
+layer_price = price.chartkit.layer(kind='line', units='BRL', highlight=True)
+layer_volume = volume.chartkit.layer(kind='bar', units='human', axis='right')
+
+# Compose into a single chart
+compose(layer_price, layer_volume, title="Price and Volume", source="Bloomberg")
+```
+
+### Dual Axes
+
+Each layer can target the left (default) or right Y-axis via the `axis` parameter:
+
+```python
+selic_layer = selic.chartkit.layer(units='%', highlight=True, axis='left')
+dollar_layer = dollar.chartkit.layer(units='BRL', highlight=True, axis='right')
+
+compose(selic_layer, dollar_layer, title="Selic vs Dollar").save('dual.png')
+```
+
+At least one layer must use `axis='left'`. Conflicting units on the same axis trigger a warning.
+
+### Composition with Transforms
+
+Layers can be created from transformed data via the `TransformAccessor`:
+
+```python
+yoy_layer = cpi.chartkit.variation(horizon='year').layer(units='%', metrics=['ath'])
+accum_layer = cpi.chartkit.accum().layer(units='%', axis='right')
+
+compose(yoy_layer, accum_layer, title="CPI Analysis")
+```
+
+### How It Works
+
+1. `df.chartkit.layer()` creates a `Layer` (frozen dataclass) that captures plotting intent without rendering
+2. `compose(*layers)` creates a figure, sets up dual axes if needed, renders each layer, consolidates the legend, resolves cross-axis collisions, and returns a `PlotResult`
+3. The returned `PlotResult` supports the same `.save()` / `.show()` chaining as `plot()`
+
+### compose() Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `*layers` | `Layer` | - | One or more layers created via `.layer()` |
+| `title` | `str \| None` | `None` | Chart title |
+| `source` | `str \| None` | `None` | Data source for footer |
+| `legend` | `bool \| None` | `None` | Legend control (same as `plot()`) |
+| `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
+
+### layer() Parameters
+
+Same as `plot()` except without chart-level options (`title`, `source`, `legend`). Additionally:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `axis` | `AxisSide` | `"left"` | Which Y-axis to use: `"left"` or `"right"` |
 
 ---
 
