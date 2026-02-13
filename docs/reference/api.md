@@ -119,7 +119,7 @@ Chainable accessor for transformations. Each method returns a new `TransformAcce
 |--------|-----------|-------------|
 | `variation()` | `variation(horizon: str = "month", periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Percentage variation by horizon (`'month'` or `'year'`, frequency auto-detection) |
 | `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Accumulated via compound product in rolling window (fallback: `config.transforms.accum_window`) |
-| `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Absolute difference between periods (periods >= 1) |
+| `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Absolute difference between periods (periods != 0; negative for forward diff) |
 | `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normalize series (default: `config.transforms.normalize_base`) |
 | `drawdown()` | `drawdown() -> TransformAccessor` | Percentage distance from historical peak |
 | `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Statistical standardization (global or rolling, window >= 2) |
@@ -286,7 +286,7 @@ def configure(
     outputs_path: Path | None = None,
     assets_path: Path | None = None,
     **section_overrides,
-) -> None
+) -> ConfigLoader
 ```
 
 Section overrides:
@@ -308,7 +308,7 @@ Returns pydantic BaseSettings with all settings.
 ### reset_config()
 
 ```python
-def reset_config() -> None
+def reset_config() -> ConfigLoader
 ```
 
 Resets settings to defaults.
@@ -547,7 +547,7 @@ class ChartingConfig(BaseSettings):
 | `ath` | `str` | `"ATH"` |
 | `atl` | `str` | `"ATL"` |
 | `avg` | `str` | `"AVG"` |
-| `moving_average_format` | `str` | `"MA{window}"` |
+| `moving_average_format` | `str` | `"MM{window}"` |
 | `target_format` | `str` | `"Meta: {value}"` |
 | `std_band_format` | `str` | `"BB({window}, {num_std})"` |
 

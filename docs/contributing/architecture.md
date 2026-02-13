@@ -136,7 +136,7 @@ src/chartkit/
 ├── charts/               # Pluggable chart types
 │   ├── __init__.py       # Imports trigger automatic registration
 │   ├── registry.py       # ChartRegistry + ChartFunc Protocol
-│   ├── _helpers.py       # Shared utilities (detect_bar_width, categorical, y_origin)
+│   ├── _helpers.py       # Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin)
 │   ├── line.py           # Line chart (@ChartRegistry.register("line"))
 │   ├── bar.py            # Bar chart (grouped bars, sort, color='cycle')
 │   └── stacked_bar.py    # Stacked bars (categorical support)
@@ -230,7 +230,7 @@ tests/                    # Test suite
 | Module | Responsibility |
 |--------|---------------|
 | `charts/registry.py` | ChartRegistry: decorator + dict + get/available |
-| `charts/_helpers.py` | Shared utilities (detect_bar_width, categorical index, y_origin, validate_y_origin) |
+| `charts/_helpers.py` | Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin) |
 | `charts/line.py` | Renders line chart + registers line obstacles for collision |
 | `charts/bar.py` | Renders bar chart (grouped bars, sort, color='cycle', categorical) |
 | `charts/stacked_bar.py` | Renders stacked bars (categorical support) |

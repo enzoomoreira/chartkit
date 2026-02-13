@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 283 tests covering all modules with business logic.
+Test suite for chartkit with 371 tests covering all modules with business logic.
 
 ---
 
@@ -20,17 +20,30 @@ uv run pytest -m slow                     # Only slow-marked tests
 
 ```
 tests/
-├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases)
+├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases, Agg backend)
 ├── test_formatters.py             # Currency, percent, human, points formatters (15 tests)
-├── collision/                     # Collision engine (16 tests)
-│   ├── conftest.py
-│   ├── test_best_displacement.py  # Bbox geometry, displacement calculation
-│   ├── test_get_padded_bbox.py    # Padded bbox with mock artist
+├── test_accessor_layer.py         # Accessor .layer() integration (9 tests)
+├── charts/                        # Chart rendering (31 tests)
+│   ├── test_bar.py                # Bar chart (grouped, sort, color='cycle', categorical)
+│   └── test_helpers.py            # detect_bar_width, categorical helpers, y_origin
+├── collision/                     # Collision engine (5 tests)
+│   ├── test_collect_obstacles.py  # Obstacle collection and path-based detection
 │   └── test_pos_to_numeric.py     # Position type coercion
+├── composing/                     # Composition system (47 tests)
+│   ├── test_compose.py            # compose() orchestration
+│   ├── test_composed_legend.py    # Consolidated legend from dual axes
+│   ├── test_extract_data.py       # extract_plot_data() for composed layers
+│   ├── test_layer.py              # Layer creation and validation
+│   ├── test_validate.py           # Compose-level validation
+│   └── test_axis_formatter.py     # Axis formatter application
+├── decorations/                   # Decorations (4 tests)
+│   └── test_title.py              # add_title() decoration
 ├── engine/                        # Chart engine (13 tests)
-│   ├── conftest.py
 │   ├── test_normalize_highlight.py  # Highlight modes (bool, string, list)
-│   └── test_validate_params.py      # _PlotParams pydantic validation
+│   └── test_validate_params.py      # PlotParamsModel pydantic validation
+├── internal/                      # _internal module (8 tests)
+│   ├── test_formatting.py         # FORMATTERS dispatch table
+│   └── test_saving.py             # save_figure() path resolution
 ├── metrics/                       # Metric registry (30 tests)
 │   ├── conftest.py                # Registry snapshot/restore
 │   ├── test_parse.py              # MetricRegistry.parse() spec parsing
@@ -41,7 +54,7 @@ tests/
 │   ├── test_discovery.py          # find_project_root, find_config_files
 │   ├── test_loader.py             # ConfigLoader (cache, reset, TOML, paths)
 │   └── test_schema.py             # ChartingConfig defaults, env vars
-└── transforms/                    # Time series transforms (150 tests)
+└── transforms/                    # Time series transforms (170 tests)
     ├── conftest.py                # Known-value fixtures (pre-calculated results)
     ├── test_accessor.py           # TransformAccessor delegation
     ├── test_accum.py              # Accumulated returns
@@ -206,7 +219,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 def test_invalid_units_raises(self) -> None:
     with pytest.raises(PydanticValidationError):
-        _PlotParams(units="EUR")
+        PlotParamsModel(units="EUR")
 ```
 
 ---

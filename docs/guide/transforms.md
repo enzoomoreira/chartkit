@@ -181,7 +181,7 @@ def diff(df, periods: int = 1) -> DataFrame | Series
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `df` | DataFrame \| Series | - | Data with temporal index |
-| `periods` | int | 1 | Periods for difference (must be >= 1) |
+| `periods` | int | 1 | Periods for difference (must be != 0; negative for forward diff) |
 
 **Example:**
 
@@ -366,7 +366,7 @@ daily_cdi.chartkit.annualize().plot(
 
 Normalizes temporal index to the last day of the month, consolidating monthly observations. Each timestamp is mapped to the last day of its respective month. If multiple rows fall in the same month (e.g., daily data), keeps only the last chronological observation of that month -- the resulting index has no duplicates.
 
-Raises `TypeError` if the index is not a `DatetimeIndex`.
+Raises `TransformError` if the index is not a `DatetimeIndex`.
 
 ```python
 def to_month_end(df) -> DataFrame | Series
@@ -463,7 +463,7 @@ cpi_12m = accum(cpi)
 real_rate = selic_12m - cpi_12m
 real_rate.chartkit.plot(
     title="Real Interest Rate (Selic - CPI)",
-    units='p.p.'
+    units='points'
 )
 ```
 
@@ -475,7 +475,7 @@ Analyze annual variation with automatic metrics:
 # GDP or other economic indicator
 gdp.chartkit.variation(horizon='year').plot(
     title="GDP Growth (Annual)",
-    metrics=['ath', 'atl', 'last'],
+    metrics=['ath', 'atl', 'avg'],
     units='%'
 )
 ```

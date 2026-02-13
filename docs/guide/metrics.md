@@ -65,7 +65,7 @@ df.chartkit.plot(title="Data with MA12", metrics=['ma:12'])
 | Color | Gray (#888888) | `colors.moving_average` |
 | Style | Solid line | - |
 | Width | 1.5 | `lines.overlay_width` |
-| Label | "MA{window}" | `labels.moving_average_format` |
+| Label | "MM{window}" | `labels.moving_average_format` |
 | zorder | 2 | Above reference lines, below data |
 
 ### Example
@@ -101,7 +101,7 @@ df.chartkit.plot(title="Chart", metrics=['ath'])
 
 | Property | Value | TOML Configuration |
 |----------|-------|--------------------|
-| Color | Green | `colors.positive` |
+| Color | Dark teal (#00464D) | `colors.positive` |
 | Label | "ATH" | `labels.ath` |
 | Style | Dashed (--) | `lines.reference_style` |
 | zorder | 1 | Reference line level |
@@ -116,7 +116,7 @@ df.chartkit.plot(title="Chart", metrics=['atl'])
 
 | Property | Value | TOML Configuration |
 |----------|-------|--------------------|
-| Color | Red | `colors.negative` |
+| Color | Dark red (#8B0000) | `colors.negative` |
 | Label | "ATL" | `labels.atl` |
 | Style | Dashed (--) | `lines.reference_style` |
 | zorder | 1 | Reference line level |
@@ -475,7 +475,7 @@ df.chartkit.plot(metrics=['ath@revenue', 'atl@costs', 'ma:6@revenue'])
 
 ### Data-Independent Metrics
 
-Metrics that don't depend on data (`hline`, `band`) silently ignore the `@`,
+Metrics that don't depend on data (`hline`, `band`, `target`, `vband`) silently ignore the `@`,
 as they are registered with `uses_series=False`.
 
 ```python

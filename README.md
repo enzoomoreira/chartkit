@@ -34,6 +34,17 @@ df.chartkit.plot(title="Analysis", metrics=['ath|Maximum', 'atl|Minimum', 'ma:12
 df.chartkit.variation().plot(title="Monthly Variation").show()
 ```
 
+### Composition Quick Example
+
+```python
+from chartkit import compose
+
+layer_rate = df.chartkit.layer(units='%', highlight=True)
+layer_variation = df.chartkit.variation().layer(kind='bar', units='%', axis='right')
+
+compose(layer_rate, layer_variation, title="Rate and Monthly Variation", source="BCB")
+```
+
 ## Features
 
 - **Pandas Accessor**: Use `df.chartkit.plot()` directly on any DataFrame
@@ -58,6 +69,7 @@ df.chartkit.variation().plot(title="Monthly Variation").show()
 | Guide | Description |
 |-------|-------------|
 | [Plotting](docs/guide/plotting.md) | Chart types, formatting, composition, and PlotResult |
+| [Composition](docs/guide/composition.md) | Tutorials and snippets for `layer()` + `compose()` |
 | [Metrics](docs/guide/metrics.md) | Declarative metrics system |
 | [Transforms](docs/guide/transforms.md) | Temporal transformations and chaining |
 | [Configuration](docs/guide/configuration.md) | TOML, paths, and auto-discovery |
@@ -82,3 +94,6 @@ df.chartkit.variation().plot(title="Monthly Variation").show()
 - matplotlib >= 3.10.0
 - numpy >= 2.0.0
 - pydantic-settings >= 2.12.0
+- Babel >= 2.17.0
+- loguru >= 0.7.3
+- cachetools >= 6.2.6

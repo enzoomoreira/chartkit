@@ -92,8 +92,8 @@ in module-level `WeakKeyDictionary` indexed by `Axes`. This means:
 
 ### Rendering Pipeline
 
-The collision engine runs at step 8 of the pipeline, after all elements
-are created and before final decorations:
+The collision engine runs after all elements are created and before
+final decorations:
 
 ```
 1. Style           theme.apply()
@@ -101,11 +101,12 @@ are created and before final decorations:
 3. Y Formatter     FORMATTERS[units]()
 4. Plot Core       ChartRegistry dispatch + highlights (register_moveable)
 5. Metrics         ATH/ATL/hline (register_fixed) + MA (register_passive) + band (register_passive)
-6. Right margin    add_right_margin() when highlights present (avoids label clipping)
-7. Legend           _apply_legend() + register_fixed(ax, legend_artist)
-8. Collisions      resolve_collisions(ax) or resolve_composed_collisions(axes)
-9. Decorations     add_title(ax), add_footer(fig)
-10. Output          PlotResult
+   Fill between    add_fill_between() (if configured)
+   Right margin    add_right_margin() when highlights present (avoids label clipping)
+6. Legend           _apply_legend() + register_fixed(ax, legend_artist)
+7. Collisions      resolve_collisions(ax) or resolve_composed_collisions(axes)
+8. Decorations     add_title(ax), add_footer(fig)
+-> PlotResult
 ```
 
 For composed charts, `resolve_composed_collisions(axes)` replaces step 7,
@@ -123,7 +124,7 @@ inter-label collisions in a single iterative pass:
 3. **Identify collisions**: bbox overlap for discrete obstacles, `Path.intersects_bbox()` for line paths
 4. **Generate displacement candidates** from each colliding obstacle (up, down, left, right)
 5. **Sort candidates** by preference: Y-only first, X-only second, diagonal last (by distance within each group)
-6. **Filter by movement preference** (`"y"`, `"x"`, or `"xy"`)
+6. **Reorder by movement preference** (`"y"`, `"x"`, or `"xy"`) -- preferred-axis candidates go first, others are kept as fallback
 7. **Validate** each candidate against ALL obstacles (bbox + path) via `_position_is_free()`
 8. **Fallback**: if no single-axis solution exists, try diagonal combinations (best Y + best X)
 
@@ -348,7 +349,7 @@ object count from ~3000 to 1 per line and yielding significant performance gains
 ### Why isn't `resolve_collisions` public?
 
 Resolution is orchestrated by the `engine.py` pipeline. Custom metrics
-register elements and the engine resolves automatically at step 7. Exposing
+register elements and the engine resolves automatically. Exposing
 `resolve_collisions` in the public API would encourage manual calls at the wrong
 moments in the pipeline (before all elements are registered, for example).
 

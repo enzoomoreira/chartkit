@@ -33,17 +33,17 @@ footer_format = "Fonte: {source}, {company_name}"
 footer_format_no_source = "{company_name}"
 
 [colors]
-primary = "#003366"
-secondary = "#0066CC"
-tertiary = "#3399FF"
-quaternary = "#66CCFF"
-quinary = "#99DDFF"
-senary = "#CCEEFF"
-text = "#003366"
+primary = "#00464D"
+secondary = "#006B6B"
+tertiary = "#008B8B"
+quaternary = "#20B2AA"
+quinary = "#5F9EA0"
+senary = "#2E8B57"
+text = "#00464D"
 grid = "lightgray"
 background = "white"
-positive = "#008800"
-negative = "#CC0000"
+positive = "#00464D"
+negative = "#8B0000"
 moving_average = "#888888"
 
 [fonts]
@@ -57,8 +57,8 @@ footer = 9
 axis_label = 11
 
 [layout]
-figsize = [12.0, 8.0]
-dpi = 150
+figsize = [10.0, 6.0]
+dpi = 300
 base_style = "seaborn-v0_8-white"  # Base matplotlib style
 grid = false                        # Show grid on chart
 
@@ -69,7 +69,6 @@ left = true      # Left border
 bottom = true    # Bottom border
 
 [layout.footer]
-x = 0.01
 y = 0.01
 color = "gray"
 
@@ -82,12 +81,18 @@ main_width = 2.0
 overlay_width = 1.5
 reference_style = "--"
 target_style = "-."
+moving_avg_min_periods = 1
 
 [bars]
 width_default = 0.8
 width_monthly = 20
 width_annual = 300
+auto_margin = 0.1
 warning_threshold = 500
+
+[bars.frequency_detection]
+monthly_threshold = 25
+annual_threshold = 300
 
 [markers]
 scatter_size = 30
@@ -103,9 +108,26 @@ babel_locale = "pt_BR"
 ath = "ATH"
 atl = "ATL"
 avg = "AVG"
-moving_average_format = "MA{window}"
+moving_average_format = "MM{window}"
 target_format = "Meta: {value}"
 std_band_format = "BB({window}, {num_std})"
+
+[bands]
+alpha = 0.15
+
+[collision]
+movement = "y"
+obstacle_padding_px = 8.0
+label_padding_px = 4.0
+max_iterations = 50
+connector_threshold_px = 30.0
+connector_alpha = 0.6
+connector_style = "-"
+connector_width = 1.0
+
+[transforms]
+normalize_base = 100
+accum_window = 12
 
 [legend]
 loc = "best"

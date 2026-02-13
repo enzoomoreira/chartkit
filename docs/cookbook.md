@@ -4,6 +4,76 @@ Practical recipes and real-world use cases for Brazilian financial data.
 
 ---
 
+## Compose: Price + Volume (Dual Axis)
+
+**Use case:** Plot asset price and traded volume in the same figure with separate y-axes.
+
+```python
+import pandas as pd
+import chartkit
+from chartkit import compose
+
+dates = pd.date_range('2024-01', periods=8, freq='ME')
+
+price = pd.DataFrame({
+    'close': [98, 101, 103, 99, 105, 108, 110, 113]
+}, index=dates)
+
+volume = pd.DataFrame({
+    'volume': [1.1e6, 1.3e6, 1.0e6, 1.6e6, 1.4e6, 1.9e6, 1.8e6, 2.2e6]
+}, index=dates)
+
+layer_price = price.chartkit.layer(units='USD', highlight=['last', 'max'], axis='left')
+layer_volume = volume.chartkit.layer(kind='bar', units='human', axis='right')
+
+compose(
+    layer_price,
+    layer_volume,
+    title='Price and Volume',
+    source='Exchange Feed'
+).save('price_volume_dual_axis.png')
+```
+
+---
+
+## Compose: YoY vs Accumulated Inflation
+
+**Use case:** Compare year-over-year inflation and accumulated inflation in one composed chart.
+
+```python
+import pandas as pd
+import chartkit
+from chartkit import compose
+
+cpi = pd.DataFrame({
+    'cpi': [0.38, 0.46, 0.52, 0.41, 0.35, 0.29, 0.21, 0.18, 0.24, 0.31, 0.43, 0.57,
+            0.49, 0.55, 0.62, 0.44, 0.36, 0.33, 0.25, 0.19, 0.27, 0.34, 0.41, 0.58]
+}, index=pd.date_range('2023-01', periods=24, freq='ME'))
+
+yoy_layer = cpi.chartkit.variation(horizon='year').layer(
+    units='%',
+    metrics=['ath', 'atl'],
+    axis='left'
+)
+
+accum_layer = cpi.chartkit.accum().layer(
+    units='%',
+    metrics=['ma:6'],
+    axis='right'
+)
+
+compose(
+    yoy_layer,
+    accum_layer,
+    title='CPI YoY vs Accumulated',
+    source='IBGE'
+).save('cpi_yoy_vs_accum.png')
+```
+
+For more patterns, see [Composition Guide](guide/composition.md).
+
+---
+
 ## Trailing 12-Month CPI
 
 **Use case:** Visualize trailing 12-month accumulated inflation with a band indicating the inflation target and its tolerance range.

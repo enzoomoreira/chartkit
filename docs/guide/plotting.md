@@ -53,6 +53,25 @@ df.chartkit.plot(y=['series_a', 'series_b'], title="Selected Series")
 
 If `y` is not specified, all numeric columns will be plotted.
 
+### plot() Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the DataFrame index |
+| `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses all numeric columns |
+| `kind` | `ChartKind` | `"line"` | Chart type: `"line"`, `"bar"`, or `"stacked_bar"` |
+| `title` | `str \| None` | `None` | Chart title |
+| `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see [Formatters](#formatters-table)) |
+| `source` | `str \| None` | `None` | Data source for footer |
+| `highlight` | `HighlightInput` | `False` | Highlight mode(s): `True`, `'last'`, `'max'`, `'min'`, `'all'`, or a list |
+| `metrics` | `str \| list[str] \| None` | `None` | Declarative metrics (see [Metrics Guide](metrics.md)) |
+| `fill_between` | `tuple[str, str] \| None` | `None` | Two column names to shade the area between |
+| `legend` | `bool \| None` | `None` | `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `debug` | `bool` | `False` | Show collision debug overlay (see [Collision Guide](collision.md)) |
+| `**kwargs` | - | - | Chart-specific args (e.g., `sort`, `color`, `y_origin` for bars) |
+
+For full type definitions and signatures, see the [API Reference](../reference/api.md).
+
 ---
 
 ## Bar Chart
@@ -84,19 +103,30 @@ df.chartkit.plot(kind='bar', title="Revenue vs Expenses", units='BRL_compact')
 
 ### Categorical Axes
 
-Bar charts support string/categorical indices (not just temporal):
+Bar charts automatically detect string/categorical indices (not just temporal). Both single-column and multi-column DataFrames work with categorical data:
 
 ```python
+# Single-column categorical
 df = pd.DataFrame({
     'score': [85, 92, 78, 95, 88]
 }, index=['Team A', 'Team B', 'Team C', 'Team D', 'Team E'])
 
 df.chartkit.plot(kind='bar', title="Team Scores")
+
+# Multi-column categorical (grouped bars by category)
+df = pd.DataFrame({
+    '2023': [15, 22, 18, 12],
+    '2024': [17, 20, 19, 14],
+}, index=['North', 'South', 'East', 'West'])
+
+df.chartkit.plot(kind='bar', title="Sales by Region", units='human')
 ```
+
+Supported index types: string indices, `pd.CategoricalIndex`, `pd.StringDtype`, and object dtype with string values. Bar width defaults to `bars.width_default` (0.8) for categorical data.
 
 ### Sorting Bars
 
-Single-column bar charts can be sorted via the `sort` keyword argument:
+Single-column bar charts can be sorted via the `sort` keyword argument. Labels move with their values:
 
 ```python
 # Ascending order
@@ -104,17 +134,33 @@ df.chartkit.plot(kind='bar', title="Ranked", sort='ascending')
 
 # Descending order
 df.chartkit.plot(kind='bar', title="Ranked", sort='descending')
+
+# Sorting with color cycling and highlights
+df.chartkit.plot(kind='bar', title="Ranked", sort='descending', color='cycle', highlight='max')
 ```
 
 `sort` accepts `None` (default, keeps original order), `'ascending'`, or `'descending'`. Not supported for multi-column charts.
 
 ### Per-Bar Color Cycling
 
-Use `color='cycle'` to apply a different color from the theme palette to each bar (single-column only):
+Use `color='cycle'` to apply a different color from the theme palette to each bar (single-column only). The default theme has 6 colors (primary through senary) that cycle when there are more bars:
 
 ```python
 df.chartkit.plot(kind='bar', title="Categories", color='cycle')
 ```
+
+### Automatic Bar Width
+
+Bar width is detected automatically based on data frequency:
+
+| Data Type | Width | Trigger |
+|-----------|-------|---------|
+| Categorical/string index | `bars.width_default` (0.8) | Non-numeric, non-datetime index |
+| Monthly datetime | `bars.width_monthly` (20 days) | Avg gap > `frequency_detection.monthly_threshold` (25 days) |
+| Annual datetime | `bars.width_annual` (300 days) | Avg gap > `frequency_detection.annual_threshold` (300 days) |
+| Other datetime | `bars.width_default` (0.8) | Fallback |
+
+All thresholds are configurable via [Configuration](configuration.md).
 
 ### Bars with Positive and Negative Values
 
@@ -130,20 +176,20 @@ df.chartkit.plot(kind='bar', title="Monthly Balance", units='BRL')
 
 ### Y-Axis Origin (y_origin)
 
-The `y_origin` parameter is specific to bar charts and passed via `**kwargs`:
+The `y_origin` parameter controls how the Y-axis limits are set. Available for both `bar` and `stacked_bar` charts:
 
 ```python
-# Zero origin (default) - shows full magnitude
+# Zero origin (default) - Y-axis includes zero, shows full magnitude
 df.chartkit.plot(kind='bar', title="Monthly Balance", y_origin='zero')
 
-# Auto origin - focuses on data variation
+# Auto origin - focuses on data variation with 10% margin
 df.chartkit.plot(kind='bar', title="Monthly Balance", y_origin='auto')
 ```
 
 | Value | Behavior |
 |-------|----------|
-| `'zero'` | Y-axis always starts from zero. Shows real magnitude. |
-| `'auto'` | Matplotlib defines limits. Focuses on data variation. |
+| `'zero'` | Y-axis always includes zero. For positive-only data, starts at 0; for negative-only, ends at 0. |
+| `'auto'` | Y-axis adjusts to data range with configurable margin (`bars.auto_margin`, default 10%). |
 
 Use `y_origin='zero'` when absolute magnitude matters. Use `y_origin='auto'` when you want to highlight small variations in large values.
 
@@ -166,6 +212,17 @@ df.chartkit.plot(kind='stacked_bar', title="Revenue by Product")
 ```
 
 Each DataFrame column becomes a layer of the bar, using colors from the configured palette. The legend is automatically generated for DataFrames with multiple columns, and bar widths are automatically adjusted by data frequency.
+
+Stacked bars also support categorical indices and the `y_origin` parameter:
+
+```python
+df = pd.DataFrame({
+    'online': [120, 200, 150, 80],
+    'physical': [300, 250, 180, 220],
+}, index=['North', 'South', 'East', 'West'])
+
+df.chartkit.plot(kind='stacked_bar', title="Sales Channel by Region")
+```
 
 ---
 
@@ -420,7 +477,7 @@ result.save('custom_chart.png')
 
 ## Chart Composition (Multi-Layer)
 
-For complex charts that combine different chart types or need dual Y-axes, use the composition system. Create layers independently and render them together with `compose()`.
+For complex charts that combine different chart types or need dual Y-axes, use `layer()` + `compose()`. This section provides a quick overview. For tutorials and reusable snippets, see the dedicated [Composition Guide](composition.md).
 
 ### Basic Composition
 
@@ -439,29 +496,11 @@ layer_volume = volume.chartkit.layer(kind='bar', units='human', axis='right')
 compose(layer_price, layer_volume, title="Price and Volume", source="Bloomberg")
 ```
 
-### Dual Axes
+### Rules
 
-Each layer can target the left (default) or right Y-axis via the `axis` parameter:
-
-```python
-selic_layer = selic.chartkit.layer(units='%', highlight=True, axis='left')
-dollar_layer = dollar.chartkit.layer(units='BRL', highlight=True, axis='right')
-
-compose(selic_layer, dollar_layer, title="Selic vs Dollar").save('dual.png')
-```
-
-At least one layer must use `axis='left'`. Conflicting units on the same axis trigger a warning.
-
-### Composition with Transforms
-
-Layers can be created from transformed data via the `TransformAccessor`:
-
-```python
-yoy_layer = cpi.chartkit.variation(horizon='year').layer(units='%', metrics=['ath'])
-accum_layer = cpi.chartkit.accum().layer(units='%', axis='right')
-
-compose(yoy_layer, accum_layer, title="CPI Analysis")
-```
+- At least one layer must use `axis='left'`
+- Conflicting units on the same axis trigger a warning
+- `layer()` captures intent; rendering happens only in `compose()`
 
 ### How It Works
 
@@ -469,24 +508,10 @@ compose(yoy_layer, accum_layer, title="CPI Analysis")
 2. `compose(*layers)` creates a figure, sets up dual axes if needed, renders each layer, consolidates the legend, resolves cross-axis collisions, and returns a `PlotResult`
 3. The returned `PlotResult` supports the same `.save()` / `.show()` chaining as `plot()`
 
-### compose() Parameters
+### Learn More
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `*layers` | `Layer` | - | One or more layers created via `.layer()` |
-| `title` | `str \| None` | `None` | Chart title |
-| `source` | `str \| None` | `None` | Data source for footer |
-| `legend` | `bool \| None` | `None` | Legend control (same as `plot()`) |
-| `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
-| `debug` | `bool` | `False` | Draw collision debug overlay |
-
-### layer() Parameters
-
-Same as `plot()` except without chart-level options (`title`, `source`, `legend`). Additionally:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `axis` | `AxisSide` | `"left"` | Which Y-axis to use: `"left"` or `"right"` |
+- [Composition Guide](composition.md) for end-to-end tutorials and snippets
+- [API Reference](../reference/api.md#chart-composition) for full signatures
 
 ---
 
@@ -566,6 +591,7 @@ df.chartkit.plot(
 
 ## Next Steps
 
+- [Composition](composition.md) - Multi-layer charts with `layer()` + `compose()`
 - [Transforms](transforms.md) - Temporal transformations (YoY, MoM, etc.)
 - [Metrics](metrics.md) - Declarative overlays (ATH, moving averages, bands)
-- [Configuration](../reference/configuration.md) - Full customization
+- [Configuration](configuration.md) - Full customization

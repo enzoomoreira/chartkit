@@ -77,9 +77,25 @@ df.chartkit.plot(metrics=['ath', 'ma:12'])
 df.chartkit.plot(metrics=['band:1.5:4.5', 'hline:3.0'])
 ```
 
+### First Composition (Layers + Compose)
+
+```python
+from chartkit import compose
+
+layer_main = df.chartkit.layer(units='%', highlight=True)
+layer_yoy = df.chartkit.variation(horizon='year').layer(
+    kind='bar',
+    units='%',
+    axis='right'
+)
+
+compose(layer_main, layer_yoy, title="Level and YoY Variation")
+```
+
 ## Next Steps
 
 - [Plotting](guide/plotting.md) - Chart types and formatting options
+- [Composition](guide/composition.md) - Tutorials and snippets for multi-layer charts
 - [Metrics](guide/metrics.md) - Declarative metrics system
 - [Transforms](guide/transforms.md) - Temporal transformation functions
 - [Configuration](guide/configuration.md) - Customization via TOML
