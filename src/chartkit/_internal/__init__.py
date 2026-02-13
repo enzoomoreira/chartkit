@@ -13,7 +13,12 @@ from .collision import (
     resolve_collisions,
     resolve_composed_collisions,
 )
-from .extraction import extract_plot_data, should_show_legend
+from .extraction import (
+    add_right_margin,
+    extract_plot_data,
+    resolve_series,
+    should_show_legend,
+)
 from .formatting import FORMATTERS
 from .highlight import normalize_highlight
 from .plot_validation import validate_plot_params
@@ -21,6 +26,7 @@ from .saving import save_figure
 
 __all__ = [
     "FORMATTERS",
+    "add_right_margin",
     "extract_plot_data",
     "normalize_highlight",
     "register_fixed",
@@ -28,6 +34,7 @@ __all__ = [
     "register_moveable",
     "register_passive",
     "resolve_collisions",
+    "resolve_series",
     "resolve_composed_collisions",
     "save_figure",
     "should_show_legend",

@@ -11,6 +11,7 @@ from matplotlib.axes import Axes
 
 from ._internal import (
     FORMATTERS,
+    add_right_margin,
     extract_plot_data,
     normalize_highlight,
     register_fixed,
@@ -80,7 +81,7 @@ class ChartingPlotter:
                 and matplotlib parameters passed directly to the renderer.
         """
         highlight_modes = normalize_highlight(highlight)
-        self._validate_params(units=units, legend=legend)
+        validate_plot_params(units=units, legend=legend)
         config = get_config()
 
         logger.debug(
@@ -121,15 +122,17 @@ class ChartingPlotter:
 
         # 5. Metrics
         if metrics:
-            if isinstance(metrics, str):
-                metrics = [metrics]
-            logger.debug("Applying {} metric(s)", len(metrics))
+            logger.debug("Applying metric(s)")
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
         # 5b. Fill between
         if fill_between is not None:
             col1, col2 = fill_between
             add_fill_between(ax, x_data, self.df[col1], self.df[col2])
+
+        # 5c. Right margin for highlight labels
+        if highlight_modes:
+            add_right_margin(ax, ax_right=None)
 
         # 6. Legend
         self._apply_legend(ax, legend)
@@ -146,10 +149,6 @@ class ChartingPlotter:
         add_footer(fig, source)
 
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
-
-    @staticmethod
-    def _validate_params(units: UnitFormat | None, legend: bool | None) -> None:
-        validate_plot_params(units=units, legend=legend)
 
     def _apply_legend(self, ax: Axes, legend: bool | None) -> None:
         _, labels = ax.get_legend_handles_labels()

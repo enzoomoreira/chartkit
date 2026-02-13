@@ -92,7 +92,7 @@ in module-level `WeakKeyDictionary` indexed by `Axes`. This means:
 
 ### Rendering Pipeline
 
-The collision engine runs at step 7 of the pipeline, after all elements
+The collision engine runs at step 8 of the pipeline, after all elements
 are created and before final decorations:
 
 ```
@@ -101,10 +101,11 @@ are created and before final decorations:
 3. Y Formatter     FORMATTERS[units]()
 4. Plot Core       ChartRegistry dispatch + highlights (register_moveable)
 5. Metrics         ATH/ATL/hline (register_fixed) + MA (register_passive) + band (register_passive)
-6. Legend           _apply_legend() + register_fixed(ax, legend_artist)
-7. Collisions      resolve_collisions(ax) or resolve_composed_collisions(axes)
-8. Decorations     add_title(ax), add_footer(fig)
-9. Output          PlotResult
+6. Right margin    add_right_margin() when highlights present (avoids label clipping)
+7. Legend           _apply_legend() + register_fixed(ax, legend_artist)
+8. Collisions      resolve_collisions(ax) or resolve_composed_collisions(axes)
+9. Decorations     add_title(ax), add_footer(fig)
+10. Output          PlotResult
 ```
 
 For composed charts, `resolve_composed_collisions(axes)` replaces step 7,

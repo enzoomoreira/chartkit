@@ -112,7 +112,8 @@ spec = MetricRegistry.parse('ma:12')
 print(spec.name)    # 'ma'
 print(spec.params)  # {'window': 12}
 
-# Apply metrics manually
+# Apply metrics manually (accepts a single string or a list)
+MetricRegistry.apply(ax, x_data, y_data, 'ath')
 MetricRegistry.apply(ax, x_data, y_data, ['ath', 'ma:12'])
 
 # Clear registry (useful for tests)
@@ -509,12 +510,12 @@ def my_formatter(prefix: str = ""):
     return FuncFormatter(_format)
 ```
 
-**2. Add to the map in `engine.py`:**
+**2. Add to the dispatch table in `_internal/formatting.py`:**
 
 ```python
-from .styling import my_formatter
+from ..styling import my_formatter
 
-_FORMATTERS = {
+FORMATTERS = {
     # ... existing ...
     'custom': my_formatter,
     'prefix_R': lambda: my_formatter('R '),

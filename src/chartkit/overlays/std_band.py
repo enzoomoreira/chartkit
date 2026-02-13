@@ -2,6 +2,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_passive
+from .._internal.extraction import resolve_series
 from ..exceptions import ValidationError
 from ..settings import get_config
 from ..styling.theme import theme
@@ -38,10 +39,7 @@ def add_std_band(
         raise ValidationError(f"num_std must be positive, got {num_std}")
 
     config = get_config()
-
-    if isinstance(y_data, pd.DataFrame):
-        col = series if series is not None else y_data.columns[0]
-        y_data = y_data[col]
+    y_data = resolve_series(y_data, series)
 
     min_periods = config.lines.moving_avg_min_periods
     rolling = y_data.rolling(window=window, min_periods=min_periods)

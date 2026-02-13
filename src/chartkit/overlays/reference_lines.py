@@ -1,12 +1,19 @@
-from typing import Any
-
 import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_fixed
+from .._internal.extraction import resolve_series
 from ..settings import get_config
 from ..styling.theme import theme
+
+__all__ = [
+    "add_ath_line",
+    "add_atl_line",
+    "add_avg_line",
+    "add_hline",
+    "add_target_line",
+]
 
 
 def _add_stat_line(
@@ -23,10 +30,7 @@ def _add_stat_line(
 ) -> None:
     """Add horizontal line at a statistic (max, min, mean) of the data."""
     config = get_config()
-
-    if isinstance(y_data, pd.DataFrame):
-        col = series if series is not None else y_data.columns[0]
-        y_data = y_data[col]
+    y_data = resolve_series(y_data, series)
 
     value = getattr(y_data, stat)()
     if pd.isna(value):
@@ -49,7 +53,11 @@ def _add_stat_line(
 def add_ath_line(
     ax: Axes,
     y_data: pd.Series | pd.DataFrame,
-    **kwargs: Any,
+    color: str | None = None,
+    linestyle: str | None = None,
+    label: str | None = None,
+    linewidth: float | None = None,
+    series: str | None = None,
 ) -> None:
     """Add horizontal line at the All-Time High (maximum value)."""
     config = get_config()
@@ -59,14 +67,22 @@ def add_ath_line(
         stat="max",
         default_color=theme.colors.positive,
         default_label=config.labels.ath,
-        **kwargs,
+        color=color,
+        linestyle=linestyle,
+        label=label,
+        linewidth=linewidth,
+        series=series,
     )
 
 
 def add_atl_line(
     ax: Axes,
     y_data: pd.Series | pd.DataFrame,
-    **kwargs: Any,
+    color: str | None = None,
+    linestyle: str | None = None,
+    label: str | None = None,
+    linewidth: float | None = None,
+    series: str | None = None,
 ) -> None:
     """Add horizontal line at the All-Time Low (minimum value)."""
     config = get_config()
@@ -76,14 +92,22 @@ def add_atl_line(
         stat="min",
         default_color=theme.colors.negative,
         default_label=config.labels.atl,
-        **kwargs,
+        color=color,
+        linestyle=linestyle,
+        label=label,
+        linewidth=linewidth,
+        series=series,
     )
 
 
 def add_avg_line(
     ax: Axes,
     y_data: pd.Series | pd.DataFrame,
-    **kwargs: Any,
+    color: str | None = None,
+    linestyle: str | None = None,
+    label: str | None = None,
+    linewidth: float | None = None,
+    series: str | None = None,
 ) -> None:
     """Add horizontal line at the mean of the data."""
     config = get_config()
@@ -93,7 +117,11 @@ def add_avg_line(
         stat="mean",
         default_color=theme.colors.grid,
         default_label=config.labels.avg,
-        **kwargs,
+        color=color,
+        linestyle=linestyle,
+        label=label,
+        linewidth=linewidth,
+        series=series,
     )
 
 

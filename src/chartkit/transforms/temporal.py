@@ -33,6 +33,17 @@ from ._validation import (
     validate_params,
 )
 
+__all__ = [
+    "variation",
+    "accum",
+    "diff",
+    "normalize",
+    "annualize",
+    "drawdown",
+    "zscore",
+    "to_month_end",
+]
+
 
 # ---------------------------------------------------------------------------
 # variation -- percentage change by horizon

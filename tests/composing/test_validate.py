@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from chartkit.composing.compose import _needs_right_axis, _validate_layers
+from chartkit.composing.compose import _validate_layers
 from chartkit.composing.layer import Layer
 from chartkit.exceptions import ValidationError
 
@@ -30,18 +30,3 @@ class TestValidateLayers:
 
     def test_mixed_passes(self) -> None:
         _validate_layers((_layer("left"), _layer("right")), None)
-
-    def test_invalid_axis_raises(self) -> None:
-        with pytest.raises(ValidationError, match="Invalid axis value"):
-            _validate_layers((_layer("secondary"),), None)
-
-
-class TestNeedsRightAxis:
-    def test_no_right(self) -> None:
-        assert _needs_right_axis((_layer("left"),)) is False
-
-    def test_has_right(self) -> None:
-        assert _needs_right_axis((_layer("left"), _layer("right"))) is True
-
-    def test_all_right(self) -> None:
-        assert _needs_right_axis((_layer("right"),)) is True

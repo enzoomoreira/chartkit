@@ -25,11 +25,6 @@ class TestCreateLayerValidation:
         with pytest.raises(ValidationError, match="units"):
             create_layer(df, units="EUR")  # type: ignore[arg-type]
 
-    def test_invalid_highlight_raises_validation_error(self) -> None:
-        df = pd.DataFrame({"a": [1, 2, 3]})
-        with pytest.raises(ValidationError, match="invalid"):
-            create_layer(df, highlight="invalid")  # type: ignore[arg-type]
-
 
 class TestLayer:
     def test_frozen_prevents_reassignment(self) -> None:

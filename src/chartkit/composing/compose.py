@@ -10,6 +10,7 @@ from loguru import logger
 
 from .._internal import (
     FORMATTERS,
+    add_right_margin,
     extract_plot_data,
     normalize_highlight,
     register_fixed,
@@ -50,37 +51,10 @@ def _validate_layers(layers: tuple[Layer, ...], legend: bool | None) -> None:
     if not layers:
         raise ValidationError("compose() requires at least one layer.")
 
-    invalid_axes = {
-        layer.axis for layer in layers if layer.axis not in {"left", "right"}
-    }
-    if invalid_axes:
-        invalid = ", ".join(sorted(invalid_axes))
-        raise ValidationError(
-            f"Invalid axis value(s): {invalid}. Expected 'left' or 'right'."
-        )
-
     if all(layer.axis == "right" for layer in layers):
         raise ValidationError(
             "All layers are on axis='right'. At least one layer must use axis='left'."
         )
-
-    for layer in layers:
-        validate_plot_params(units=layer.units, legend=None)
-
-
-def _needs_right_axis(layers: tuple[Layer, ...]) -> bool:
-    return any(layer.axis == "right" for layer in layers)
-
-
-def _add_right_margin(
-    ax_left: plt.Axes, ax_right: plt.Axes | None, fraction: float = 0.06
-) -> None:
-    """Expand X limits to give room for highlight labels at the right edge."""
-    x0, x1 = ax_left.get_xlim()
-    pad = (x1 - x0) * fraction
-    ax_left.set_xlim(x0, x1 + pad)
-    if ax_right is not None:
-        ax_right.set_xlim(x0, x1 + pad)
 
 
 def _apply_axis_formatter(
@@ -116,8 +90,7 @@ def _render_layer(
     chart_fn(ax, x_data, y_data, highlight=highlight_modes, **layer.kwargs)
 
     if layer.metrics:
-        metrics = [layer.metrics] if isinstance(layer.metrics, str) else layer.metrics
-        MetricRegistry.apply(ax, x_data, y_data, metrics)
+        MetricRegistry.apply(ax, x_data, y_data, layer.metrics)
 
     if layer.fill_between is not None:
         col1, col2 = layer.fill_between
@@ -183,7 +156,7 @@ def compose(
 
     # 2. Right axis (if needed)
     ax_right: plt.Axes | None = None
-    if _needs_right_axis(layers):
+    if any(layer.axis == "right" for layer in layers):
         ax_right = ax_left.twinx()
         ax_right.spines["right"].set_visible(True)
 
@@ -209,7 +182,7 @@ def compose(
     # 4. Right margin for highlight labels
     has_highlights = any(layer.highlight for layer in layers)
     if has_highlights:
-        _add_right_margin(ax_left, ax_right)
+        add_right_margin(ax_left, ax_right)
 
     # 5. Legend (consolidated from both axes)
     _apply_composed_legend(ax_left, ax_right, legend)

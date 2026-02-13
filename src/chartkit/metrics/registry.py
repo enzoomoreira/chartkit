@@ -139,9 +139,11 @@ class MetricRegistry:
         ax: Axes,
         x_data: pd.Index | pd.Series,
         y_data: pd.Series | pd.DataFrame,
-        specs: Sequence[str | MetricSpec],
+        specs: str | Sequence[str | MetricSpec],
     ) -> None:
         """Apply list of metrics to the chart."""
+        if isinstance(specs, str):
+            specs = [specs]
         for spec in specs:
             parsed = cls.parse(spec)
             entry = cls._metrics[parsed.name]

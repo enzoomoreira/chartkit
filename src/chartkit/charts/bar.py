@@ -7,7 +7,7 @@ from loguru import logger
 from matplotlib.axes import Axes
 
 from ..exceptions import ValidationError
-from ..overlays.markers import add_highlight
+from ..overlays import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
 from ._helpers import (
@@ -20,7 +20,7 @@ from ._helpers import (
 from .registry import ChartRegistry
 
 if TYPE_CHECKING:
-    from ..overlays.markers import HighlightMode
+    from ..overlays import HighlightMode
 
 __all__ = ["plot_bar"]
 

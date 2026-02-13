@@ -68,6 +68,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Applies axis formatters via `FORMATTERS` dispatch table
    - Dispatches via `ChartRegistry.get(kind)` to the registered chart type
    - Applies metrics via `MetricRegistry.apply()`
+   - Expands right margin via `add_right_margin()` when highlights are present
    - Applies legend and registers it as fixed obstacle
    - Resolves label collisions via `resolve_collisions(ax)`
    - Adds decorations via `add_title(ax)` and `add_footer(fig)`
@@ -99,10 +100,11 @@ flowchart TD
     D3 --> D4["4. FORMATTERS[units]()"]
     D4 --> D5["5. ChartRegistry.get(kind)()"]
     D5 --> D6["6. MetricRegistry.apply()"]
-    D6 --> D6b["7. _apply_legend() + register_fixed(legend)"]
-    D6b --> D7["8. resolve_collisions()"]
-    D7 --> D8["9. add_title()"]
-    D8 --> D9["10. add_footer()"]
+    D6 --> D6a["7. add_right_margin() (if highlights)"]
+    D6a --> D6b["8. _apply_legend() + register_fixed(legend)"]
+    D6b --> D7["9. resolve_collisions()"]
+    D7 --> D8["10. add_title()"]
+    D8 --> D9["11. add_footer()"]
     D9 --> E["PlotResult"]
 ```
 
@@ -173,7 +175,7 @@ src/chartkit/
 └── _internal/            # Private utilities (shared between engine and compose)
     ├── __init__.py       # Facade: collision, extraction, formatting, highlight, saving, validation
     ├── collision.py      # Collision engine (single-axis + composed cross-axis)
-    ├── extraction.py     # extract_plot_data(), should_show_legend()
+    ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series(), add_right_margin()
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
     ├── highlight.py      # normalize_highlight()
     ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat

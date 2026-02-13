@@ -7,13 +7,13 @@ from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_line_obstacle
-from ..overlays.markers import add_highlight
+from ..overlays import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
 from .registry import ChartRegistry
 
 if TYPE_CHECKING:
-    from ..overlays.markers import HighlightMode
+    from ..overlays import HighlightMode
 
 __all__ = ["plot_line"]
 
@@ -47,7 +47,7 @@ def plot_line(
     for i, col in enumerate(y_data.columns):
         c = user_color if user_color is not None else colors[i % len(colors)]
 
-        ax.plot(
+        (line_artist,) = ax.plot(
             x,
             y_data[col],
             linewidth=user_linewidth
@@ -61,7 +61,7 @@ def plot_line(
             **kwargs,
         )
 
-        register_line_obstacle(ax, ax.lines[-1])
+        register_line_obstacle(ax, line_artist)
 
         if highlight:
             add_highlight(

@@ -45,8 +45,7 @@ def prepare_categorical_axis(
     """Convert categorical index to numeric positions and set tick labels.
 
     Returns the numeric x positions (np.arange). Caller should use these
-    instead of the original x for plotting. Call *after* all bars are plotted
-    to set tick labels.
+    instead of the original x for plotting.
     """
     x_numeric = np.arange(len(x))
     ax.set_xticks(x_numeric)

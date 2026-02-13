@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 from ..exceptions import RegistryError
 
 if TYPE_CHECKING:
-    from ..overlays.markers import HighlightMode
+    from ..overlays import HighlightMode
 
 __all__ = ["ChartFunc", "ChartRegistry"]
 

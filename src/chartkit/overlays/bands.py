@@ -4,6 +4,8 @@ from .._internal.collision import register_passive
 from ..settings import get_config
 from ..styling.theme import theme
 
+__all__ = ["add_band"]
+
 
 def add_band(
     ax: Axes,

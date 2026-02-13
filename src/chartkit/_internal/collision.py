@@ -81,8 +81,8 @@ class _LinePathObstacle:
             local[:, 1].max(),
         )
 
-    def get_visible(self) -> bool:
-        return self._line.get_visible()
+
+Obstacle = Artist | _LinePathObstacle
 
 
 @runtime_checkable
@@ -152,7 +152,7 @@ def resolve_collisions(ax: Axes, *, debug: bool = False) -> None:
 
     _resolve_all(positionable, fixed, renderer, axes_bbox, collision)
 
-    _add_connectors(positionable, original_positions, renderer, collision, config)
+    _add_connectors(positionable, original_positions, renderer, config)
 
     if debug:
         _draw_debug_overlay(fig, positionable, fixed, renderer, axes_bbox, collision)
@@ -186,7 +186,7 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
 
     # Collect obstacles from all axes (deduplicated via _collect_obstacles internals)
     seen_ids: set[int] = set()
-    fixed: list[Artist] = []
+    fixed: list[Obstacle] = []
     for ax in axes:
         for obs in _collect_obstacles(ax, all_moveables):
             oid = id(obs)
@@ -206,7 +206,7 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
 
     _resolve_all(positionable, fixed, renderer, axes_bbox, collision)
 
-    _add_connectors(positionable, original_positions, renderer, collision, config)
+    _add_connectors(positionable, original_positions, renderer, config)
 
     if debug:
         _draw_debug_overlay(fig, positionable, fixed, renderer, axes_bbox, collision)
@@ -214,7 +214,7 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
 
 def _resolve_all(
     moveables: Sequence[PositionableArtist],
-    fixed: list[Artist],
+    fixed: list[Obstacle],
     renderer: RendererBase,
     axes_bbox: Bbox,
     collision: CollisionConfig,
@@ -315,7 +315,7 @@ def _find_free_position(
     clearance = label_pad + 1.0
     for obs in colliding_bboxes:
         candidates.extend(
-            _compute_displacement_options(label_bbox, obs, "xy", clearance, axes_bbox)
+            _compute_displacement_options(label_bbox, obs, clearance, axes_bbox)
         )
 
     if not candidates:
@@ -394,39 +394,36 @@ def _pad_bbox(bbox: Bbox, padding_px: float) -> Bbox:
 def _compute_displacement_options(
     mov_bbox: Bbox,
     fix_bbox: Bbox,
-    movement: str,
     padding_px: float,
     axes_bbox: Bbox,
 ) -> list[tuple[float, float, float]]:
-    """Compute valid displacement options for a given movement axis."""
+    """Compute valid displacement options in both axes."""
     options: list[tuple[float, float, float]] = []  # (dx, dy, abs_distance)
 
-    if movement in ("y", "xy"):
-        dy_up = fix_bbox.y1 + padding_px - mov_bbox.y0
-        dy_down = fix_bbox.y0 - padding_px - mov_bbox.y1
+    dy_up = fix_bbox.y1 + padding_px - mov_bbox.y0
+    dy_down = fix_bbox.y0 - padding_px - mov_bbox.y1
 
-        new_y0_up = mov_bbox.y0 + dy_up
-        new_y1_up = mov_bbox.y1 + dy_up
-        if new_y0_up >= axes_bbox.y0 and new_y1_up <= axes_bbox.y1:
-            options.append((0, dy_up, abs(dy_up)))
+    new_y0_up = mov_bbox.y0 + dy_up
+    new_y1_up = mov_bbox.y1 + dy_up
+    if new_y0_up >= axes_bbox.y0 and new_y1_up <= axes_bbox.y1:
+        options.append((0, dy_up, abs(dy_up)))
 
-        new_y0_down = mov_bbox.y0 + dy_down
-        new_y1_down = mov_bbox.y1 + dy_down
-        if new_y0_down >= axes_bbox.y0 and new_y1_down <= axes_bbox.y1:
-            options.append((0, dy_down, abs(dy_down)))
+    new_y0_down = mov_bbox.y0 + dy_down
+    new_y1_down = mov_bbox.y1 + dy_down
+    if new_y0_down >= axes_bbox.y0 and new_y1_down <= axes_bbox.y1:
+        options.append((0, dy_down, abs(dy_down)))
 
-    if movement in ("x", "xy"):
-        dx_right = fix_bbox.x1 + padding_px - mov_bbox.x0
-        new_x0_right = mov_bbox.x0 + dx_right
-        new_x1_right = mov_bbox.x1 + dx_right
-        if new_x0_right >= axes_bbox.x0 and new_x1_right <= axes_bbox.x1:
-            options.append((dx_right, 0, abs(dx_right)))
+    dx_right = fix_bbox.x1 + padding_px - mov_bbox.x0
+    new_x0_right = mov_bbox.x0 + dx_right
+    new_x1_right = mov_bbox.x1 + dx_right
+    if new_x0_right >= axes_bbox.x0 and new_x1_right <= axes_bbox.x1:
+        options.append((dx_right, 0, abs(dx_right)))
 
-        dx_left = fix_bbox.x0 - padding_px - mov_bbox.x1
-        new_x0_left = mov_bbox.x0 + dx_left
-        new_x1_left = mov_bbox.x1 + dx_left
-        if new_x0_left >= axes_bbox.x0 and new_x1_left <= axes_bbox.x1:
-            options.append((dx_left, 0, abs(dx_left)))
+    dx_left = fix_bbox.x0 - padding_px - mov_bbox.x1
+    new_x0_left = mov_bbox.x0 + dx_left
+    new_x1_left = mov_bbox.x1 + dx_left
+    if new_x0_left >= axes_bbox.x0 and new_x1_left <= axes_bbox.x1:
+        options.append((dx_left, 0, abs(dx_left)))
 
     return options
 
@@ -435,10 +432,10 @@ def _add_connectors(
     moveables: Sequence[PositionableArtist],
     original_positions: list[tuple[float, float]],
     renderer: RendererBase,
-    collision: CollisionConfig,
     config: ChartingConfig,
 ) -> None:
     """Add guide lines for moveables displaced beyond the threshold."""
+    collision = config.collision
     # Group labels by their parent axes for correct transform and limit preservation
     by_axes: defaultdict[Axes, list[tuple[PositionableArtist, tuple[float, float]]]] = (
         defaultdict(list)
@@ -476,7 +473,7 @@ def _add_connectors(
 def _draw_debug_overlay(
     fig: Figure,
     moveables: Sequence[PositionableArtist],
-    fixed: list[Artist],
+    fixed: list[Obstacle],
     renderer: RendererBase,
     axes_bbox: Bbox,
     collision: CollisionConfig,
@@ -564,7 +561,7 @@ def _draw_debug_overlay(
 # -- Internal helpers --
 
 
-def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Artist]:
+def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Obstacle]:
     """Collect obstacles: explicit + auto-detected patches + line paths on shared axes.
 
     In composed charts with twinx, labels from one axis must also avoid
@@ -574,7 +571,7 @@ def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Artist]:
     sibling_axes = list(ax.get_shared_x_axes().get_siblings(ax))
     passive_ids = {id(p) for sibling in sibling_axes for p in _passive.get(sibling, [])}
     seen: set[int] = set()
-    obstacles: list[Artist] = []
+    obstacles: list[Obstacle] = []
 
     # 1. Explicitly registered obstacles (reference lines, etc.)
     for obs in _obstacles.get(ax, []):

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast, get_args
 
 from ..exceptions import ValidationError
-from ..overlays.markers import HighlightMode
+from ..overlays import HighlightMode
 
 if TYPE_CHECKING:
     from ..engine import HighlightInput

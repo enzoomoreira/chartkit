@@ -7,7 +7,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
-from ..overlays.markers import add_highlight
+from ..overlays import add_highlight
 from ..settings import get_config
 from ..styling.theme import theme
 from ._helpers import (
@@ -20,7 +20,7 @@ from ._helpers import (
 from .registry import ChartRegistry
 
 if TYPE_CHECKING:
-    from ..overlays.markers import HighlightMode
+    from ..overlays import HighlightMode
 
 __all__ = ["plot_stacked_bar"]
 
@@ -62,7 +62,7 @@ def plot_stacked_bar(
 
     categorical = is_categorical_index(x)
     if categorical:
-        x_plot = np.arange(len(x))
+        x_plot = prepare_categorical_axis(ax, x)
         width = bars.width_default
     else:
         x_plot = x
@@ -84,9 +84,6 @@ def plot_stacked_bar(
             **kwargs,
         )
         bottom = bottom + vals.values
-
-    if categorical:
-        prepare_categorical_axis(ax, x)
 
     total = y_data.sum(axis=1)
     apply_y_origin(ax, y_origin, total, bars.auto_margin)

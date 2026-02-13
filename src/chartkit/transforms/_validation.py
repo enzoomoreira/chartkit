@@ -19,7 +19,7 @@ __all__ = [
 import numpy as np
 import pandas as pd
 from loguru import logger
-from pydantic import BaseModel, PositiveInt, model_validator
+from pydantic import BaseModel, PositiveInt, ValidationError, model_validator
 
 from ..exceptions import TransformError
 
@@ -178,7 +178,6 @@ def validate_params[T: BaseModel](model_class: type[T], **kwargs) -> T:
     Catches ``ValidationError`` and re-raises as ``TransformError``
     with a clean message.
     """
-    from pydantic import ValidationError
 
     try:
         return model_class(**kwargs)

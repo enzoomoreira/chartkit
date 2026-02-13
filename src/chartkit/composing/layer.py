@@ -57,12 +57,11 @@ def create_layer(
         ValidationError: Invalid ``units``, ``highlight``, or ``axis``.
         RegistryError: Unknown ``kind``.
     """
-    from .._internal import normalize_highlight, validate_plot_params
+    from .._internal import validate_plot_params
     from ..charts import ChartRegistry
 
     validate_plot_params(units=units, legend=None)
     ChartRegistry.get(kind)
-    normalize_highlight(highlight)
     if axis not in ("left", "right"):
         from ..exceptions import ValidationError
 
