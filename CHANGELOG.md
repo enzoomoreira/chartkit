@@ -1,5 +1,26 @@
 # Project Changelog
 
+## [2026-02-12 23:40]
+### Changed
+- **Collision engine: path-based detection** (`collision.py`): `_LineSampleObstacle` (N obstacle objects per data point) substituido por `_LinePathObstacle` (1 objeto por linha), usando `Path.intersects_bbox()` (Cython/C) para deteccao continua e exata ao longo da curva inteira
+  - Bulk transform via numpy em vez de N chamadas individuais a `ax.transData.transform()`
+  - Quick-reject via `get_extents().overlaps()` antes do check detalhado por segmentos
+  - `local_bbox()` filtra vertices por X-range com numpy mask para gerar candidatos de displacement
+  - Cache de display path por `_LinePathObstacle` (transform estavel durante resolution pass)
+  - Reducao de ~3000 objetos Python para 1 por linha, estimativa de ~10s para <1s em series longas
+- **`_resolve_all()` separa bbox e path obstacles**: Novo fluxo distingue obstaculos discretos (patches, labels) de obstaculos continuos (line paths), com logica de co-location same-axis preservada via `obs.intersects()` em vez de `raw_bbox.overlaps(obs_ext)`
+- **`_find_free_position()` valida contra paths**: Nova funcao `_position_is_free()` unifica validacao contra bbox overlaps e path intersections, usada tanto no candidate check quanto no fallback diagonal
+- **`_collect_obstacles()` simplificado**: Loop de sampling por data point (com `isfinite` check, zip, e criacao de N `_LineSampleObstacle`) substituido por criacao direta de 1 `_LinePathObstacle` por linha registrada
+
+### Added
+- **`debug=True` em `plot()` e `compose()`**: Parametro propagado ate `resolve_collisions()` / `resolve_composed_collisions()`, ativa overlay visual de colisao sem scripts externos
+- **`_draw_debug_overlay()`** (`collision.py`): Funcao interna que renderiza bboxes translucidos sobre a figura -- obstaculos fixos (vermelho), line paths (laranja com PathPatch), labels moveveis (azul), e bounds do axes (verde)
+- **`_position_is_free()`** (`collision.py`): Helper que valida posicao contra lista de bbox obstacles e lista de path obstacles em chamada unica
+
+### Removed
+- **`_LineSampleObstacle`**: Classe inteira deletada (substituida por `_LinePathObstacle`)
+- **`isfinite` import**: Unico uso era no loop de sampling de pontos, removido junto com o loop
+
 ## [2026-02-12 17:52]
 ### Added
 - **Chart composition system** (`composing/`): Nova funcao `compose()` que combina multiplos `Layer` em um unico grafico com suporte a dual-axis

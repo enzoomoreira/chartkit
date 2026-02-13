@@ -470,6 +470,7 @@ leaks config state to another.
 2. **LRUCache**: `find_project_root()` cached with 32 entries
 3. **Simple flag**: `_config = None` avoids unnecessary pydantic object reconstruction
 4. **Lazy project_root**: Property in ConfigLoader with `_project_root_resolved` flag
+5. **Path-based collision**: `_LinePathObstacle` creates 1 object per Line2D (instead of N per data point), with cached display-coordinate paths and Cython-based `Path.intersects_bbox()` for O(segments) intersection checks
 
 ### Tips for Contributors
 

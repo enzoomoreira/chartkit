@@ -478,6 +478,7 @@ compose(yoy_layer, accum_layer, title="CPI Analysis")
 | `source` | `str \| None` | `None` | Data source for footer |
 | `legend` | `bool \| None` | `None` | Legend control (same as `plot()`) |
 | `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
+| `debug` | `bool` | `False` | Draw collision debug overlay |
 
 ### layer() Parameters
 

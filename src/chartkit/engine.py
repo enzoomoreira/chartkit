@@ -54,6 +54,7 @@ class ChartingPlotter:
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
+        debug: bool = False,
         **kwargs,
     ) -> PlotResult:
         """Generate standardized chart.
@@ -138,7 +139,7 @@ class ChartingPlotter:
             register_fixed(ax, legend_artist)
 
         # 7. Collision resolution
-        resolve_collisions(ax)
+        resolve_collisions(ax, debug=debug)
 
         # 8. Decorations
         add_title(ax, title)

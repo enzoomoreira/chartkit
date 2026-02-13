@@ -157,6 +157,7 @@ def compose(
     source: str | None = None,
     legend: bool | None = None,
     figsize: tuple[float, float] | None = None,
+    debug: bool = False,
 ) -> PlotResult:
     """Compose multiple layers into a single chart with optional dual axes.
 
@@ -221,7 +222,7 @@ def compose(
     all_axes: list[plt.Axes] = [ax_left]
     if ax_right is not None:
         all_axes.append(ax_right)
-    resolve_composed_collisions(all_axes)
+    resolve_composed_collisions(all_axes, debug=debug)
 
     # 7. Decorations
     add_title(ax_left, title)

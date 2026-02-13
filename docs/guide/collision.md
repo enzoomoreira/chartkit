@@ -20,7 +20,7 @@ and three participation categories:
 | **Moveable** | `register_moveable(ax, artist)` | Can be repositioned to resolve collisions |
 | **Fixed** | `register_fixed(ax, artist)` | Immutable obstacle that others must avoid |
 | **Passive** | `register_passive(ax, artist)` | Exists visually but doesn't participate in collision |
-| **Line Obstacle** | `register_line_obstacle(ax, line)` | Line2D whose data path repels labels via point sampling |
+| **Line Obstacle** | `register_line_obstacle(ax, line)` | Line2D whose data path repels labels via continuous path intersection |
 
 Each external module decides how to classify its own elements. The engine
 provides the building blocks; modules handle the integration.
@@ -115,14 +115,16 @@ merging labels from all axes (left + right) into a single pool.
 The engine uses a unified algorithm that handles both fixed obstacles and
 inter-label collisions in a single iterative pass:
 
-1. **For each label**, build the full obstacle list: all fixed obstacles (padded)
-   plus all other labels (padded)
-2. **Identify collisions** between the label's padded bbox and each obstacle
-3. **Generate displacement candidates** from each colliding obstacle (up, down, left, right)
-4. **Sort candidates** by preference: Y-only first, X-only second, diagonal last (by distance within each group)
-5. **Filter by movement preference** (`"y"`, `"x"`, or `"xy"`)
-6. **Validate** each candidate against ALL obstacles (not just the colliding one)
-7. **Fallback**: if no single-axis solution exists, try diagonal combinations (best Y + best X)
+1. **For each label**, separate obstacles into two types:
+   - **Bbox obstacles**: fixed patches, other labels (padded with `obstacle_padding_px` or `label_padding_px`)
+   - **Path obstacles**: `_LinePathObstacle` instances (continuous line paths)
+2. **Same-axis co-location**: if a label starts ON its own line (same axes), that path is excluded as obstacle
+3. **Identify collisions**: bbox overlap for discrete obstacles, `Path.intersects_bbox()` for line paths
+4. **Generate displacement candidates** from each colliding obstacle (up, down, left, right)
+5. **Sort candidates** by preference: Y-only first, X-only second, diagonal last (by distance within each group)
+6. **Filter by movement preference** (`"y"`, `"x"`, or `"xy"`)
+7. **Validate** each candidate against ALL obstacles (bbox + path) via `_position_is_free()`
+8. **Fallback**: if no single-axis solution exists, try diagonal combinations (best Y + best X)
 
 ```
 Example with movement="y" (default):
@@ -159,11 +161,11 @@ The engine combines multiple obstacle sources:
 1. **Explicit**: elements registered via `register_fixed()` (ATH, ATL, hline lines, legend)
 2. **Auto-detected patches**: `ax.patches` on all sibling axes sharing the X-axis (bars, boxes, etc.)
 3. **Cross-axis labels**: labels from twinx sibling axes act as obstacles for each other
-4. **Line path samples**: registered lines (`register_line_obstacle()`) are sampled at each data point, creating point-sized virtual obstacles along the visible path
+4. **Line path obstacles**: registered lines (`register_line_obstacle()`) are wrapped in `_LinePathObstacle`, using matplotlib's Cython-based `Path.intersects_bbox()` for continuous collision detection along the entire curve
 
 Line2D bounding boxes span the entire data area and are useless as collision targets.
-Instead, `_LineSampleObstacle` creates small obstacles at each data point so labels
-can be pushed away from the visible line path.
+Instead, `_LinePathObstacle` wraps each Line2D with its display-coordinate path and
+uses exact path-segment intersection to detect collisions with labels.
 
 Auto-detection traverses all sibling axes (via `get_shared_x_axes().get_siblings(ax)`),
 enabling cross-axis collision avoidance in composed charts with `twinx()`.
@@ -173,6 +175,38 @@ The engine filters:
 - Patches registered as passive (bands, background areas)
 - Patches already registered as fixed (avoids duplication)
 - Invisible artists (`get_visible() == False`)
+
+---
+
+## Debug Overlay
+
+Pass `debug=True` to `plot()` or `compose()` to visualize collision bounding boxes
+directly on the chart:
+
+```python
+# Single chart
+df.chartkit.plot(
+    title="Debug View",
+    highlight=True,
+    metrics=["ath"],
+    debug=True,
+)
+
+# Composed chart
+compose(layer1, layer2, title="Debug", debug=True)
+```
+
+The overlay draws translucent shapes over the figure:
+
+| Color | Element |
+|-------|---------|
+| **Red** | Fixed obstacles (patches, labels) with padding |
+| **Orange** | Line path obstacles (continuous curves) |
+| **Blue** | Moveable labels with padding |
+| **Green** | Axes bounding box |
+
+This is useful for understanding why labels are positioned where they are
+and for diagnosing unexpected collision behavior.
 
 ---
 
@@ -300,13 +334,15 @@ The alternative would be for the engine to check types (`isinstance(patch, Polyg
 properties (`alpha < 0.5`), but this would break agnosticism. The correct solution:
 the module that creates the element knows what it is and self-classifies.
 
-### Why line path sampling instead of Line2D bboxes?
+### Why continuous path intersection instead of Line2D bboxes?
 
 A Line2D's bounding box spans the entire data area (from min to max X and Y).
 Using it as a collision obstacle would push labels far away from the chart,
-even when the line is nowhere near the label. Sampling at each data point
-creates precise, localized obstacles that only repel labels near the actual
-visible path.
+even when the line is nowhere near the label. `_LinePathObstacle` wraps each
+Line2D with its display-coordinate path and uses `Path.intersects_bbox()`
+(Cython/C) for exact segment-level collision detection. This replaces the
+previous approach of creating N point-sized obstacles per data point, reducing
+object count from ~3000 to 1 per line and yielding significant performance gains.
 
 ### Why isn't `resolve_collisions` public?
 

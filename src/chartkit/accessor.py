@@ -84,6 +84,7 @@ class ChartingAccessor:
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
+        debug: bool = False,
         **kwargs,
     ) -> PlotResult:
         """Create standardized chart. See ``ChartingPlotter.plot()`` for full docs."""
@@ -99,6 +100,7 @@ class ChartingAccessor:
             metrics=metrics,
             fill_between=fill_between,
             legend=legend,
+            debug=debug,
             **kwargs,
         )
 
