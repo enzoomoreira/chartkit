@@ -4,15 +4,15 @@ import pandas as pd
 import pytest
 
 from chartkit.composing.layer import AxisSide, Layer, create_layer
-from chartkit.exceptions import RegistryError, ValidationError
+from chartkit.exceptions import ValidationError
 
 
 class TestCreateLayerValidation:
     """Eager validation in create_layer() catches invalid inputs at construction."""
 
-    def test_invalid_kind_raises_registry_error(self) -> None:
+    def test_invalid_kind_raises_validation_error(self) -> None:
         df = pd.DataFrame({"a": [1, 2, 3]})
-        with pytest.raises(RegistryError, match="not supported"):
+        with pytest.raises(ValidationError, match="not a valid matplotlib"):
             create_layer(df, kind="invalid")  # type: ignore[arg-type]
 
     def test_invalid_axis_raises_validation_error(self) -> None:

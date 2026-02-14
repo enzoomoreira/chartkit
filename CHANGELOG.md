@@ -1,5 +1,28 @@
 # Project Changelog
 
+## [2026-02-13 21:14]
+### Added
+- **`ChartRenderer` com rendering generico** (`charts/renderer.py`): Novo motor de rendering que despacha para `ax.{kind}()` para qualquer tipo de grafico matplotlib, eliminando a necessidade de registrar cada tipo manualmente
+  - Enhancers para tipos complexos via `@ChartRenderer.register_enhancer("name")` -- bar grouping e stacking continuam com logica especializada
+  - `Enhancer` Protocol define a interface de handlers especializados
+  - `_generic_render()` com color cycling automatico, kind defaults per-type, e highlight inference via snapshot diff de patches
+  - `_ALIASES` mapeia `"line"` -> `"plot"` (matplotlib usa `ax.plot()`)
+  - `_KIND_DEFAULTS` aplica defaults per-kind (ex: `linewidth` para `plot`)
+  - Post-render: snapshot diff de `ax.lines` registra novos Line2D como obstaculos de colisao
+  - `validate_kind()` publica para validacao eagerly em `create_layer()`
+- **`charts/enhancers/` package**: Enhancers de bar e stacked_bar movidos para subpackage dedicado, com auto-registro via import no `__init__.py`
+
+### Changed
+- **`ChartKind` agora e `str`** (`engine.py`): Tipo expandido de `Literal["line", "bar", "stacked_bar"]` para `str` -- qualquer metodo valido de matplotlib Axes (scatter, step, stem, hist, etc.) funciona automaticamente
+- **Engine e compose usam `ChartRenderer.render()`**: Dispatch unificado substitui `ChartRegistry.get(kind)` + chamada manual em ambos os pipelines
+- **Layer validation via `ChartRenderer.validate_kind()`** (`layer.py`): Validacao eagerly agora levanta `ValidationError` (em vez de `RegistryError`) para kinds invalidos
+- **Testes atualizados**: Import de `plot_bar` aponta para `charts/enhancers/bar.py`, teste de layer espera `ValidationError` em vez de `RegistryError`
+
+### Removed
+- **`ChartRegistry`** (`charts/registry.py`): Classe inteira deletada -- substituida por `ChartRenderer`
+- **`charts/line.py`**: Rendering de linhas agora tratado genericamente pelo `ChartRenderer._generic_render()`
+- **`charts/bar.py` e `charts/stacked_bar.py`** (top-level): Movidos para `charts/enhancers/` como enhancers registrados
+
 ## [2026-02-13 00:48]
 ### Fixed
 - **Right margin para highlight labels** (`engine.py`): Pipeline single-chart agora aplica `add_right_margin()` (expansao de 6% no xlim) quando highlights estao presentes, evitando clipping de labels no ultimo datapoint -- comportamento ja existia no `compose()` mas faltava no `engine.py`

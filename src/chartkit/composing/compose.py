@@ -19,7 +19,7 @@ from .._internal import (
     should_show_legend,
     validate_plot_params,
 )
-from ..charts import ChartRegistry
+from ..charts import ChartRenderer
 from ..decorations import add_footer, add_title
 from ..exceptions import ValidationError
 from ..metrics import MetricRegistry
@@ -86,8 +86,9 @@ def _render_layer(
     y_data: pd.Series | pd.DataFrame,
 ) -> None:
     highlight_modes = normalize_highlight(layer.highlight)
-    chart_fn = ChartRegistry.get(layer.kind)
-    chart_fn(ax, x_data, y_data, highlight=highlight_modes, **layer.kwargs)
+    ChartRenderer.render(
+        ax, layer.kind, x_data, y_data, highlight=highlight_modes, **layer.kwargs
+    )
 
     if layer.metrics:
         MetricRegistry.apply(ax, x_data, y_data, layer.metrics)

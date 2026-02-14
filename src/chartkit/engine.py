@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Literal
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -21,7 +20,7 @@ from ._internal import (
     validate_plot_params,
 )
 from ._internal.plot_validation import UnitFormat
-from .charts import ChartRegistry
+from .charts import ChartRenderer
 from .decorations import add_footer, add_title
 from .exceptions import StateError
 from .metrics import MetricRegistry
@@ -30,7 +29,7 @@ from .result import PlotResult
 from .settings import get_config
 from .styling import theme
 
-ChartKind = Literal["line", "bar", "stacked_bar"]
+ChartKind = str
 HighlightInput = bool | HighlightMode | list[HighlightMode]
 
 
@@ -116,9 +115,9 @@ class ChartingPlotter:
             ax.yaxis.set_major_formatter(FORMATTERS[units]())
 
         # 4. Plot
-        chart_fn = ChartRegistry.get(kind)
-        logger.debug("Dispatch: kind='{}'", kind)
-        chart_fn(ax, x_data, y_data, highlight=highlight_modes, **kwargs)
+        ChartRenderer.render(
+            ax, kind, x_data, y_data, highlight=highlight_modes, **kwargs
+        )
 
         # 5. Metrics
         if metrics:

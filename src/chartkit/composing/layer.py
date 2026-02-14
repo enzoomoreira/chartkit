@@ -54,14 +54,13 @@ def create_layer(
     (title, source, legend). Those are passed to ``compose()`` instead.
 
     Raises:
-        ValidationError: Invalid ``units``, ``highlight``, or ``axis``.
-        RegistryError: Unknown ``kind``.
+        ValidationError: Invalid ``units``, ``highlight``, ``axis``, or ``kind``.
     """
     from .._internal import validate_plot_params
-    from ..charts import ChartRegistry
+    from ..charts import ChartRenderer
 
     validate_plot_params(units=units, legend=None)
-    ChartRegistry.get(kind)
+    ChartRenderer.validate_kind(kind)
     if axis not in ("left", "right"):
         from ..exceptions import ValidationError
 

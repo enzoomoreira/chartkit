@@ -66,7 +66,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Applies theme via `theme.apply()`
    - Extracts data via `extract_plot_data()`
    - Applies axis formatters via `FORMATTERS` dispatch table
-   - Dispatches via `ChartRegistry.get(kind)` to the registered chart type
+   - Dispatches via `ChartRenderer.render(ax, kind, ...)` (enhancer or generic `ax.{kind}()`)
    - Applies metrics via `MetricRegistry.apply()`
    - Expands right margin via `add_right_margin()` when highlights are present
    - Applies legend and registers it as fixed obstacle
@@ -98,7 +98,7 @@ flowchart TD
     D1 --> D2["2. theme.apply()"]
     D2 --> D3["3. extract_plot_data()"]
     D3 --> D4["4. FORMATTERS[units]()"]
-    D4 --> D5["5. ChartRegistry.get(kind)()"]
+    D4 --> D5["5. ChartRenderer.render(kind)"]
     D5 --> D6["6. MetricRegistry.apply()"]
     D6 --> D6a["7. add_right_margin() (if highlights)"]
     D6a --> D6b["8. _apply_legend() + register_fixed(legend)"]
@@ -133,13 +133,14 @@ src/chartkit/
 │   ├── formatters.py     # Y-axis formatters (Babel i18n)
 │   └── fonts.py          # Custom font loading
 │
-├── charts/               # Pluggable chart types
-│   ├── __init__.py       # Imports trigger automatic registration
-│   ├── registry.py       # ChartRegistry + ChartFunc Protocol
+├── charts/               # Generic rendering + enhancers
+│   ├── __init__.py       # Enhancer imports trigger automatic registration
+│   ├── renderer.py       # ChartRenderer - generic rendering (ax.{kind}()) + enhancer dispatch
 │   ├── _helpers.py       # Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin)
-│   ├── line.py           # Line chart (@ChartRegistry.register("line"))
-│   ├── bar.py            # Bar chart (grouped bars, sort, color='cycle')
-│   └── stacked_bar.py    # Stacked bars (categorical support)
+│   └── enhancers/        # Specialized handlers for complex chart types
+│       ├── __init__.py   # Auto-imports bar, stacked_bar
+│       ├── bar.py        # Bar chart enhancer (grouped bars, sort, color='cycle')
+│       └── stacked_bar.py # Stacked bar enhancer (categorical support)
 │
 ├── composing/            # Multi-layer chart composition
 │   ├── __init__.py       # Facade: compose, Layer, AxisSide, create_layer
@@ -229,11 +230,10 @@ tests/                    # Test suite
 
 | Module | Responsibility |
 |--------|---------------|
-| `charts/registry.py` | ChartRegistry: decorator + dict + get/available |
+| `charts/renderer.py` | ChartRenderer: generic rendering via `ax.{kind}()` + enhancer dispatch + line obstacle registration |
 | `charts/_helpers.py` | Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin) |
-| `charts/line.py` | Renders line chart + registers line obstacles for collision |
-| `charts/bar.py` | Renders bar chart (grouped bars, sort, color='cycle', categorical) |
-| `charts/stacked_bar.py` | Renders stacked bars (categorical support) |
+| `charts/enhancers/bar.py` | Bar chart enhancer (grouped bars, sort, color='cycle', categorical) |
+| `charts/enhancers/stacked_bar.py` | Stacked bar enhancer (categorical support) |
 | `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |
 | `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions, _ComposePlotter |
 | `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, fill_between, std_band, vband) |

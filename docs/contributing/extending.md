@@ -223,16 +223,29 @@ df.chartkit.my_transform().variation(horizon='year').plot()
 
 ## Creating New Chart Types
 
-New chart types are registered via `@ChartRegistry.register()`. The engine
-dispatches automatically via `ChartRegistry.get(kind)` -- no need to
-modify `engine.py`.
+chartkit supports two approaches for new chart types:
 
-### 1. Create the chart file
+### Generic Types (No Code Needed)
 
-The function must follow the `ChartFunc` protocol:
+Any valid matplotlib Axes method works automatically as `kind`. The `ChartRenderer` calls `ax.{kind}()` with automatic color cycling, highlight inference, and line obstacle registration:
 
 ```python
-# In src/chartkit/charts/scatter.py
+# These work out of the box -- no registration needed
+df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
+df.chartkit.plot(kind='step', where='mid')
+df.chartkit.plot(kind='stem')
+```
+
+### Enhancers (For Complex Types)
+
+When a chart type needs custom logic beyond a simple `ax.{kind}()` call (e.g., bar grouping, stacking, categorical axis handling), register an enhancer via `@ChartRenderer.register_enhancer()`.
+
+#### 1. Create the enhancer file
+
+The function must follow the `Enhancer` protocol:
+
+```python
+# In src/chartkit/charts/enhancers/waterfall.py
 
 from __future__ import annotations
 
@@ -241,72 +254,48 @@ from typing import TYPE_CHECKING
 import pandas as pd
 from matplotlib.axes import Axes
 
-from ..settings import get_config
-from ..styling.theme import theme
-from .registry import ChartRegistry
+from ...settings import get_config
+from ...styling.theme import theme
+from ..renderer import ChartRenderer
 
 if TYPE_CHECKING:
-    from ..overlays.markers import HighlightMode
+    from ...overlays.markers import HighlightMode
 
 
-@ChartRegistry.register("scatter")
-def plot_scatter(
+@ChartRenderer.register_enhancer("waterfall")
+def plot_waterfall(
     ax: Axes,
     x: pd.Index | pd.Series,
-    y_data: pd.DataFrame | pd.Series,
-    highlight: list[HighlightMode] | None = None,
-    size: int = 50,
-    alpha: float = 0.7,
+    y_data: pd.Series | pd.DataFrame,
+    highlight: list[HighlightMode],
     **kwargs,
 ) -> None:
     config = get_config()
-
-    if isinstance(y_data, pd.Series):
-        y_data = y_data.to_frame()
-
-    colors = theme.colors.cycle()
-
-    for i, col in enumerate(y_data.columns):
-        color = colors[i % len(colors)]
-        ax.scatter(
-            x,
-            y_data[col],
-            s=size,
-            alpha=alpha,
-            color=color,
-            label=col,
-            **kwargs,
-        )
-
-    if len(y_data.columns) > 1:
-        ax.legend()
+    # Custom rendering logic here
+    ...
 ```
 
-### 2. Import in `charts/__init__.py`
+#### 2. Import in `charts/enhancers/__init__.py`
 
 The import triggers automatic registration via decorator:
 
 ```python
-from .registry import ChartRegistry
-from .bar import plot_bar
-from .line import plot_line
-from .scatter import plot_scatter  # Import triggers @ChartRegistry.register("scatter")
+from . import bar, stacked_bar, waterfall  # Import triggers registration
 
-__all__ = ["ChartRegistry", "plot_bar", "plot_line", "plot_scatter"]
+__all__: list[str] = []
 ```
 
 No need to modify `engine.py`. Dispatch is automatic:
 
 ```python
-# engine.py (already existing)
-chart_fn = ChartRegistry.get(kind)
-chart_fn(ax, x_data, y_data, highlight=highlight, **kwargs)
+# ChartRenderer.render() dispatches to enhancer or generic path
+ChartRenderer.render(ax, kind, x_data, y_data, highlight=highlight, **kwargs)
 ```
 
 Usage:
 
 ```python
-df.chartkit.plot(kind='scatter', size=100, alpha=0.5)
+df.chartkit.plot(kind='waterfall')
 ```
 
 ---

@@ -9,7 +9,7 @@ from ._internal import register_fixed, register_moveable, register_passive
 from ._logging import configure_logging, disable_logging
 from .accessor import ChartingAccessor
 from .composing import AxisSide, Layer, compose
-from .charts import ChartRegistry
+from .charts import ChartRenderer
 from .engine import ChartingPlotter, ChartKind, HighlightInput, UnitFormat
 from .overlays.markers import HighlightMode
 from .exceptions import (
@@ -83,7 +83,7 @@ __all__ = [
     # Main classes
     "ChartingAccessor",
     "ChartingPlotter",
-    "ChartRegistry",
+    "ChartRenderer",
     "PlotResult",
     "TransformAccessor",
     "MetricRegistry",

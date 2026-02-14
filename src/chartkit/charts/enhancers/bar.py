@@ -6,28 +6,28 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
-from ..exceptions import ValidationError
-from ..overlays import add_highlight
-from ..settings import get_config
-from ..styling.theme import theme
-from ._helpers import (
+from ...exceptions import ValidationError
+from ...overlays import add_highlight
+from ...settings import get_config
+from ...styling.theme import theme
+from .._helpers import (
     apply_y_origin,
     detect_bar_width,
     is_categorical_index,
     prepare_categorical_axis,
     validate_y_origin,
 )
-from .registry import ChartRegistry
+from ..renderer import ChartRenderer
 
 if TYPE_CHECKING:
-    from ..overlays import HighlightMode
+    from ...overlays import HighlightMode
 
 __all__ = ["plot_bar"]
 
 _VALID_SORT = {None, "ascending", "descending"}
 
 
-@ChartRegistry.register("bar")
+@ChartRenderer.register_enhancer("bar")
 def plot_bar(
     ax: Axes,
     x: pd.Index | pd.Series,

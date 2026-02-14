@@ -32,7 +32,7 @@ def plot(
 |-----------|------|---------|-------------|
 | `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the index |
 | `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses numeric columns |
-| `kind` | `ChartKind` | `"line"` | Chart type registered in `ChartRegistry` (e.g., `"line"`, `"bar"`, `"stacked_bar"`) |
+| `kind` | `ChartKind` | `"line"` | Chart type: any valid matplotlib Axes method (e.g., `"line"`, `"bar"`, `"stacked_bar"`, `"scatter"`, `"step"`) or registered enhancer |
 | `title` | `str \| None` | `None` | Chart title |
 | `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see table below) |
 | `source` | `str \| None` | `None` | Data source for footer. When `None`, uses `branding.default_source` as fallback |
@@ -62,7 +62,7 @@ Metrics support custom labels via `|` syntax: `'ath|Maximum'`, `'ma:12@col|12M A
 #### Types
 
 ```python
-ChartKind = Literal["line", "bar", "stacked_bar"]
+ChartKind = str  # any valid matplotlib Axes method or registered enhancer
 UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
 HighlightMode = Literal["last", "max", "min", "all"]
 HighlightInput = bool | HighlightMode | list[HighlightMode]
@@ -217,17 +217,28 @@ Currency formatters use Babel. Locale configurable via `formatters.locale.babel_
 
 ---
 
-## ChartRegistry
+## ChartRenderer
 
-Pluggable chart type system via decorator.
+Generic chart renderer with enhancer-based extensibility. Simple chart types (scatter, step, stem, hist, etc.) work automatically via `ax.{kind}()`. Complex types that need custom logic (bar grouping, stacking) are handled by registered enhancers.
 
-### Register new type
+### Generic Rendering
+
+Any valid matplotlib Axes method can be used as `kind`:
 
 ```python
-from chartkit.charts.registry import ChartRegistry
+df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
+df.chartkit.plot(kind='step', where='mid')
+```
 
-@ChartRegistry.register("scatter")
-def plot_scatter(ax, x, y_data, highlight=None, **kwargs):
+### Register an enhancer
+
+Enhancers handle chart types that need custom logic beyond a simple `ax.{kind}()` call:
+
+```python
+from chartkit.charts.renderer import ChartRenderer
+
+@ChartRenderer.register_enhancer("my_chart")
+def plot_my_chart(ax, x, y_data, highlight, **kwargs):
     ...
 ```
 
@@ -235,9 +246,10 @@ def plot_scatter(ax, x, y_data, highlight=None, **kwargs):
 
 | Method | Return | Description |
 |--------|--------|-------------|
-| `register(name)` | decorator | Registers function as chart type |
-| `get(name)` | `ChartFunc` | Returns registered function |
-| `available()` | `list[str]` | Lists registered names |
+| `register_enhancer(name)` | decorator | Registers specialized chart handler |
+| `render(ax, kind, x, y_data, highlight, **kwargs)` | `None` | Renders chart (enhancer or generic) |
+| `validate_kind(kind)` | `None` | Validates that kind is a valid Axes method or enhancer |
+| `available()` | `list[str]` | Lists registered enhancer names |
 
 ---
 
@@ -584,11 +596,11 @@ The new exceptions inherit from corresponding built-in types, maintaining compat
 - `plot()` receives an invalid mode in `highlight` (e.g., `"banana"` instead of `"last"`, `"max"` or `"min"`)
 - `plot()` receives an invalid value in `units` (e.g., `"EUR"` instead of `"BRL"`)
 - `y_origin` receives a value outside `"zero"` / `"auto"` in bar charts
+- `plot()` or `layer()` receives a `kind` that is not a valid matplotlib Axes method or registered enhancer
 - `diff(periods=0)` (returns all-zeros, almost certainly a user error)
 - `zscore(window=1)` (std of 1 value is undefined)
 
 `RegistryError` is raised when:
-- `ChartRegistry.get()` receives an unregistered chart type
 - `add_highlight()` receives a `style` not registered in `HIGHLIGHT_STYLES`
 
 `StateError` is raised when:
@@ -632,7 +644,7 @@ from chartkit import (
     # Main classes
     ChartingAccessor,
     ChartingPlotter,
-    ChartRegistry,
+    ChartRenderer,
     PlotResult,
     TransformAccessor,
     MetricRegistry,

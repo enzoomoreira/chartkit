@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-from chartkit.charts.bar import plot_bar
+from chartkit.charts.enhancers.bar import plot_bar
 from chartkit.exceptions import ValidationError
 
 

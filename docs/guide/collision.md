@@ -99,7 +99,7 @@ final decorations:
 1. Style           theme.apply()
 2. Data            extract_plot_data()
 3. Y Formatter     FORMATTERS[units]()
-4. Plot Core       ChartRegistry dispatch + highlights (register_moveable)
+4. Plot Core       ChartRenderer dispatch + highlights (register_moveable)
 5. Metrics         ATH/ATL/hline (register_fixed) + MA (register_passive) + band (register_passive)
    Fill between    add_fill_between() (if configured)
    Right margin    add_right_margin() when highlights present (avoids label clipping)

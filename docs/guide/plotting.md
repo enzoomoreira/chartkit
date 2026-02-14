@@ -59,7 +59,7 @@ If `y` is not specified, all numeric columns will be plotted.
 |-----------|------|---------|-------------|
 | `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the DataFrame index |
 | `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses all numeric columns |
-| `kind` | `ChartKind` | `"line"` | Chart type: `"line"`, `"bar"`, or `"stacked_bar"` |
+| `kind` | `ChartKind` | `"line"` | Chart type: any valid matplotlib Axes method (`"line"`, `"bar"`, `"stacked_bar"`, `"scatter"`, `"step"`, etc.) |
 | `title` | `str \| None` | `None` | Chart title |
 | `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see [Formatters](#formatters-table)) |
 | `source` | `str \| None` | `None` | Data source for footer |

@@ -54,7 +54,7 @@ compose(layer_rate, layer_variation, title="Rate and Monthly Variation", source=
 - **Declarative Metrics**: `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5', 'target:1000', 'std_band:20:2', 'vband:2020-03:2020-06']`
 - **Chained Transforms**: `df.chartkit.variation(horizon='year').drawdown().plot()` with method chaining and frequency auto-detection
 - **Overlays**: Area between series (`fill_between`), standard deviation bands, vertical bands
-- **ChartRegistry**: Pluggable chart type system via decorator
+- **ChartRenderer**: Generic rendering via `ax.{kind}()` for any matplotlib chart type, with enhancers for complex types
 - **TOML + Env Var Configuration**: Customize via TOML file or environment variables (`CHARTKIT_*`)
 
 ## Documentation
