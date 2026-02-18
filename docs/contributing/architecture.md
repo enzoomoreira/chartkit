@@ -69,6 +69,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Dispatches via `ChartRenderer.render(ax, kind, ...)` (enhancer or generic `ax.{kind}()`)
    - Applies metrics via `MetricRegistry.apply()`
    - Expands right margin via `add_right_margin()` when highlights are present
+   - Applies tick rotation via `apply_tick_rotation()` (auto-detect overlap or fixed angle)
    - Applies legend and registers it as fixed obstacle
    - Resolves label collisions via `resolve_collisions(ax)`
    - Adds decorations via `add_title(ax)` and `add_footer(fig)`
@@ -101,10 +102,11 @@ flowchart TD
     D4 --> D5["5. ChartRenderer.render(kind)"]
     D5 --> D6["6. MetricRegistry.apply()"]
     D6 --> D6a["7. add_right_margin() (if highlights)"]
-    D6a --> D6b["8. _apply_legend() + register_artist_obstacle(legend)"]
-    D6b --> D7["9. resolve_collisions()"]
-    D7 --> D8["10. add_title()"]
-    D8 --> D9["11. add_footer()"]
+    D6a --> D6c["8. apply_tick_rotation()"]
+    D6c --> D6b["9. _apply_legend() + register_artist_obstacle(legend)"]
+    D6b --> D7["10. resolve_collisions()"]
+    D7 --> D8["11. add_title()"]
+    D8 --> D9["12. add_footer()"]
     D9 --> E["PlotResult"]
 ```
 
@@ -180,7 +182,8 @@ src/chartkit/
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
     ├── highlight.py      # normalize_highlight()
     ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat
-    └── saving.py         # save_figure() with path resolution
+    ├── saving.py         # save_figure() with path resolution
+    └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
 tests/                    # Test suite
 ├── conftest.py           # Shared fixtures (financial DataFrames, edge cases, Agg backend)

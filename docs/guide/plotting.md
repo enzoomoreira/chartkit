@@ -67,6 +67,7 @@ If `y` is not specified, all numeric columns will be plotted.
 | `metrics` | `str \| list[str] \| None` | `None` | Declarative metrics (see [Metrics Guide](metrics.md)) |
 | `fill_between` | `tuple[str, str] \| None` | `None` | Two column names to shade the area between |
 | `legend` | `bool \| None` | `None` | `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
 | `debug` | `bool` | `False` | Show collision debug overlay (see [Collision Guide](collision.md)) |
 | `**kwargs` | - | - | Chart-specific args (e.g., `sort`, `color`, `y_origin` for bars) |
 

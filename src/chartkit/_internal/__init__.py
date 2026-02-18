@@ -22,6 +22,7 @@ from .formatting import FORMATTERS
 from .highlight import normalize_highlight
 from .plot_validation import validate_plot_params
 from .saving import save_figure
+from .tick_rotation import apply_tick_rotation
 
 __all__ = [
     "FORMATTERS",
@@ -34,6 +35,7 @@ __all__ = [
     "resolve_collisions",
     "resolve_series",
     "resolve_composed_collisions",
+    "apply_tick_rotation",
     "save_figure",
     "should_show_legend",
     "validate_plot_params",

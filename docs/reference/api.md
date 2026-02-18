@@ -21,6 +21,7 @@ def plot(
     metrics: str | list[str] | None = None,
     fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
+    tick_rotation: int | Literal["auto"] | None = None,
     debug: bool = False,
     **kwargs,
 ) -> PlotResult
@@ -40,6 +41,7 @@ def plot(
 | `metrics` | `str \| list[str] \| None` | `None` | Metric(s) to apply (string or list) |
 | `fill_between` | `tuple[str, str] \| None` | `None` | Tuple `(col1, col2)` to shade area between two columns |
 | `legend` | `bool \| None` | `None` | Legend control. `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
 | `debug` | `bool` | `False` | Draw collision debug overlay (colored bboxes for obstacles, labels, and line paths) |
 | `**kwargs` | - | - | Chart-specific parameters (e.g., `y_origin='auto'`) and extra matplotlib args |
 
@@ -142,6 +144,7 @@ def compose(
     source: str | None = None,
     legend: bool | None = None,
     figsize: tuple[float, float] | None = None,
+    tick_rotation: int | Literal["auto"] | None = None,
     debug: bool = False,
 ) -> PlotResult
 ```
@@ -155,6 +158,7 @@ Compose multiple layers into a single chart with optional dual axes.
 | `source` | `str \| None` | `None` | Data source for footer |
 | `legend` | `bool \| None` | `None` | Legend control |
 | `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
+| `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
 | `debug` | `bool` | `False` | Draw collision debug overlay |
 
 Raises `ValidationError` if no layers are provided or all layers are on the right axis.
@@ -315,6 +319,7 @@ def plot(
     metrics: str | list[str] | None = None,
     fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
+    tick_rotation: int | Literal["auto"] | None = None,
     debug: bool = False,
     **kwargs,
 ) -> PlotResult
@@ -399,6 +404,7 @@ class ChartingConfig(BaseSettings):
     bands: BandsConfig
     markers: MarkersConfig
     collision: CollisionConfig
+    ticks: TicksConfig
     transforms: TransformsConfig
     formatters: FormattersConfig
     labels: LabelsConfig
@@ -559,6 +565,13 @@ class ChartingConfig(BaseSettings):
 | `connector_alpha` | `float` | `0.6` |
 | `connector_style` | `str` | `"-"` |
 | `connector_width` | `float` | `1.0` |
+
+#### TicksConfig
+
+| Field | Type | Default |
+|-------|------|---------|
+| `rotation` | `int \| Literal["auto"]` | `"auto"` |
+| `auto_rotation_angle` | `int` | `45` |
 
 #### TransformsConfig
 

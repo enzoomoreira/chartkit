@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import pandas as pd
 
@@ -84,6 +84,7 @@ class ChartingAccessor:
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
+        tick_rotation: int | Literal["auto"] | None = None,
         debug: bool = False,
         **kwargs,
     ) -> PlotResult:
@@ -100,6 +101,7 @@ class ChartingAccessor:
             metrics=metrics,
             fill_between=fill_between,
             legend=legend,
+            tick_rotation=tick_rotation,
             debug=debug,
             **kwargs,
         )

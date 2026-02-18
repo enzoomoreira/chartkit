@@ -143,6 +143,12 @@ dpi = 300              # Resolucao para exportacao
 # alpha = 0.9
 # frameon = true
 
+# --- Ticks ------------------------------------------------------------------
+
+# [ticks]
+# rotation = "auto"          # "auto" ou angulo em graus (0, 45, 90)
+# auto_rotation_angle = 45   # Angulo quando auto-detect ativa rotacao
+
 # --- Barras ------------------------------------------------------------------
 
 # [bars]

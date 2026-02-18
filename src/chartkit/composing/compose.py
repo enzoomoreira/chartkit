@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -11,6 +11,7 @@ from loguru import logger
 from .._internal import (
     FORMATTERS,
     add_right_margin,
+    apply_tick_rotation,
     extract_plot_data,
     normalize_highlight,
     register_artist_obstacle,
@@ -131,6 +132,7 @@ def compose(
     source: str | None = None,
     legend: bool | None = None,
     figsize: tuple[float, float] | None = None,
+    tick_rotation: int | Literal["auto"] | None = None,
     debug: bool = False,
 ) -> PlotResult:
     """Compose multiple layers into a single chart with optional dual axes.
@@ -141,6 +143,8 @@ def compose(
         source: Data source for the footer.
         legend: Legend control. ``None`` = auto, ``True`` = force, ``False`` = suppress.
         figsize: Override figure size ``(width, height)`` in inches.
+        tick_rotation: X-axis tick label rotation. ``"auto"`` detects
+            overlap; ``int`` forces a fixed angle. ``None`` uses config.
 
     Raises:
         ValidationError: No layers provided or all layers on right axis.
@@ -180,25 +184,28 @@ def compose(
         )
         _render_layer(ax, layer, x_data, y_data)
 
-    # 4. Right margin for highlight labels
+    # 4. Tick rotation
+    apply_tick_rotation(fig, ax_left, tick_rotation=tick_rotation)
+
+    # 5. Right margin for highlight labels
     has_highlights = any(layer.highlight for layer in layers)
     if has_highlights:
         add_right_margin(ax_left, ax_right)
 
-    # 5. Legend (consolidated from both axes)
+    # 6. Legend (consolidated from both axes)
     _apply_composed_legend(ax_left, ax_right, legend)
 
     legend_artist = ax_left.get_legend()
     if legend_artist is not None:
         register_artist_obstacle(ax_left, legend_artist, filled=True)
 
-    # 6. Collision resolution (unified cross-axis)
+    # 7. Collision resolution (unified cross-axis)
     all_axes: list[plt.Axes] = [ax_left]
     if ax_right is not None:
         all_axes.append(ax_right)
     resolve_composed_collisions(all_axes, debug=debug)
 
-    # 7. Decorations
+    # 8. Decorations
     add_title(ax_left, title)
     add_footer(fig, source)
 

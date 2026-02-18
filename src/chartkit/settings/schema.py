@@ -27,6 +27,7 @@ __all__ = [
     "BandsConfig",
     "MarkersConfig",
     "CollisionConfig",
+    "TicksConfig",
     "TransformsConfig",
     "LocaleConfig",
     "MagnitudeConfig",
@@ -129,6 +130,11 @@ class LegendConfig(BaseModel):
     loc: str = "best"
     alpha: float = 0.9
     frameon: bool = True
+
+
+class TicksConfig(BaseModel):
+    rotation: int | Literal["auto"] = "auto"
+    auto_rotation_angle: int = 45
 
 
 class LinesConfig(BaseModel):
@@ -256,6 +262,7 @@ class ChartingConfig(BaseSettings):
     formatters: FormattersConfig = Field(default_factory=FormattersConfig)
     labels: LabelsConfig = Field(default_factory=LabelsConfig)
     legend: LegendConfig = Field(default_factory=LegendConfig)
+    ticks: TicksConfig = Field(default_factory=TicksConfig)
     paths: PathsConfig = Field(default_factory=PathsConfig)
 
     @classmethod

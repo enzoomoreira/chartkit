@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -11,6 +12,7 @@ from matplotlib.axes import Axes
 from ._internal import (
     FORMATTERS,
     add_right_margin,
+    apply_tick_rotation,
     extract_plot_data,
     normalize_highlight,
     register_artist_obstacle,
@@ -54,6 +56,7 @@ class ChartingPlotter:
         metrics: str | list[str] | None = None,
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
+        tick_rotation: int | Literal["auto"] | None = None,
         debug: bool = False,
         **kwargs,
     ) -> PlotResult:
@@ -76,6 +79,8 @@ class ChartingPlotter:
                 two DataFrame columns.
             legend: Legend control. ``None`` = auto (shows when there are
                 2+ labeled artists), ``True`` = force, ``False`` = suppress.
+            tick_rotation: X-axis tick label rotation. ``"auto"`` detects
+                overlap; ``int`` forces a fixed angle. ``None`` uses config.
             **kwargs: Chart-specific parameters (e.g.: ``y_origin='auto'`` for bars)
                 and matplotlib parameters passed directly to the renderer.
         """
@@ -132,6 +137,9 @@ class ChartingPlotter:
         # 5c. Right margin for highlight labels
         if highlight_modes:
             add_right_margin(ax, ax_right=None)
+
+        # 5d. Tick rotation
+        apply_tick_rotation(fig, ax, tick_rotation=tick_rotation)
 
         # 6. Legend
         self._apply_legend(ax, legend)

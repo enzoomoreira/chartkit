@@ -134,6 +134,10 @@ loc = "best"
 alpha = 0.9
 frameon = true
 
+[ticks]
+rotation = "auto"          # "auto" or angle in degrees (0, 45, 90)
+auto_rotation_angle = 45   # Angle when auto-detect triggers rotation
+
 [paths]
 charts_subdir = "charts"
 outputs_dir = ""    # Empty = auto-discovery

@@ -1,5 +1,16 @@
 # Project Changelog
 
+## [2026-02-18 14:48]
+### Added
+- **Sistema de tick rotation** (`_internal/tick_rotation.py`): Auto-rotacao de labels do eixo X para prevenir sobreposicao -- modo `"auto"` detecta overlap via `get_window_extent()` e aplica rotacao apenas quando necessario; modo fixo aceita angulo em graus
+- **`TicksConfig`** (`settings/schema.py`): Nova sub-config com `rotation` (`"auto"` ou angulo) e `auto_rotation_angle` (default 45) -- configuravel via TOML e env vars
+- **Parametro `tick_rotation`** em `plot()`, `compose()` e accessor: Controle per-call da rotacao de ticks, com precedencia sobre config global
+- **Secao `[ticks]` no `charting.example.toml`**: Exemplo de configuracao com `rotation` e `auto_rotation_angle`
+
+### Changed
+- **Pipeline do engine** (`engine.py`): Novo step 5d aplica tick rotation apos right margin e antes da legenda
+- **Pipeline do compose** (`compose.py`): Tick rotation inserido como step 4, reordenando steps subsequentes (5-8)
+
 ## [2026-02-18 14:25]
 ### Added
 - **9 novos chart enhancers** (`charts/enhancers/`): Suporte especializado para area, ecdf, eventplot, hist, pie, stackplot, stairs, statistical (boxplot/violinplot) e stem -- cada um registrado via `@ChartRenderer.register_enhancer` com color cycling, labels e kwargs corretos para a API do matplotlib
