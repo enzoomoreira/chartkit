@@ -42,6 +42,22 @@ df.chartkit.plot(
 Internally, the `engine.py` pipeline calls `resolve_collisions(ax)` after
 all elements have been registered.
 
+### Disabling the Engine
+
+Pass `collision=False` to skip all collision processing:
+
+```python
+# No collision resolution -- useful for simple charts or when
+# the engine interferes with a specific layout
+df.chartkit.plot(title="Simple Chart", highlight=True, collision=False)
+
+# Also available in compose()
+compose(layer1, layer2, title="Composed", collision=False)
+```
+
+When disabled, legend obstacle registration and label repositioning are
+both skipped entirely.
+
 ---
 
 ## Manual Usage
@@ -102,8 +118,8 @@ final decorations:
 5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_passive) + band (register_passive)
    Fill between    add_fill_between() (if configured)
    Right margin    add_right_margin() when highlights present (avoids label clipping)
-6. Legend           _apply_legend() + register_artist_obstacle(ax, legend_artist, filled=True)
-7. Collisions      resolve_collisions(ax) or resolve_composed_collisions(axes)
+6. Legend           _apply_legend()
+7. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
 8. Decorations     add_title(ax), add_footer(fig)
 -> PlotResult
 ```

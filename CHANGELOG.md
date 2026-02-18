@@ -1,5 +1,18 @@
 # Project Changelog
 
+## [2026-02-18 15:30]
+### Added
+- **Parametro `collision`** em `plot()`, `compose()` e accessor: `collision=False` desabilita completamente a collision resolution engine -- util para graficos simples onde a resolucao de colisao e desnecessaria ou interfere no layout
+- **Ajuste automatico de margem inferior** (`_internal/tick_rotation.py`): Apos rotacao de tick labels, `_adjust_bottom_margin()` empurra o axes para cima se labels sobreporem a area do footer
+
+### Changed
+- **Collision engine condicional** (`engine.py`, `compose.py`): Registro de legend como obstaculo e resolucao de colisoes agora executam apenas quando `collision=True` (default), evitando processamento desnecessario
+- **Skip de rotacao quando angulo e zero** (`tick_rotation.py`): Early return evita setar rotation/ha desnecessariamente e pular ajuste de margem
+
+## [2026-02-18 15:07]
+### Added
+- **`units="x"` (multiplier formatter)**: Novo formato de eixo Y para dados que representam multiplicadores (P/L, EV/EBITDA, etc.) -- formata valores como `12,3x`, `0,8x` respeitando locale para separador decimal
+
 ## [2026-02-18 14:48]
 ### Added
 - **Sistema de tick rotation** (`_internal/tick_rotation.py`): Auto-rotacao de labels do eixo X para prevenir sobreposicao -- modo `"auto"` detecta overlap via `get_window_extent()` e aplica rotacao apenas quando necessario; modo fixo aceita angulo em graus

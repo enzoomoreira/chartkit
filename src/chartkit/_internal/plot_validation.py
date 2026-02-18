@@ -9,7 +9,9 @@ from pydantic import ValidationError as PydanticValidationError
 
 from ..exceptions import ValidationError
 
-UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
+UnitFormat = Literal[
+    "BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x"
+]
 
 
 class PlotParamsModel(BaseModel):

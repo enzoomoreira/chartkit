@@ -22,6 +22,7 @@ def plot(
     fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
+    collision: bool = True,
     debug: bool = False,
     **kwargs,
 ) -> PlotResult
@@ -42,6 +43,7 @@ def plot(
 | `fill_between` | `tuple[str, str] \| None` | `None` | Tuple `(col1, col2)` to shade area between two columns |
 | `legend` | `bool \| None` | `None` | Legend control. `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
+| `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Draw collision debug overlay (colored bboxes for obstacles, labels, and line paths) |
 | `**kwargs` | - | - | Chart-specific parameters (e.g., `y_origin='auto'`) and extra matplotlib args |
 
@@ -65,7 +67,7 @@ Metrics support custom labels via `|` syntax: `'ath|Maximum'`, `'ma:12@col|12M A
 
 ```python
 ChartKind = str  # any valid matplotlib Axes method or registered enhancer
-UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points"]
+UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x"]
 HighlightMode = Literal["last", "max", "min", "all"]
 HighlightInput = bool | HighlightMode | list[HighlightMode]
 ```
@@ -145,6 +147,7 @@ def compose(
     legend: bool | None = None,
     figsize: tuple[float, float] | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
+    collision: bool = True,
     debug: bool = False,
 ) -> PlotResult
 ```
@@ -159,6 +162,7 @@ Compose multiple layers into a single chart with optional dual axes.
 | `legend` | `bool \| None` | `None` | Legend control |
 | `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
+| `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Draw collision debug overlay |
 
 Raises `ValidationError` if no layers are provided or all layers are on the right axis.
@@ -216,6 +220,7 @@ Same parameters as `plot()` but without chart-level options (title, source, lege
 | `"%"` | Percentage | 10,5% |
 | `"points"` | Locale-aware integers | 1.234.567 |
 | `"human"` | Compact notation | 1,2M |
+| `"x"` | Multiplier | 12,3x |
 
 Currency formatters use Babel. Locale configurable via `formatters.locale.babel_locale`.
 
@@ -320,6 +325,7 @@ def plot(
     fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
+    collision: bool = True,
     debug: bool = False,
     **kwargs,
 ) -> PlotResult

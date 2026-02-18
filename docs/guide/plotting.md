@@ -68,6 +68,7 @@ If `y` is not specified, all numeric columns will be plotted.
 | `fill_between` | `tuple[str, str] \| None` | `None` | Two column names to shade the area between |
 | `legend` | `bool \| None` | `None` | `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
 | `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
+| `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Show collision debug overlay (see [Collision Guide](collision.md)) |
 | `**kwargs` | - | - | Chart-specific args (e.g., `sort`, `color`, `y_origin` for bars) |
 
@@ -430,6 +431,7 @@ The `human` format is similar to `BRL_compact`, but without the currency symbol.
 | `'%'` | Percentage | 10,5% |
 | `'points'` | Locale-aware integers | 1.234.567 |
 | `'human'` | Compact notation | 1,2M |
+| `'x'` | Multiplier | 12,3x |
 
 Currency formatters use the [Babel](https://babel.pocoo.org/) library and support any ISO 4217 currency code.
 

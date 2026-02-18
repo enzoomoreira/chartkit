@@ -29,6 +29,35 @@ def _has_overlap(fig: plt.Figure, ax: Axes) -> bool:
     return False
 
 
+def _adjust_bottom_margin(fig: plt.Figure, ax: Axes) -> None:
+    """Push axes up if rotated tick labels overlap the footer area."""
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+
+    labels = [t for t in ax.get_xticklabels() if t.get_text()]
+    if not labels:
+        return
+
+    # Lowest tick label extent in figure-fraction coordinates
+    min_y = min(
+        label.get_window_extent(renderer).transformed(fig.transFigure.inverted()).y0
+        for label in labels
+    )
+
+    config = get_config()
+    footer_y = config.layout.footer.y
+
+    # Estimate footer text height (points -> inches -> figure fraction)
+    footer_height = (config.fonts.sizes.footer / 72) / fig.get_size_inches()[1]
+    clearance = footer_y + footer_height + 0.01
+
+    if min_y >= clearance:
+        return
+
+    current_bottom = ax.get_position().y0
+    fig.subplots_adjust(bottom=current_bottom + (clearance - min_y))
+
+
 def apply_tick_rotation(
     fig: plt.Figure,
     ax: Axes,
@@ -39,6 +68,8 @@ def apply_tick_rotation(
 
     Resolution order: ``tick_rotation`` parameter > ``config.ticks.rotation``.
     When ``"auto"``, rotation is applied only if adjacent labels overlap.
+    After rotation, the bottom margin is adjusted so labels do not overlap
+    the footer.
     """
     config = get_config()
     effective = tick_rotation if tick_rotation is not None else config.ticks.rotation
@@ -51,5 +82,10 @@ def apply_tick_rotation(
     else:
         angle = effective
 
+    if angle == 0:
+        return
+
     ha = "right" if angle > 0 else "center"
     plt.setp(ax.get_xticklabels(), rotation=angle, ha=ha)
+
+    _adjust_bottom_margin(fig, ax)

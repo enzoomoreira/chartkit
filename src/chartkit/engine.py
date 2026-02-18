@@ -57,6 +57,7 @@ class ChartingPlotter:
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
         tick_rotation: int | Literal["auto"] | None = None,
+        collision: bool = True,
         debug: bool = False,
         **kwargs,
     ) -> PlotResult:
@@ -81,6 +82,8 @@ class ChartingPlotter:
                 2+ labeled artists), ``True`` = force, ``False`` = suppress.
             tick_rotation: X-axis tick label rotation. ``"auto"`` detects
                 overlap; ``int`` forces a fixed angle. ``None`` uses config.
+            collision: Enable collision resolution engine. ``False`` skips
+                all label collision processing.
             **kwargs: Chart-specific parameters (e.g.: ``y_origin='auto'`` for bars)
                 and matplotlib parameters passed directly to the renderer.
         """
@@ -144,12 +147,12 @@ class ChartingPlotter:
         # 6. Legend
         self._apply_legend(ax, legend)
 
-        legend_artist = ax.get_legend()
-        if legend_artist is not None:
-            register_artist_obstacle(ax, legend_artist, filled=True)
-
         # 7. Collision resolution
-        resolve_collisions(ax, debug=debug)
+        if collision:
+            legend_artist = ax.get_legend()
+            if legend_artist is not None:
+                register_artist_obstacle(ax, legend_artist, filled=True)
+            resolve_collisions(ax, debug=debug)
 
         # 8. Decorations
         add_title(ax, title)

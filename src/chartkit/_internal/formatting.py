@@ -9,6 +9,7 @@ from ..styling import (
     compact_currency_formatter,
     currency_formatter,
     human_readable_formatter,
+    multiplier_formatter,
     percent_formatter,
     points_formatter,
 )
@@ -23,6 +24,7 @@ FORMATTERS = {
     "%": percent_formatter,
     "human": human_readable_formatter,
     "points": points_formatter,
+    "x": multiplier_formatter,
 }
 
 assert set(FORMATTERS.keys()) == set(get_args(UnitFormat)), (

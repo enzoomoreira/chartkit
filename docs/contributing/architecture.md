@@ -70,8 +70,8 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Applies metrics via `MetricRegistry.apply()`
    - Expands right margin via `add_right_margin()` when highlights are present
    - Applies tick rotation via `apply_tick_rotation()` (auto-detect overlap or fixed angle)
-   - Applies legend and registers it as fixed obstacle
-   - Resolves label collisions via `resolve_collisions(ax)`
+   - Applies legend
+   - Resolves label collisions via `resolve_collisions(ax)` (when `collision=True`)
    - Adds decorations via `add_title(ax)` and `add_footer(fig)`
 
 6. **compose()**: Orchestrator for multi-layer charts:
@@ -103,8 +103,8 @@ flowchart TD
     D5 --> D6["6. MetricRegistry.apply()"]
     D6 --> D6a["7. add_right_margin() (if highlights)"]
     D6a --> D6c["8. apply_tick_rotation()"]
-    D6c --> D6b["9. _apply_legend() + register_artist_obstacle(legend)"]
-    D6b --> D7["10. resolve_collisions()"]
+    D6c --> D6b["9. _apply_legend()"]
+    D6b --> D7["10. resolve_collisions() (if collision=True)"]
     D7 --> D8["11. add_title()"]
     D8 --> D9["12. add_footer()"]
     D9 --> E["PlotResult"]

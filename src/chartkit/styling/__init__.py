@@ -4,6 +4,7 @@ from .formatters import (
     compact_currency_formatter,
     currency_formatter,
     human_readable_formatter,
+    multiplier_formatter,
     percent_formatter,
     points_formatter,
 )
@@ -15,5 +16,6 @@ __all__ = [
     "compact_currency_formatter",
     "percent_formatter",
     "human_readable_formatter",
+    "multiplier_formatter",
     "points_formatter",
 ]

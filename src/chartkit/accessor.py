@@ -85,6 +85,7 @@ class ChartingAccessor:
         fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
         tick_rotation: int | Literal["auto"] | None = None,
+        collision: bool = True,
         debug: bool = False,
         **kwargs,
     ) -> PlotResult:
@@ -102,6 +103,7 @@ class ChartingAccessor:
             fill_between=fill_between,
             legend=legend,
             tick_rotation=tick_rotation,
+            collision=collision,
             debug=debug,
             **kwargs,
         )
