@@ -370,11 +370,11 @@ Overlays that create visual elements should register them with the collision eng
 so that labels are automatically repositioned. Use the appropriate category:
 
 ```python
-from .._internal.collision import register_fixed, register_moveable, register_passive
+from .._internal.collision import register_artist_obstacle, register_moveable, register_passive
 
 # Reference lines: obstacles that labels must avoid
 line = ax.axhline(y=value, ...)
-register_fixed(ax, line)
+register_artist_obstacle(ax, line, filled=False)
 
 # Text labels: can be repositioned
 text = ax.text(x, y, "Label", ...)

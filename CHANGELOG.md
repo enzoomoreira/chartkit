@@ -1,5 +1,32 @@
 # Project Changelog
 
+## [2026-02-18 14:25]
+### Added
+- **9 novos chart enhancers** (`charts/enhancers/`): Suporte especializado para area, ecdf, eventplot, hist, pie, stackplot, stairs, statistical (boxplot/violinplot) e stem -- cada um registrado via `@ChartRenderer.register_enhancer` com color cycling, labels e kwargs corretos para a API do matplotlib
+- **Horizontal bar chart** (`charts/enhancers/bar.py`): `kind='barh'` com suporte a multi-coluna (grouped), sort, color cycling e y_origin
+- **`compute_bar_offsets()`** (`charts/_helpers.py`): Calcula largura e offsets por coluna para grouped bar charts (vertical e horizontal)
+- **`_UNSUPPORTED_KINDS`** (`charts/renderer.py`): Blocklist explicita para chart kinds incompativeis (imshow, contour, quiver, etc.) com mensagens de erro descritivas
+- **Auto-deteccao de collections na collision engine** (`collision.py`): `ax.collections` de sibling axes agora auto-detectados como obstaculos -- `PathCollection` (scatter) como filled, outros como passive
+- **Alias `area` -> `fill_between`** (`renderer.py`): `kind='area'` mapeia para `ax.fill_between()` via enhancer
+- **Testes para todos os novos chart types** (11 arquivos): test_area, test_barh, test_ecdf, test_eventplot, test_hist, test_pie, test_stackplot, test_stairs, test_statistical, test_stem, test_unsupported
+
+### Changed
+- **Collision engine unificada com `_PathObstacle`** (`collision.py`): Sistema dual (bbox obstacles + `_LinePathObstacle`) substituido por classe unica `_PathObstacle` que extrai geometria real de qualquer Artist via factory functions (`_path_from_line`, `_path_from_patch`, `_path_from_collection`, `_path_from_extent`)
+- **`register_artist_obstacle()` substitui `register_fixed()` + `register_line_obstacle()`**: API unica com parametros `filled` (shape vs line) e `colocate` (skip para labels que iniciam sobre a propria linha)
+- **`_collect_obstacles()` com dispatch por tipo**: Recebe renderer, auto-detecta collections em siblings, e despacha artists registrados por tipo (Line2D -> path, Collection -> paths, Patch -> patch transform, fallback -> extent)
+- **`_resolve_all()` usa lista unificada de `_PathObstacle`**: Padding condicional (obstacle_pad para filled, 0 para lines) em vez de separar bbox/path obstacles
+- **Post-render no `ChartRenderer`**: PathCollection (scatter) registrado como filled obstacle, outras collections como passive -- alem dos Line2D existentes
+- **Scatter markers registrados como passive** (`overlays/markers.py`): Evita que pontos de highlight se tornem obstaculos de colisao automaticamente
+- **Debug overlay atualizado** (`collision.py`): Renderiza todas as geometrias (filled com face color, unfilled com edge grosso), substituindo o sistema anterior de rects translucidos
+- **Documentacao atualizada**: architecture.md, extending.md, internals.md, collision.md e api.md refletem a nova API unificada
+
+### Removed
+- **`register_fixed()`**: Substituido por `register_artist_obstacle(ax, artist, filled=True)`
+- **`register_line_obstacle()`**: Substituido por `register_artist_obstacle(ax, artist, filled=False, colocate=True)`
+- **`_LinePathObstacle`**: Substituida pela `_PathObstacle` unificada
+- **`_obstacles` e `_line_obstacles` WeakKeyDictionaries**: Consolidados em `_artist_obstacles`
+- **Type alias `Obstacle`**: Desnecessario -- tudo e `_PathObstacle`
+
 ## [2026-02-13 21:14]
 ### Added
 - **`ChartRenderer` com rendering generico** (`charts/renderer.py`): Novo motor de rendering que despacha para `ax.{kind}()` para qualquer tipo de grafico matplotlib, eliminando a necessidade de registrar cada tipo manualmente

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
+import numpy as np
 import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
@@ -12,6 +13,7 @@ from ...settings import get_config
 from ...styling.theme import theme
 from .._helpers import (
     apply_y_origin,
+    compute_bar_offsets,
     detect_bar_width,
     is_categorical_index,
     prepare_categorical_axis,
@@ -22,7 +24,7 @@ from ..renderer import ChartRenderer
 if TYPE_CHECKING:
     from ...overlays import HighlightMode
 
-__all__ = ["plot_bar"]
+__all__ = ["plot_bar", "plot_barh"]
 
 _VALID_SORT = {None, "ascending", "descending"}
 
@@ -147,3 +149,116 @@ def plot_bar(
         add_highlight(
             ax, vals, style="bar", color=highlight_color, x=x, modes=highlight
         )
+
+
+@ChartRenderer.register_enhancer("barh")
+def plot_barh(
+    ax: Axes,
+    x: pd.Index | pd.Series,
+    y_data: pd.Series | pd.DataFrame,
+    highlight: list[HighlightMode],
+    y_origin: Literal["zero", "auto"] = "zero",
+    **kwargs,
+) -> None:
+    """Plot horizontal bar chart with automatic height based on frequency.
+
+    Semantics are inverted vs ``bar``: the Y axis holds categories/positions,
+    the X axis holds values. ``y_origin`` controls the X-axis origin.
+
+    Keyword Args:
+        sort: ``None``, ``'ascending'`` or ``'descending'``. Single-column only.
+        color: Explicit color or ``'cycle'`` to cycle theme colors per bar.
+    """
+    y_origin = validate_y_origin(y_origin)
+
+    config = get_config()
+    bars = config.bars
+
+    user_color = kwargs.pop("color", None)
+    sort = kwargs.pop("sort", None)
+    colors = theme.colors.cycle()
+
+    multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
+
+    if sort not in _VALID_SORT:
+        raise ValidationError(
+            f"sort must be None, 'ascending' or 'descending', got: {sort!r}"
+        )
+    if sort is not None and multi_col:
+        raise ValidationError("sort is not supported for multi-column barh charts")
+    if user_color == "cycle" and multi_col:
+        raise ValidationError(
+            "color='cycle' is not supported for multi-column barh charts"
+        )
+
+    if multi_col:
+        categorical = is_categorical_index(x)
+
+        if categorical:
+            y_numeric = prepare_categorical_axis(ax, x)
+            group_height = bars.width_default
+        else:
+            y_numeric = np.arange(len(x))
+            ax.set_yticks(y_numeric)
+            ax.set_yticklabels(list(x))
+            group_height = bars.width_default
+
+        n_cols = len(y_data.columns)
+        bar_height, offsets = compute_bar_offsets(n_cols, group_height)
+
+        for i, col in enumerate(y_data.columns):
+            c = user_color if user_color is not None else colors[i % len(colors)]
+            ax.barh(
+                y_numeric + offsets[i],
+                y_data[col],
+                height=bar_height,
+                color=c,
+                label=str(col),
+                zorder=config.layout.zorder.data,
+                **kwargs,
+            )
+        all_vals = y_data.stack().dropna()
+    else:
+        vals = y_data.iloc[:, 0] if isinstance(y_data, pd.DataFrame) else y_data
+
+        if sort is not None:
+            ascending = sort == "ascending"
+            vals = vals.sort_values(ascending=ascending)
+            x = vals.index
+
+        if user_color == "cycle":
+            c = [colors[i % len(colors)] for i in range(len(vals))]
+        else:
+            c = user_color if user_color is not None else colors[0]
+
+        label = str(vals.name) if vals.name is not None else None
+        ax.barh(
+            range(len(vals)),
+            vals,
+            height=bars.width_default,
+            color=c,
+            label=label,
+            zorder=config.layout.zorder.data,
+            **kwargs,
+        )
+        ax.set_yticks(range(len(vals)))
+        ax.set_yticklabels(list(x))
+
+        all_vals = vals
+
+    # Apply x-axis origin (analogous to y_origin for vertical bars)
+    if y_origin == "auto":
+        clean = all_vals.dropna()
+        if not clean.empty:
+            xmin, xmax = clean.min(), clean.max()
+            margin = (xmax - xmin) * bars.auto_margin
+            ax.set_xlim(xmin - margin, xmax + margin)
+    else:
+        xmin, xmax = ax.get_xlim()
+        if xmin > 0:
+            ax.set_xlim(0, xmax)
+        elif xmax < 0:
+            ax.set_xlim(xmin, 0)
+
+    if highlight:
+        logger.debug("barh: highlight not supported for horizontal bars, skipping")

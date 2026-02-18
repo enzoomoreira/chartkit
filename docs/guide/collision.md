@@ -18,9 +18,8 @@ and three participation categories:
 | Category | Function | Meaning |
 |----------|----------|---------|
 | **Moveable** | `register_moveable(ax, artist)` | Can be repositioned to resolve collisions |
-| **Fixed** | `register_fixed(ax, artist)` | Immutable obstacle that others must avoid |
+| **Artist Obstacle** | `register_artist_obstacle(ax, artist, filled, colocate)` | Path-based obstacle that repels moveable labels |
 | **Passive** | `register_passive(ax, artist)` | Exists visually but doesn't participate in collision |
-| **Line Obstacle** | `register_line_obstacle(ax, line)` | Line2D whose data path repels labels via continuous path intersection |
 
 Each external module decides how to classify its own elements. The engine
 provides the building blocks; modules handle the integration.
@@ -51,24 +50,24 @@ For advanced scenarios (custom overlays, custom metrics), use the API
 directly:
 
 ```python
-from chartkit import register_moveable, register_fixed, register_passive
-from chartkit._internal.collision import register_line_obstacle
+from chartkit import register_artist_obstacle, register_moveable, register_passive
 
 # Create a label that can be moved
 text = ax.text(x, y, "My label", ha="left", va="center")
 register_moveable(ax, text)
 
-# Create a reference line as an obstacle
+# Create a reference line as an obstacle (unfilled path)
 line = ax.axhline(y=100, color="red", linestyle="--")
-register_fixed(ax, line)
+register_artist_obstacle(ax, line, filled=False)
 
 # Create a background area that is NOT an obstacle
 patch = ax.axhspan(50, 150, alpha=0.1, color="gray")
 register_passive(ax, patch)
 
-# Register a line whose visible path should repel labels
+# Register a data line whose path should repel labels (colocate=True
+# allows labels that start ON this line to stay without being repelled)
 (plot_line,) = ax.plot(x, y, color="blue")
-register_line_obstacle(ax, plot_line)
+register_artist_obstacle(ax, plot_line, filled=False, colocate=True)
 ```
 
 > **Important**: Use `ax.text()`, not `ax.annotate()`. `ax.text()` natively uses
@@ -100,10 +99,10 @@ final decorations:
 2. Data            extract_plot_data()
 3. Y Formatter     FORMATTERS[units]()
 4. Plot Core       ChartRenderer dispatch + highlights (register_moveable)
-5. Metrics         ATH/ATL/hline (register_fixed) + MA (register_passive) + band (register_passive)
+5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_passive) + band (register_passive)
    Fill between    add_fill_between() (if configured)
    Right margin    add_right_margin() when highlights present (avoids label clipping)
-6. Legend           _apply_legend() + register_fixed(ax, legend_artist)
+6. Legend           _apply_legend() + register_artist_obstacle(ax, legend_artist, filled=True)
 7. Collisions      resolve_collisions(ax) or resolve_composed_collisions(axes)
 8. Decorations     add_title(ax), add_footer(fig)
 -> PlotResult
@@ -117,11 +116,9 @@ merging labels from all axes (left + right) into a single pool.
 The engine uses a unified algorithm that handles both fixed obstacles and
 inter-label collisions in a single iterative pass:
 
-1. **For each label**, separate obstacles into two types:
-   - **Bbox obstacles**: fixed patches, other labels (padded with `obstacle_padding_px` or `label_padding_px`)
-   - **Path obstacles**: `_LinePathObstacle` instances (continuous line paths)
-2. **Same-axis co-location**: if a label starts ON its own line (same axes), that path is excluded as obstacle
-3. **Identify collisions**: bbox overlap for discrete obstacles, `Path.intersects_bbox()` for line paths
+1. **For each label**, collect all `_PathObstacle` instances (lines, patches, collections, labels from other axes)
+2. **Co-location skip**: if a label starts ON a `colocate=True` obstacle on the same axes, that obstacle is excluded
+3. **Identify collisions**: `Path.intersects_bbox()` for path obstacles, bbox overlap for other moveable labels
 4. **Generate displacement candidates** from each colliding obstacle (up, down, left, right)
 5. **Sort candidates** by preference: Y-only first, X-only second, diagonal last (by distance within each group)
 6. **Reorder by movement preference** (`"y"`, `"x"`, or `"xy"`) -- preferred-axis candidates go first, others are kept as fallback
@@ -160,14 +157,14 @@ correct coordinate transforms in composed charts.
 
 The engine combines multiple obstacle sources:
 
-1. **Explicit**: elements registered via `register_fixed()` (ATH, ATL, hline lines, legend)
-2. **Auto-detected patches**: `ax.patches` on all sibling axes sharing the X-axis (bars, boxes, etc.)
-3. **Cross-axis labels**: labels from twinx sibling axes act as obstacles for each other
-4. **Line path obstacles**: registered lines (`register_line_obstacle()`) are wrapped in `_LinePathObstacle`, using matplotlib's Cython-based `Path.intersects_bbox()` for continuous collision detection along the entire curve
+1. **Auto-detected patches**: `ax.patches` on all sibling axes sharing the X-axis (bars, boxes, etc.) -> `_path_from_patch()`
+2. **Auto-detected collections**: `ax.collections` on siblings (scatter, violin, fill_between) -> `_path_from_collection()`
+3. **Cross-axis labels**: labels from twinx sibling axes act as obstacles -> `_path_from_extent()`
+4. **Registered artist obstacles**: elements registered via `register_artist_obstacle()` (reference lines, data lines, legend) -> dispatched by type
 
-Line2D bounding boxes span the entire data area and are useless as collision targets.
-Instead, `_LinePathObstacle` wraps each Line2D with its display-coordinate path and
-uses exact path-segment intersection to detect collisions with labels.
+All obstacles are converted to `_PathObstacle` instances with display-space `Path` geometry.
+Collision detection uses matplotlib's Cython-based `Path.intersects_bbox()` for precise
+intersection against all geometries (lines, patches, collections).
 
 Auto-detection traverses all sibling axes (via `get_shared_x_axes().get_siblings(ax)`),
 enabling cross-axis collision avoidance in composed charts with `twinx()`.
@@ -218,15 +215,15 @@ When creating custom metrics via `MetricRegistry.register`, use the
 registration functions to integrate with the collision engine:
 
 ```python
-from chartkit import register_fixed, register_moveable, register_passive
+from chartkit import register_artist_obstacle, register_moveable, register_passive
 from chartkit.metrics import MetricRegistry
 
 @MetricRegistry.register("target", param_names=["value"])
 def metric_target(ax, x_data, y_data, value: float, **kwargs):
     """Line target with label."""
-    # Line as fixed obstacle
+    # Line as path-based obstacle (unfilled for line geometry)
     line = ax.axhline(y=value, color="green", linestyle="--")
-    register_fixed(ax, line)
+    register_artist_obstacle(ax, line, filled=False)
 
     # Label as moveable
     text = ax.text(
@@ -340,11 +337,11 @@ the module that creates the element knows what it is and self-classifies.
 
 A Line2D's bounding box spans the entire data area (from min to max X and Y).
 Using it as a collision obstacle would push labels far away from the chart,
-even when the line is nowhere near the label. `_LinePathObstacle` wraps each
-Line2D with its display-coordinate path and uses `Path.intersects_bbox()`
-(Cython/C) for exact segment-level collision detection. This replaces the
-previous approach of creating N point-sized obstacles per data point, reducing
-object count from ~3000 to 1 per line and yielding significant performance gains.
+even when the line is nowhere near the label. `_PathObstacle` extracts the
+actual display-coordinate path from any Artist and uses `Path.intersects_bbox()`
+(Cython/C) for exact segment-level collision detection. This unified approach
+handles lines, patches, and collections with a single class, replacing the
+previous dual system of bbox obstacles and `_LinePathObstacle`.
 
 ### Why isn't `resolve_collisions` public?
 
@@ -353,7 +350,7 @@ register elements and the engine resolves automatically. Exposing
 `resolve_collisions` in the public API would encourage manual calls at the wrong
 moments in the pipeline (before all elements are registered, for example).
 
-`register_moveable`, `register_fixed`, and `register_passive` are public because
+`register_moveable`, `register_artist_obstacle`, and `register_passive` are public because
 custom metrics need to register their elements. Resolution itself is the
 orchestrator's responsibility.
 

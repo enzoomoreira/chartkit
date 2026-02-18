@@ -7,8 +7,12 @@ from typing import TYPE_CHECKING, Any, Callable, Protocol, cast
 import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
+from matplotlib.collections import PathCollection
 
-from .._internal.collision import register_line_obstacle
+from .._internal.collision import (
+    register_artist_obstacle,
+    register_passive,
+)
 from ..exceptions import ValidationError
 from ..overlays import add_highlight
 from ..settings import get_config
@@ -44,7 +48,18 @@ class ChartRenderer:
 
     _enhancers: dict[str, Enhancer] = {}
 
-    _ALIASES: dict[str, str] = {"line": "plot"}
+    _ALIASES: dict[str, str] = {"line": "plot", "area": "fill_between"}
+
+    _UNSUPPORTED_KINDS: dict[str, str] = {
+        "imshow": "imshow requires 2D array data, not tabular x/y",
+        "contour": "contour requires 2D grid data (X, Y, Z meshgrid)",
+        "contourf": "contourf requires 2D grid data (X, Y, Z meshgrid)",
+        "pcolormesh": "pcolormesh requires 2D grid data",
+        "quiver": "quiver requires vector field data (U, V components)",
+        "streamplot": "streamplot requires vector field data on regular grid",
+        "barbs": "barbs requires wind component data (U, V)",
+        "spy": "spy requires 2D sparse matrix data",
+    }
 
     _KIND_DEFAULTS: dict[str, Callable[..., dict[str, Any]]] = {
         "plot": lambda config: {"linewidth": config.lines.main_width},
@@ -74,11 +89,14 @@ class ChartRenderer:
 
         Dispatches to a registered enhancer if one exists for ``kind``,
         otherwise falls through to the generic matplotlib path.
-        Post-render: new Line2D artists are registered as collision obstacles.
+        Post-render: new Line2D are registered as obstacles; PathCollections
+        (scatter) are registered as filled obstacles; other collections
+        are marked passive.
         """
         kind = cls._ALIASES.get(kind, kind)
 
         lines_before = set(id(line) for line in ax.lines)
+        colls_before = set(id(c) for c in ax.collections)
 
         if kind in cls._enhancers:
             logger.debug("Dispatch: kind='{}' (enhancer)", kind)
@@ -88,9 +106,16 @@ class ChartRenderer:
             logger.debug("Dispatch: kind='{}' (generic)", kind)
             cls._generic_render(ax, kind, x, y_data, highlight, **kwargs)
 
-        new_lines = [line for line in ax.lines if id(line) not in lines_before]
-        for line in new_lines:
-            register_line_obstacle(ax, line)
+        for line in ax.lines:
+            if id(line) not in lines_before:
+                register_artist_obstacle(ax, line, filled=False, colocate=True)
+
+        for coll in ax.collections:
+            if id(coll) not in colls_before:
+                if isinstance(coll, PathCollection):
+                    register_artist_obstacle(ax, coll, filled=True)
+                else:
+                    register_passive(ax, coll)
 
     @classmethod
     def _generic_render(
@@ -160,6 +185,10 @@ class ChartRenderer:
     @classmethod
     def _validate_kind(cls, kind: str) -> None:
         """Validate that ``ax.{kind}`` exists as a callable on Axes."""
+        if kind in cls._UNSUPPORTED_KINDS:
+            raise ValidationError(
+                f"Chart kind '{kind}' is not supported: {cls._UNSUPPORTED_KINDS[kind]}."
+            )
         if kind.startswith("_"):
             raise ValidationError(
                 f"Chart kind '{kind}' is not a valid matplotlib Axes method."

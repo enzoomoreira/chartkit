@@ -8,7 +8,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
-from .._internal.collision import register_moveable
+from .._internal.collision import register_moveable, register_passive
 from ..exceptions import RegistryError
 from ..settings import get_config
 from ..styling.theme import theme
@@ -123,13 +123,14 @@ def _render_point(
     y_pos = cast(float, val)
 
     if show_scatter:
-        ax.scatter(
+        scatter_coll = ax.scatter(
             [x_pos],
             [y_pos],
             color=color,
             s=config.markers.scatter_size,
             zorder=config.layout.zorder.markers,
         )
+        register_passive(ax, scatter_coll)
 
     y_fmt = ax.yaxis.get_major_formatter()
     label_text = y_fmt(val, None)

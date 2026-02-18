@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 371 tests covering all modules with business logic.
+Test suite for chartkit with 436 tests covering all modules with business logic.
 
 ---
 
@@ -23,9 +23,20 @@ tests/
 ├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases, Agg backend)
 ├── test_formatters.py             # Currency, percent, human, points formatters (15 tests)
 ├── test_accessor_layer.py         # Accessor .layer() integration (9 tests)
-├── charts/                        # Chart rendering (31 tests)
+├── charts/                        # Chart rendering (90 tests)
+│   ├── test_area.py               # Area chart (fill_between enhancer)
 │   ├── test_bar.py                # Bar chart (grouped, sort, color='cycle', categorical)
-│   └── test_helpers.py            # detect_bar_width, categorical helpers, y_origin
+│   ├── test_barh.py               # Horizontal bar chart
+│   ├── test_ecdf.py               # Empirical CDF
+│   ├── test_eventplot.py          # Event plot
+│   ├── test_helpers.py            # detect_bar_width, categorical helpers, y_origin
+│   ├── test_hist.py               # Histogram
+│   ├── test_pie.py                # Pie chart
+│   ├── test_stackplot.py          # Stacked area
+│   ├── test_stairs.py             # Stairs (step function)
+│   ├── test_statistical.py        # Boxplot and violinplot
+│   ├── test_stem.py               # Stem plot
+│   └── test_unsupported.py        # Unsupported kind validation
 ├── collision/                     # Collision engine (5 tests)
 │   ├── test_collect_obstacles.py  # Obstacle collection and path-based detection
 │   └── test_pos_to_numeric.py     # Position type coercion
@@ -269,6 +280,7 @@ Transforms and collision tests don't need isolation -- they operate on fixture d
 
 | Testing... | Location |
 |-----------|----------|
+| A new chart enhancer | `tests/charts/test_<kind>.py` |
 | A new transform function | `tests/transforms/test_<name>.py` |
 | MetricRegistry behavior | `tests/metrics/test_registry.py` or `test_parse.py` |
 | A new formatter | `tests/test_formatters.py` |

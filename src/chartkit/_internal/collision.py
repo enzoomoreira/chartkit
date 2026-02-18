@@ -1,8 +1,9 @@
 """
 Generic collision resolution engine.
 
-Works with bounding boxes (display pixels) and continuous path
-intersection for line obstacles. Element-type agnostic.
+Works with unified path-based collision detection. Extracts geometry
+from any matplotlib Artist via matplotlib.path.Path, using
+Path.intersects_bbox() (Cython) for precise detection.
 """
 
 from __future__ import annotations
@@ -14,75 +15,191 @@ from typing import Protocol, runtime_checkable
 from weakref import WeakKeyDictionary
 
 import matplotlib.dates as mdates
-import matplotlib.patches as mpatches  # used by _draw_debug_overlay
+import matplotlib.patches as mpatches
 from loguru import logger
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import RendererBase
 from matplotlib.figure import Figure
 from matplotlib.path import Path as MplPath
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Affine2D, Bbox
 
 from ..settings import get_config
 from ..settings.schema import ChartingConfig, CollisionConfig
 
 # Collision state per Axes, automatically released by GC.
 _labels: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
-_obstacles: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
 _passive: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
-_line_obstacles: WeakKeyDictionary[Axes, list[Artist]] = WeakKeyDictionary()
+_artist_obstacles: WeakKeyDictionary[Axes, list[tuple[Artist, bool, bool]]] = (
+    WeakKeyDictionary()
+)
 
 
-class _LinePathObstacle:
-    """Continuous path obstacle from a Line2D.
+class _PathObstacle:
+    """Unified path-based collision obstacle for any matplotlib Artist."""
 
-    Uses matplotlib's Cython-based ``Path.intersects_bbox()`` for exact
-    collision detection along the entire line curve, replacing the
-    previous approach of N point-sized obstacles per data point.
-    """
+    __slots__ = (
+        "_ax",
+        "_artist",
+        "_display_paths",
+        "_filled",
+        "_colocate",
+        "_debug_color",
+        "_source_id",
+    )
 
-    __slots__ = ("_ax", "_line", "_display_path")
-
-    def __init__(self, ax: Axes, line: Artist) -> None:
+    def __init__(
+        self,
+        ax: Axes,
+        artist: Artist,
+        display_paths: list[MplPath],
+        *,
+        filled: bool,
+        colocate: bool = False,
+        debug_color: str,
+    ) -> None:
         self._ax = ax
-        self._line = line
-        self._display_path: MplPath | None = None
+        self._artist = artist
+        self._display_paths = display_paths
+        self._filled = filled
+        self._colocate = colocate
+        self._debug_color = debug_color
+        self._source_id = id(artist)
 
-    def _get_display_path(self, renderer: RendererBase) -> MplPath:
-        if self._display_path is None:
-            data_path = self._line.get_path()
-            transform = self._line.get_transform()
-            vertices = transform.transform(data_path.vertices)
-            self._display_path = MplPath(vertices, data_path.codes)
-        return self._display_path
-
-    def intersects(self, bbox: Bbox, renderer: RendererBase) -> bool:
-        path = self._get_display_path(renderer)
-        if not path.get_extents().overlaps(bbox):
-            return False
-        return path.intersects_bbox(bbox, filled=False)
+    def intersects(
+        self, bbox: Bbox, renderer: RendererBase, padding: float = 0.0
+    ) -> bool:
+        test_bbox = _pad_bbox(bbox, padding) if padding > 0 else bbox
+        for path in self._display_paths:
+            if not path.get_extents().overlaps(test_bbox):
+                continue
+            if path.intersects_bbox(test_bbox, filled=self._filled):
+                return True
+        return False
 
     def local_bbox(
         self, label_bbox: Bbox, margin: float, renderer: RendererBase
     ) -> Bbox:
-        """Bbox of path vertices near the label, for displacement generation."""
-        path = self._get_display_path(renderer)
-        verts = path.vertices
+        """Bbox of the obstacle near the label, for displacement generation."""
+        if self._filled:
+            extents = [p.get_extents() for p in self._display_paths]
+            if not extents:
+                return label_bbox
+            return Bbox.from_extents(
+                min(e.x0 for e in extents),
+                min(e.y0 for e in extents),
+                max(e.x1 for e in extents),
+                max(e.y1 for e in extents),
+            )
+        # Unfilled: only vertices near the label (for lines)
         x_lo = label_bbox.x0 - margin
         x_hi = label_bbox.x1 + margin
-        mask = (verts[:, 0] >= x_lo) & (verts[:, 0] <= x_hi)
-        local = verts[mask]
-        if len(local) == 0:
+        x_mins: list[float] = []
+        y_mins: list[float] = []
+        x_maxes: list[float] = []
+        y_maxes: list[float] = []
+        for path in self._display_paths:
+            verts = path.vertices
+            mask = (verts[:, 0] >= x_lo) & (verts[:, 0] <= x_hi)
+            local = verts[mask]
+            if len(local) > 0:
+                x_mins.append(float(local[:, 0].min()))
+                y_mins.append(float(local[:, 1].min()))
+                x_maxes.append(float(local[:, 0].max()))
+                y_maxes.append(float(local[:, 1].max()))
+        if not x_mins:
             return label_bbox
-        return Bbox.from_extents(
-            local[:, 0].min(),
-            local[:, 1].min(),
-            local[:, 0].max(),
-            local[:, 1].max(),
-        )
+        return Bbox.from_extents(min(x_mins), min(y_mins), max(x_maxes), max(y_maxes))
 
 
-Obstacle = Artist | _LinePathObstacle
+# -- Factory functions --
+
+
+def _bbox_to_path(bbox: Bbox) -> MplPath:
+    """Convert a Bbox to a closed rectangular Path in the same coordinates."""
+    return MplPath(
+        [
+            [bbox.x0, bbox.y0],
+            [bbox.x1, bbox.y0],
+            [bbox.x1, bbox.y1],
+            [bbox.x0, bbox.y1],
+            [bbox.x0, bbox.y0],
+        ]
+    )
+
+
+def _path_from_line(ax: Axes, line: Artist) -> _PathObstacle:
+    """Extract display-space path from a Line2D."""
+    data_path = line.get_path()
+    transform = line.get_transform()
+    vertices = transform.transform(data_path.vertices)
+    display_path = MplPath(vertices, data_path.codes)
+    return _PathObstacle(ax, line, [display_path], filled=False, debug_color="orange")
+
+
+def _path_from_patch(ax: Axes, patch: Artist) -> _PathObstacle:
+    """Extract display-space path from a Patch (Rectangle, Wedge, etc.).
+
+    ``Patch.get_transform()`` already includes ``get_patch_transform()``,
+    so using it directly maps unit path -> data -> display in one step.
+    """
+    path = patch.get_path()
+    display_path = path.transformed(patch.get_transform())
+    return _PathObstacle(ax, patch, [display_path], filled=True, debug_color="red")
+
+
+def _path_from_collection(
+    ax: Axes, collection: Artist, renderer: RendererBase
+) -> _PathObstacle:
+    """Extract display-space paths from a Collection (scatter, etc.)."""
+    offsets = collection.get_offsets()
+
+    if len(offsets) == 0:
+        return _PathObstacle(ax, collection, [], filled=True, debug_color="purple")
+
+    paths = collection.get_paths()
+    if not paths:
+        return _PathObstacle(ax, collection, [], filled=True, debug_color="purple")
+
+    element_transforms = collection.get_transforms()
+    offset_transform = collection.get_offset_transform()
+    display_offsets = offset_transform.transform(offsets)
+
+    display_paths: list[MplPath] = []
+    for i, doff in enumerate(display_offsets):
+        base = paths[i % len(paths)]
+        if len(element_transforms) > 0:
+            et = element_transforms[i % len(element_transforms)]
+            scaled = base.transformed(Affine2D(et))
+        else:
+            scaled = base
+        translated = scaled.transformed(Affine2D().translate(doff[0], doff[1]))
+        display_paths.append(translated)
+
+    return _PathObstacle(
+        ax,
+        collection,
+        display_paths,
+        filled=True,
+        debug_color="purple",
+    )
+
+
+def _path_from_extent(
+    ax: Axes, artist: Artist, renderer: RendererBase
+) -> _PathObstacle:
+    """Fallback: use the artist's bounding box as a filled rectangle."""
+    extent = artist.get_window_extent(renderer)
+    return _PathObstacle(
+        ax,
+        artist,
+        [_bbox_to_path(extent)],
+        filled=True,
+        debug_color="red",
+    )
+
+
+# -- Protocol + registration --
 
 
 @runtime_checkable
@@ -99,29 +216,33 @@ def register_moveable(ax: Axes, artist: Artist) -> None:
     _labels.setdefault(ax, []).append(artist)
 
 
-def register_fixed(ax: Axes, artist: Artist) -> None:
-    """Register Artist that should be avoided by moveables."""
-    _obstacles.setdefault(ax, []).append(artist)
+def register_artist_obstacle(
+    ax: Axes, artist: Artist, *, filled: bool = False, colocate: bool = False
+) -> None:
+    """Register an Artist whose geometry should repel moveable labels.
 
+    The artist's actual path is extracted and used for precise collision
+    detection via ``Path.intersects_bbox()``.
 
-def register_line_obstacle(ax: Axes, line: Artist) -> None:
-    """Register a Line2D whose data path should repel moveable labels.
-
-    The line's full bounding box is not used (it spans the entire plot).
-    Instead, ``_collect_obstacles`` wraps each line in a ``_LinePathObstacle``
-    that uses continuous path intersection for collision detection.
+    Args:
+        filled: ``True`` for shapes (bars, wedges), ``False`` for lines.
+        colocate: ``True`` for data lines where labels naturally start ON
+            the line. The co-location skip allows the label to remain at
+            its origin without being repelled by the line it belongs to.
     """
-    _line_obstacles.setdefault(ax, []).append(line)
+    _artist_obstacles.setdefault(ax, []).append((artist, filled, colocate))
 
 
 def register_passive(ax: Axes, artist: Artist) -> None:
     """Register Artist that does not participate in collision resolution.
 
-    Auto-detected patches (ax.patches) are treated as obstacles by default.
-    Use this function to exclude background visual elements (bands, shaded
-    areas, etc.) from automatic detection.
+    Auto-detected patches and collections are treated as obstacles by
+    default. Use this to exclude background visuals (bands, shaded areas).
     """
     _passive.setdefault(ax, []).append(artist)
+
+
+# -- Public entry points --
 
 
 def resolve_collisions(ax: Axes, *, debug: bool = False) -> None:
@@ -143,7 +264,7 @@ def resolve_collisions(ax: Axes, *, debug: bool = False) -> None:
 
     original_positions = [_pos_to_numeric(*m.get_position()) for m in positionable]
 
-    fixed = _collect_obstacles(ax, moveables)
+    fixed = _collect_obstacles(ax, moveables, renderer)
     logger.debug(
         "Collision: {} moveable(s), {} obstacle(s)", len(positionable), len(fixed)
     )
@@ -162,8 +283,7 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
     """Resolve collisions across multiple axes simultaneously.
 
     Merges all moveable labels from every axes into a single pool
-    and resolves them together in pixel space. Each label is shifted
-    using its own axes' transform (``label.axes.transData``).
+    and resolves them together in pixel space.
     """
     all_moveables: list[Artist] = []
     for ax in axes:
@@ -184,15 +304,13 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
 
     original_positions = [_pos_to_numeric(*m.get_position()) for m in positionable]
 
-    # Collect obstacles from all axes (deduplicated via _collect_obstacles internals)
     seen_ids: set[int] = set()
-    fixed: list[Obstacle] = []
+    fixed: list[_PathObstacle] = []
     for ax in axes:
-        for obs in _collect_obstacles(ax, all_moveables):
-            oid = id(obs)
-            if oid not in seen_ids:
+        for obs in _collect_obstacles(ax, all_moveables, renderer):
+            if obs._source_id not in seen_ids:
                 fixed.append(obs)
-                seen_ids.add(oid)
+                seen_ids.add(obs._source_id)
 
     logger.debug(
         "Composed collision: {} moveable(s), {} obstacle(s), {} axes",
@@ -201,7 +319,6 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
         len(axes),
     )
 
-    # twinx axes share the same physical area
     axes_bbox = axes[0].get_window_extent(renderer)
 
     _resolve_all(positionable, fixed, renderer, axes_bbox, collision)
@@ -212,14 +329,17 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
         _draw_debug_overlay(fig, positionable, fixed, renderer, axes_bbox, collision)
 
 
+# -- Core resolution --
+
+
 def _resolve_all(
     moveables: Sequence[PositionableArtist],
-    fixed: list[Obstacle],
+    obstacles: list[_PathObstacle],
     renderer: RendererBase,
     axes_bbox: Bbox,
     collision: CollisionConfig,
 ) -> None:
-    """Resolve all collisions (fixed + inter-label) in a unified pass."""
+    """Resolve all collisions (obstacles + inter-label) in a unified pass."""
     obstacle_pad = collision.obstacle_padding_px
     label_pad = collision.label_padding_px
 
@@ -231,35 +351,42 @@ def _resolve_all(
             if raw_bbox.width < 1 and raw_bbox.height < 1:
                 continue
 
-            # Separate bbox obstacles from path obstacles.
-            # Path obstacles (lines) use continuous intersection checks
-            # instead of discrete bounding boxes.
             label_ax = label.axes  # type: ignore[union-attr]
-            bbox_obs: list[Bbox] = []
-            path_obs: list[_LinePathObstacle] = []
 
-            for obs in fixed:
-                if isinstance(obs, _LinePathObstacle):
-                    # Same-axis co-location: label starts ON this line
-                    if obs._ax is label_ax and obs.intersects(raw_bbox, renderer):
-                        continue
-                    path_obs.append(obs)
-                else:
-                    bbox_obs.append(
-                        _pad_bbox(obs.get_window_extent(renderer), obstacle_pad)
+            # Co-location skip: data lines (colocate=True) on same axis
+            # where the label starts ON the line are excluded. Reference
+            # lines (colocate=False) always participate in repulsion.
+            active_obs: list[_PathObstacle] = []
+            for obs in obstacles:
+                if (
+                    obs._colocate
+                    and obs._ax is label_ax
+                    and obs.intersects(raw_bbox, renderer)
+                ):
+                    continue
+                active_obs.append(obs)
+
+            # Bboxes from other moveable labels
+            label_bboxes: list[Bbox] = []
+            for j, other in enumerate(moveables):
+                if j != i:
+                    label_bboxes.append(
+                        _pad_bbox(other.get_window_extent(renderer), label_pad)
                     )
 
-            for j, other in enumerate(moveables):
-                if j == i:
-                    continue
-                bbox_obs.append(_pad_bbox(other.get_window_extent(renderer), label_pad))
-
-            # Detect collisions: bbox overlap + path intersection
+            # Detect collisions
             padded_label = _pad_bbox(raw_bbox, label_pad)
-            colliding: list[Bbox] = [ob for ob in bbox_obs if padded_label.overlaps(ob)]
-            for po in path_obs:
-                if po.intersects(padded_label, renderer):
-                    colliding.append(po.local_bbox(raw_bbox, label_pad * 2, renderer))
+            colliding: list[Bbox] = [
+                lb for lb in label_bboxes if padded_label.overlaps(lb)
+            ]
+
+            for obs in active_obs:
+                pad = obstacle_pad if obs._filled else 0.0
+                if obs.intersects(padded_label, renderer, padding=pad):
+                    obs_bbox = obs.local_bbox(raw_bbox, label_pad * 2, renderer)
+                    if pad > 0:
+                        obs_bbox = _pad_bbox(obs_bbox, pad)
+                    colliding.append(obs_bbox)
 
             if not colliding:
                 continue
@@ -267,8 +394,9 @@ def _resolve_all(
             result = _find_free_position(
                 raw_bbox,
                 colliding,
-                bbox_obs,
-                path_obs,
+                label_bboxes,
+                active_obs,
+                obstacle_pad,
                 collision.movement,
                 axes_bbox,
                 label_pad,
@@ -285,21 +413,26 @@ def _resolve_all(
 
 def _position_is_free(
     bbox: Bbox,
-    bbox_obs: list[Bbox],
-    paths: list[_LinePathObstacle],
+    label_bboxes: list[Bbox],
+    obstacles: list[_PathObstacle],
+    obstacle_pad: float,
     renderer: RendererBase,
 ) -> bool:
-    """Check if a position is free from all bbox and path obstacles."""
-    if any(bbox.overlaps(ob) for ob in bbox_obs):
+    """Check if a position is free from all label and path obstacles."""
+    if any(bbox.overlaps(lb) for lb in label_bboxes):
         return False
-    return not any(p.intersects(bbox, renderer) for p in paths)
+    return not any(
+        obs.intersects(bbox, renderer, padding=obstacle_pad if obs._filled else 0.0)
+        for obs in obstacles
+    )
 
 
 def _find_free_position(
     label_bbox: Bbox,
     colliding_bboxes: list[Bbox],
-    all_obs_bboxes: list[Bbox],
-    path_obs: list[_LinePathObstacle],
+    label_bboxes: list[Bbox],
+    obstacles: list[_PathObstacle],
+    obstacle_pad: float,
     movement: str,
     axes_bbox: Bbox,
     label_pad: float,
@@ -308,7 +441,7 @@ def _find_free_position(
     """Find the smallest displacement that frees label_bbox from all obstacles.
 
     Generates candidate displacements from each colliding obstacle, validates
-    them against all obstacles (bbox + path), and returns the best option.
+    them against all obstacles, and returns the best option.
     Falls back to diagonal displacement if no single-axis solution exists.
     """
     candidates: list[tuple[float, float, float]] = []
@@ -321,7 +454,6 @@ def _find_free_position(
     if not candidates:
         return None
 
-    # Sort: Y-only first, X-only second, diagonal last (by distance within each)
     def _sort_key(c: tuple[float, float, float]) -> tuple[int, float]:
         dx, dy, dist = c
         if dx == 0:
@@ -332,7 +464,6 @@ def _find_free_position(
 
     candidates.sort(key=_sort_key)
 
-    # Filter by movement preference
     if movement == "y":
         ordered = [c for c in candidates if c[0] == 0]
         ordered.extend(c for c in candidates if c[0] != 0)
@@ -342,7 +473,6 @@ def _find_free_position(
     else:
         ordered = candidates
 
-    # Validate each candidate against ALL obstacles (bbox + path)
     for dx, dy, _ in ordered:
         shifted_padded = _pad_bbox(
             Bbox.from_extents(
@@ -353,7 +483,9 @@ def _find_free_position(
             ),
             label_pad,
         )
-        if _position_is_free(shifted_padded, all_obs_bboxes, path_obs, renderer):
+        if _position_is_free(
+            shifted_padded, label_bboxes, obstacles, obstacle_pad, renderer
+        ):
             return (dx, dy)
 
     # Fallback: diagonal combination of best Y + best X
@@ -374,11 +506,18 @@ def _find_free_position(
                     label_pad,
                 )
                 if _position_is_free(
-                    shifted_padded, all_obs_bboxes, path_obs, renderer
+                    shifted_padded,
+                    label_bboxes,
+                    obstacles,
+                    obstacle_pad,
+                    renderer,
                 ):
                     return (dx_combo, dy_combo)
 
     return None
+
+
+# -- Geometry helpers --
 
 
 def _pad_bbox(bbox: Bbox, padding_px: float) -> Bbox:
@@ -428,6 +567,9 @@ def _compute_displacement_options(
     return options
 
 
+# -- Connectors + Debug --
+
+
 def _add_connectors(
     moveables: Sequence[PositionableArtist],
     original_positions: list[tuple[float, float]],
@@ -436,7 +578,6 @@ def _add_connectors(
 ) -> None:
     """Add guide lines for moveables displaced beyond the threshold."""
     collision = config.collision
-    # Group labels by their parent axes for correct transform and limit preservation
     by_axes: defaultdict[Axes, list[tuple[PositionableArtist, tuple[float, float]]]] = (
         defaultdict(list)
     )
@@ -473,18 +614,17 @@ def _add_connectors(
 def _draw_debug_overlay(
     fig: Figure,
     moveables: Sequence[PositionableArtist],
-    fixed: list[Obstacle],
+    obstacles: list[_PathObstacle],
     renderer: RendererBase,
     axes_bbox: Bbox,
     collision: CollisionConfig,
 ) -> None:
-    """Draw translucent collision bboxes for visual debugging."""
+    """Draw translucent collision visuals for debugging."""
     obstacle_pad = collision.obstacle_padding_px
     label_pad = collision.label_padding_px
     inv = fig.transFigure.inverted()
 
     def _add_rect(bbox_raw: Bbox, color: str, alpha: float) -> None:
-        # Clip to axes bounds so debug rects don't stretch the figure
         bbox = Bbox.from_extents(
             max(bbox_raw.x0, axes_bbox.x0),
             max(bbox_raw.y0, axes_bbox.y0),
@@ -510,18 +650,22 @@ def _draw_debug_overlay(
             )
         )
 
-    # Fixed obstacles (red) and line paths (orange)
-    for obs in fixed:
-        if isinstance(obs, _LinePathObstacle):
-            path = obs._get_display_path(renderer)
-            fig_verts = inv.transform(path.vertices)
+    for obs in obstacles:
+        for path in obs._display_paths:
+            if obs._filled:
+                draw_path = path.clip_to_bbox(axes_bbox)
+                if len(draw_path.vertices) < 2:
+                    continue
+            else:
+                draw_path = path
+            fig_verts = inv.transform(draw_path.vertices)
             fig.patches.append(
                 mpatches.PathPatch(
-                    MplPath(fig_verts, path.codes),
-                    facecolor="none",
-                    edgecolor="orange",
-                    linewidth=4,
-                    alpha=0.5,
+                    MplPath(fig_verts, draw_path.codes),
+                    facecolor=obs._debug_color if obs._filled else "none",
+                    edgecolor=obs._debug_color,
+                    linewidth=1 if obs._filled else 4,
+                    alpha=0.25 if obs._filled else 0.5,
                     joinstyle="round",
                     capstyle="round",
                     transform=fig.transFigure,
@@ -529,9 +673,6 @@ def _draw_debug_overlay(
                     zorder=100,
                 )
             )
-        else:
-            ext = obs.get_window_extent(renderer)
-            _add_rect(_pad_bbox(ext, obstacle_pad), "red", 0.25)
 
     # Moveable labels (blue)
     for label in moveables:
@@ -561,29 +702,23 @@ def _draw_debug_overlay(
 # -- Internal helpers --
 
 
-def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Obstacle]:
-    """Collect obstacles: explicit + auto-detected patches + line paths on shared axes.
+def _collect_obstacles(
+    ax: Axes, moveables: list[Artist], renderer: RendererBase
+) -> list[_PathObstacle]:
+    """Collect obstacles from patches, collections, and registered artists.
 
     In composed charts with twinx, labels from one axis must also avoid
-    patches, labels and line paths rendered on the sibling axis.
+    patches, collections, labels and line paths on the sibling axis.
     """
     moveable_ids = {id(m) for m in moveables}
     sibling_axes = list(ax.get_shared_x_axes().get_siblings(ax))
     passive_ids = {id(p) for sibling in sibling_axes for p in _passive.get(sibling, [])}
     seen: set[int] = set()
-    obstacles: list[Obstacle] = []
+    obstacles: list[_PathObstacle] = []
 
-    # 1. Explicitly registered obstacles (reference lines, etc.)
-    for obs in _obstacles.get(ax, []):
-        oid = id(obs)
-        if oid not in seen:
-            obstacles.append(obs)
-            seen.add(oid)
-
-    # 2. Auto-detect patches on all axes sharing X (bars, boxes, etc.)
-    #    Full Line2D bboxes are NOT included (they span the entire data area).
-    #    Registered lines are wrapped in _LinePathObstacle (step 3).
+    # 1-3. Auto-detect from sibling axes
     for sibling in sibling_axes:
+        # 1. Patches (bars, boxes, etc.) -> real patch geometry
         for patch in sibling.patches:
             pid = id(patch)
             if (
@@ -592,10 +727,22 @@ def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Obstacle]:
                 and pid not in seen
                 and patch.get_visible()
             ):
-                obstacles.append(patch)
+                obstacles.append(_path_from_patch(sibling, patch))
                 seen.add(pid)
 
-        # Labels from sibling axes (twinx) are obstacles for cross-axis avoidance
+        # 2. Collections (scatter, violin, fill_between, etc.)
+        for collection in sibling.collections:
+            cid = id(collection)
+            if (
+                cid not in moveable_ids
+                and cid not in passive_ids
+                and cid not in seen
+                and collection.get_visible()
+            ):
+                obstacles.append(_path_from_collection(sibling, collection, renderer))
+                seen.add(cid)
+
+        # 3. Labels from sibling axes (twinx) -> extent
         if sibling is not ax:
             for label in _labels.get(sibling, []):
                 lid = id(label)
@@ -605,20 +752,28 @@ def _collect_obstacles(ax: Axes, moveables: list[Artist]) -> list[Obstacle]:
                     and lid not in seen
                     and label.get_visible()
                 ):
-                    obstacles.append(label)
+                    obstacles.append(_path_from_extent(sibling, label, renderer))
                     seen.add(lid)
 
-    # 3. Line path obstacles: one _LinePathObstacle per registered line,
-    #    using continuous path intersection instead of per-point sampling.
+    # 4. Explicitly registered artist obstacles -> dispatch by type
     for sibling in sibling_axes:
-        for line in _line_obstacles.get(sibling, []):
-            if not line.get_visible():
+        for artist, filled, colocate in _artist_obstacles.get(sibling, []):
+            if not artist.get_visible():
                 continue
-            lid = id(line)
-            if lid in seen:
+            aid = id(artist)
+            if aid in seen or aid in passive_ids:
                 continue
-            seen.add(lid)
-            obstacles.append(_LinePathObstacle(sibling, line))
+            seen.add(aid)
+            if not filled and hasattr(artist, "get_path"):
+                obs = _path_from_line(sibling, artist)
+                obs._colocate = colocate
+                obstacles.append(obs)
+            elif hasattr(artist, "get_paths") and hasattr(artist, "get_offsets"):
+                obstacles.append(_path_from_collection(sibling, artist, renderer))
+            elif hasattr(artist, "get_patch_transform"):
+                obstacles.append(_path_from_patch(sibling, artist))
+            else:
+                obstacles.append(_path_from_extent(sibling, artist, renderer))
 
     return obstacles
 
@@ -640,7 +795,6 @@ def _shift_label(label: PositionableArtist, dx_px: float, dy_px: float) -> None:
     curr_px = ax.transData.transform((num_x, num_y))
     new_px = (curr_px[0] + dx_px, curr_px[1] + dy_px)
     new_data = ax.transData.inverted().transform(new_px)
-    # Pin coordinate that should not change to avoid roundtrip drift
     final_x = num_x if dx_px == 0 else new_data[0]
     final_y = num_y if dy_px == 0 else new_data[1]
     label.set_position((final_x, final_y))

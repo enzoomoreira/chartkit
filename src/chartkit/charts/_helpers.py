@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "apply_y_origin",
+    "compute_bar_offsets",
     "detect_bar_width",
     "is_categorical_index",
     "prepare_categorical_axis",
@@ -84,6 +85,21 @@ def apply_y_origin(
             ax.set_ylim(0, ymax)
         elif ymax < 0:
             ax.set_ylim(ymin, 0)
+
+
+def compute_bar_offsets(
+    n_cols: int,
+    group_width: float,
+) -> tuple[float, list[float]]:
+    """Compute bar width and per-column offsets for grouped bar charts.
+
+    Returns:
+        Tuple of (bar_width, offsets) where offsets[i] is the center
+        displacement for column i relative to the group center.
+    """
+    bar_width = group_width / n_cols
+    offsets = [(i - n_cols / 2 + 0.5) * bar_width for i in range(n_cols)]
+    return bar_width, offsets
 
 
 def _coerce_datetime_index(x: pd.Index | pd.Series) -> pd.DatetimeIndex | None:

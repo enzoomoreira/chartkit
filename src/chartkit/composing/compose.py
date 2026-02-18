@@ -13,7 +13,7 @@ from .._internal import (
     add_right_margin,
     extract_plot_data,
     normalize_highlight,
-    register_fixed,
+    register_artist_obstacle,
     resolve_composed_collisions,
     save_figure,
     should_show_legend,
@@ -190,7 +190,7 @@ def compose(
 
     legend_artist = ax_left.get_legend()
     if legend_artist is not None:
-        register_fixed(ax_left, legend_artist)
+        register_artist_obstacle(ax_left, legend_artist, filled=True)
 
     # 6. Collision resolution (unified cross-axis)
     all_axes: list[plt.Axes] = [ax_left]

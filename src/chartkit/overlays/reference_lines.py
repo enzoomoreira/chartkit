@@ -2,7 +2,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
-from .._internal.collision import register_fixed
+from .._internal.collision import register_artist_obstacle
 from .._internal.extraction import resolve_series
 from ..settings import get_config
 from ..styling.theme import theme
@@ -47,7 +47,7 @@ def _add_stat_line(
         label=label if label is not None else default_label,
         zorder=config.layout.zorder.reference_lines,
     )
-    register_fixed(ax, line)
+    register_artist_obstacle(ax, line, filled=False)
 
 
 def add_ath_line(
@@ -144,7 +144,7 @@ def add_hline(
         label=label,
         zorder=config.layout.zorder.reference_lines,
     )
-    register_fixed(ax, line)
+    register_artist_obstacle(ax, line, filled=False)
 
 
 def add_target_line(
@@ -177,4 +177,4 @@ def add_target_line(
         label=label if label is not None else default_label,
         zorder=config.layout.zorder.reference_lines,
     )
-    register_fixed(ax, line)
+    register_artist_obstacle(ax, line, filled=False)

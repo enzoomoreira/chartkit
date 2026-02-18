@@ -18,13 +18,17 @@ def test_collect_obstacles_includes_twinx_patches_and_labels() -> None:
     register_moveable(ax_left, left_label)
     register_moveable(ax_right, right_label)
 
-    obstacles = _collect_obstacles(ax_left, [left_label])
+    fig.draw_without_rendering()
+    renderer = fig.canvas.get_renderer()
 
-    # Lines are excluded: their bbox spans the entire data area
-    assert left_line not in obstacles
+    obstacles = _collect_obstacles(ax_left, [left_label], renderer)
+    obstacle_artists = {obs._artist for obs in obstacles}
+
+    # Lines are excluded: only registered artist obstacles create line paths
+    assert left_line not in obstacle_artists
     # Patches from sibling axes are detected
-    assert right_bar in obstacles
+    assert right_bar in obstacle_artists
     # Labels from sibling axes are obstacles for cross-axis avoidance
-    assert right_label in obstacles
+    assert right_label in obstacle_artists
 
     plt.close(fig)

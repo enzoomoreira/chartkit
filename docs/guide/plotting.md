@@ -59,7 +59,7 @@ If `y` is not specified, all numeric columns will be plotted.
 |-----------|------|---------|-------------|
 | `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the DataFrame index |
 | `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses all numeric columns |
-| `kind` | `ChartKind` | `"line"` | Chart type: any valid matplotlib Axes method (`"line"`, `"bar"`, `"stacked_bar"`, `"scatter"`, `"step"`, etc.) |
+| `kind` | `ChartKind` | `"line"` | Chart type: `"line"`, `"bar"`, `"barh"`, `"stacked_bar"`, `"area"`, `"hist"`, `"pie"`, `"scatter"`, `"step"`, `"stem"`, `"stairs"`, `"boxplot"`, `"violinplot"`, `"ecdf"`, `"eventplot"`, `"stackplot"`, or any valid matplotlib Axes method |
 | `title` | `str \| None` | `None` | Chart title |
 | `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see [Formatters](#formatters-table)) |
 | `source` | `str \| None` | `None` | Data source for footer |
@@ -223,6 +223,123 @@ df = pd.DataFrame({
 
 df.chartkit.plot(kind='stacked_bar', title="Sales Channel by Region")
 ```
+
+---
+
+## Horizontal Bar Chart
+
+Use `kind='barh'` to create horizontal bar charts. The Y axis holds categories or positions, the X axis holds values.
+
+### Basic Horizontal Bars
+
+```python
+df = pd.DataFrame({
+    'sales': [150, 200, 180, 220, 250]
+}, index=['Team A', 'Team B', 'Team C', 'Team D', 'Team E'])
+
+df.chartkit.plot(kind='barh', title="Sales by Team")
+```
+
+### Multiple Columns (Grouped)
+
+```python
+df = pd.DataFrame({
+    '2023': [15, 22, 18, 12],
+    '2024': [17, 20, 19, 14],
+}, index=['North', 'South', 'East', 'West'])
+
+df.chartkit.plot(kind='barh', title="Sales by Region")
+```
+
+### Sorting
+
+Single-column horizontal bars support `sort='ascending'` or `sort='descending'`:
+
+```python
+df.chartkit.plot(kind='barh', title="Ranked", sort='descending')
+```
+
+### Color Cycling
+
+```python
+df.chartkit.plot(kind='barh', title="Categories", color='cycle')
+```
+
+Horizontal bars also support `y_origin` (`'zero'` or `'auto'`) which controls the X-axis origin.
+
+---
+
+## Area Chart
+
+Use `kind='area'` (alias for `fill_between`) to create filled area charts. Each column fills from zero with a contour line on top.
+
+```python
+df = pd.DataFrame({
+    'revenue': [100, 120, 130, 140, 160],
+    'costs': [80, 90, 85, 95, 100],
+}, index=pd.date_range('2024-01', periods=5, freq='ME'))
+
+# Single series area
+df[['revenue']].chartkit.plot(kind='area', title="Revenue", units='BRL_compact')
+
+# Multi-series area (overlapped, not stacked)
+df.chartkit.plot(kind='area', title="Revenue vs Costs", units='BRL_compact')
+```
+
+For stacked areas use `kind='stackplot'` instead.
+
+---
+
+## Other Chart Types
+
+chartkit supports many additional chart types through registered enhancers and generic rendering. Any valid matplotlib Axes method can be used as `kind`.
+
+### Enhancers (Specialized Handling)
+
+These types have dedicated enhancers with color cycling, proper label handling, and correct argument mapping:
+
+| Kind | Description | Notes |
+|------|-------------|-------|
+| `'hist'` | Histogram | Data is passed for binning, not as (x, y) pairs. Multi-column aligns bins |
+| `'pie'` | Pie chart | Single-column only. Index used as slice labels |
+| `'stackplot'` | Stacked area | All columns stacked. Use `kind='area'` for overlapped areas |
+| `'stem'` | Stem plot | Vertical lines from baseline to data points |
+| `'stairs'` | Step function | Values as heights with auto-generated edges |
+| `'boxplot'` | Box-and-whisker | Each column becomes a box. `patch_artist=True` forced |
+| `'violinplot'` | Violin plot | Kernel density + quartile markers per column |
+| `'ecdf'` | Empirical CDF | Data values on X, cumulative probability on Y |
+| `'eventplot'` | Event positions | Each column becomes a row of vertical event markers |
+
+```python
+# Histogram
+df.chartkit.plot(kind='hist', title="Distribution", bins=20)
+
+# Pie chart
+df[['share']].chartkit.plot(kind='pie', title="Market Share")
+
+# Stacked area
+df.chartkit.plot(kind='stackplot', title="Composition")
+
+# Box plot
+df.chartkit.plot(kind='boxplot', title="Distribution by Column")
+```
+
+### Generic Rendering
+
+Any matplotlib Axes method not listed above works automatically:
+
+```python
+df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
+df.chartkit.plot(kind='step', where='mid')
+```
+
+Extra `**kwargs` are passed directly to the matplotlib method.
+
+### Unsupported Kinds
+
+Chart kinds that require 2D grid data or vector fields are explicitly blocked with descriptive error messages:
+
+`imshow`, `contour`, `contourf`, `pcolormesh`, `quiver`, `streamplot`, `barbs`, `spy`
 
 ---
 

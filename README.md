@@ -48,7 +48,7 @@ compose(layer_rate, layer_variation, title="Rate and Monthly Variation", source=
 ## Features
 
 - **Pandas Accessor**: Use `df.chartkit.plot()` directly on any DataFrame
-- **Charts**: Line, bar, and stacked bar charts with professional styling
+- **Charts**: Line, bar, stacked bar, area, histogram, pie, scatter, stem, stairs, boxplot, violinplot, and more -- any matplotlib chart type works via generic rendering
 - **Chart Composition**: Combine multiple layers with dual-axis support via `compose()` for complex multi-series charts
 - **Formatters**: BRL, USD, BRL_compact, USD_compact, %, points, human-readable notation (1k, 1M)
 - **Declarative Metrics**: `metrics=['ath', 'atl', 'ma:12', 'hline:3.0', 'band:1.5:4.5', 'target:1000', 'std_band:20:2', 'vband:2020-03:2020-06']`

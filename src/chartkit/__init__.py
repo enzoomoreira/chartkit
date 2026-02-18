@@ -5,7 +5,7 @@ df.chartkit.plot(metrics=['ath', 'ma:12'], units='%')
 df.chartkit.variation(horizon='year').plot(title='YoY Variation').save('chart.png')
 """
 
-from ._internal import register_fixed, register_moveable, register_passive
+from ._internal import register_artist_obstacle, register_moveable, register_passive
 from ._logging import configure_logging, disable_logging
 from .accessor import ChartingAccessor
 from .composing import AxisSide, Layer, compose
@@ -68,7 +68,7 @@ __all__ = [
     "OUTPUTS_PATH",  # pyright: ignore[reportUnsupportedDunderAll]
     "ASSETS_PATH",  # pyright: ignore[reportUnsupportedDunderAll]
     # Collision API
-    "register_fixed",
+    "register_artist_obstacle",
     "register_moveable",
     "register_passive",
     # Types

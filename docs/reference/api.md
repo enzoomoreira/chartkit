@@ -32,7 +32,7 @@ def plot(
 |-----------|------|---------|-------------|
 | `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the index |
 | `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses numeric columns |
-| `kind` | `ChartKind` | `"line"` | Chart type: any valid matplotlib Axes method (e.g., `"line"`, `"bar"`, `"stacked_bar"`, `"scatter"`, `"step"`) or registered enhancer |
+| `kind` | `ChartKind` | `"line"` | Chart type: any registered enhancer (`"bar"`, `"barh"`, `"area"`, `"hist"`, `"pie"`, `"stem"`, etc.) or valid matplotlib Axes method (`"scatter"`, `"step"`, etc.) |
 | `title` | `str \| None` | `None` | Chart title |
 | `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see table below) |
 | `source` | `str \| None` | `None` | Data source for footer. When `None`, uses `branding.default_source` as fallback |
@@ -219,20 +219,56 @@ Currency formatters use Babel. Locale configurable via `formatters.locale.babel_
 
 ## ChartRenderer
 
-Generic chart renderer with enhancer-based extensibility. Simple chart types (scatter, step, stem, hist, etc.) work automatically via `ax.{kind}()`. Complex types that need custom logic (bar grouping, stacking) are handled by registered enhancers.
+Generic chart renderer with enhancer-based extensibility. Simple chart types (scatter, step, etc.) work automatically via `ax.{kind}()`. Complex types that need custom logic are handled by registered enhancers.
+
+### Registered Enhancers
+
+| Enhancer | Kind | Module |
+|----------|------|--------|
+| `bar` | `"bar"` | `charts/enhancers/bar.py` |
+| `barh` | `"barh"` | `charts/enhancers/bar.py` |
+| `stacked_bar` | `"stacked_bar"` | `charts/enhancers/stacked_bar.py` |
+| `fill_between` | `"area"` / `"fill_between"` | `charts/enhancers/area.py` |
+| `hist` | `"hist"` | `charts/enhancers/hist.py` |
+| `pie` | `"pie"` | `charts/enhancers/pie.py` |
+| `stackplot` | `"stackplot"` | `charts/enhancers/stackplot.py` |
+| `stem` | `"stem"` | `charts/enhancers/stem.py` |
+| `stairs` | `"stairs"` | `charts/enhancers/stairs.py` |
+| `boxplot` | `"boxplot"` | `charts/enhancers/statistical.py` |
+| `violinplot` | `"violinplot"` | `charts/enhancers/statistical.py` |
+| `ecdf` | `"ecdf"` | `charts/enhancers/ecdf.py` |
+| `eventplot` | `"eventplot"` | `charts/enhancers/eventplot.py` |
+
+### Aliases
+
+| Alias | Resolves To |
+|-------|-------------|
+| `"line"` | `"plot"` |
+| `"area"` | `"fill_between"` |
+
+### Unsupported Kinds
+
+These chart kinds require 2D grid or vector field data and are explicitly blocked:
+
+`imshow`, `contour`, `contourf`, `pcolormesh`, `quiver`, `streamplot`, `barbs`, `spy`
 
 ### Generic Rendering
 
-Any valid matplotlib Axes method can be used as `kind`:
+Any valid matplotlib Axes method not listed above works automatically:
 
 ```python
 df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
 df.chartkit.plot(kind='step', where='mid')
 ```
 
-### Register an enhancer
+### Post-Render Collision Registration
 
-Enhancers handle chart types that need custom logic beyond a simple `ax.{kind}()` call:
+After rendering, `ChartRenderer` automatically registers new artists for collision detection:
+- New `Line2D` artists -> `register_artist_obstacle(filled=False, colocate=True)`
+- New `PathCollection` (scatter) -> `register_artist_obstacle(filled=True)`
+- Other new collections -> `register_passive()`
+
+### Register a Custom Enhancer
 
 ```python
 from chartkit.charts.renderer import ChartRenderer
@@ -248,7 +284,7 @@ def plot_my_chart(ax, x, y_data, highlight, **kwargs):
 |--------|--------|-------------|
 | `register_enhancer(name)` | decorator | Registers specialized chart handler |
 | `render(ax, kind, x, y_data, highlight, **kwargs)` | `None` | Renders chart (enhancer or generic) |
-| `validate_kind(kind)` | `None` | Validates that kind is a valid Axes method or enhancer |
+| `validate_kind(kind)` | `None` | Validates kind (rejects unsupported, private, and non-existent methods) |
 | `available()` | `list[str]` | Lists registered enhancer names |
 
 ---
@@ -626,7 +662,7 @@ from chartkit import (
     ASSETS_PATH,
 
     # Collision API
-    register_fixed,
+    register_artist_obstacle,
     register_moveable,
     register_passive,
 

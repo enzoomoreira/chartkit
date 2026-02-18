@@ -13,7 +13,7 @@ from ._internal import (
     add_right_margin,
     extract_plot_data,
     normalize_highlight,
-    register_fixed,
+    register_artist_obstacle,
     resolve_collisions,
     save_figure,
     should_show_legend,
@@ -138,7 +138,7 @@ class ChartingPlotter:
 
         legend_artist = ax.get_legend()
         if legend_artist is not None:
-            register_fixed(ax, legend_artist)
+            register_artist_obstacle(ax, legend_artist, filled=True)
 
         # 7. Collision resolution
         resolve_collisions(ax, debug=debug)

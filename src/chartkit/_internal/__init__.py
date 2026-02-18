@@ -6,8 +6,7 @@ Do not import directly from this module in external code.
 """
 
 from .collision import (
-    register_fixed,
-    register_line_obstacle,
+    register_artist_obstacle,
     register_moveable,
     register_passive,
     resolve_collisions,
@@ -29,8 +28,7 @@ __all__ = [
     "add_right_margin",
     "extract_plot_data",
     "normalize_highlight",
-    "register_fixed",
-    "register_line_obstacle",
+    "register_artist_obstacle",
     "register_moveable",
     "register_passive",
     "resolve_collisions",

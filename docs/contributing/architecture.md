@@ -101,7 +101,7 @@ flowchart TD
     D4 --> D5["5. ChartRenderer.render(kind)"]
     D5 --> D6["6. MetricRegistry.apply()"]
     D6 --> D6a["7. add_right_margin() (if highlights)"]
-    D6a --> D6b["8. _apply_legend() + register_fixed(legend)"]
+    D6a --> D6b["8. _apply_legend() + register_artist_obstacle(legend)"]
     D6b --> D7["9. resolve_collisions()"]
     D7 --> D8["10. add_title()"]
     D8 --> D9["11. add_footer()"]
