@@ -9,10 +9,7 @@ from loguru import logger
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
 
-from .._internal.collision import (
-    register_artist_obstacle,
-    register_passive,
-)
+from .._internal.collision import register_artist_obstacle
 from ..exceptions import ValidationError
 from ..overlays import add_highlight
 from ..settings import get_config
@@ -91,7 +88,7 @@ class ChartRenderer:
         otherwise falls through to the generic matplotlib path.
         Post-render: new Line2D are registered as obstacles; PathCollections
         (scatter) are registered as filled obstacles; other collections
-        are marked passive.
+        are left unregistered for auto-detection by ``_collect_obstacles()``.
         """
         kind = cls._ALIASES.get(kind, kind)
 
@@ -114,8 +111,6 @@ class ChartRenderer:
             if id(coll) not in colls_before:
                 if isinstance(coll, PathCollection):
                     register_artist_obstacle(ax, coll, filled=True)
-                else:
-                    register_passive(ax, coll)
 
     @classmethod
     def _generic_render(

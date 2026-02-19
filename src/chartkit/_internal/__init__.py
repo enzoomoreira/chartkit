@@ -22,20 +22,22 @@ from .formatting import FORMATTERS
 from .highlight import normalize_highlight
 from .plot_validation import validate_plot_params
 from .saving import save_figure
+from .tick_formatting import apply_tick_formatting
 from .tick_rotation import apply_tick_rotation
 
 __all__ = [
     "FORMATTERS",
     "add_right_margin",
+    "apply_tick_formatting",
+    "apply_tick_rotation",
     "extract_plot_data",
     "normalize_highlight",
     "register_artist_obstacle",
     "register_moveable",
     "register_passive",
     "resolve_collisions",
-    "resolve_series",
     "resolve_composed_collisions",
-    "apply_tick_rotation",
+    "resolve_series",
     "save_figure",
     "should_show_legend",
     "validate_plot_params",

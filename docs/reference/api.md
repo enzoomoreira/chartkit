@@ -19,9 +19,15 @@ def plot(
     source: str | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
-    fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    xlim: tuple | None = None,
+    ylim: tuple | None = None,
+    grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
+    tick_format: str | None = None,
+    tick_freq: str | None = None,
     collision: bool = True,
     debug: bool = False,
     **kwargs,
@@ -40,9 +46,15 @@ def plot(
 | `source` | `str \| None` | `None` | Data source for footer. When `None`, uses `branding.default_source` as fallback |
 | `highlight` | `HighlightInput` | `False` | Highlight mode(s). `True` / `'last'` = last value; `'max'` / `'min'` = extremes. Accepts list to combine modes (e.g., `['max', 'min']`) |
 | `metrics` | `str \| list[str] \| None` | `None` | Metric(s) to apply (string or list) |
-| `fill_between` | `tuple[str, str] \| None` | `None` | Tuple `(col1, col2)` to shade area between two columns |
 | `legend` | `bool \| None` | `None` | Legend control. `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `xlabel` | `str \| None` | `None` | X-axis label |
+| `ylabel` | `str \| None` | `None` | Y-axis label |
+| `xlim` | `tuple \| None` | `None` | X-axis limits as `(min, max)` |
+| `ylim` | `tuple \| None` | `None` | Y-axis limits as `(min, max)` |
+| `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
+| `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
+| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Draw collision debug overlay (colored bboxes for obstacles, labels, and line paths) |
 | `**kwargs` | - | - | Chart-specific parameters (e.g., `y_origin='auto'`) and extra matplotlib args |
@@ -129,7 +141,7 @@ Chainable accessor for transformations. Each method returns a new `TransformAcce
 | `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Statistical standardization (global or rolling, window >= 2) |
 | `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Annualize periodic rate via compound interest (frequency auto-detection) |
 | `to_month_end()` | `to_month_end() -> TransformAccessor` | Normalize index to month-end (consolidates duplicates) |
-| `layer()` | `layer(kind, x, y, *, units, highlight, metrics, fill_between, axis, **kwargs) -> Layer` | Create a Layer for `compose()` |
+| `layer()` | `layer(kind, x, y, *, units, highlight, metrics, axis, **kwargs) -> Layer` | Create a Layer for `compose()` |
 | `plot()` | `plot(**kwargs) -> PlotResult` | Finalize chain and plot |
 | `df` | `@property -> pd.DataFrame` | Access to transformed DataFrame |
 
@@ -146,7 +158,14 @@ def compose(
     source: str | None = None,
     legend: bool | None = None,
     figsize: tuple[float, float] | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    xlim: tuple | None = None,
+    ylim: tuple | None = None,
+    grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
+    tick_format: str | None = None,
+    tick_freq: str | None = None,
     collision: bool = True,
     debug: bool = False,
 ) -> PlotResult
@@ -161,7 +180,14 @@ Compose multiple layers into a single chart with optional dual axes.
 | `source` | `str \| None` | `None` | Data source for footer |
 | `legend` | `bool \| None` | `None` | Legend control |
 | `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
+| `xlabel` | `str \| None` | `None` | X-axis label |
+| `ylabel` | `str \| None` | `None` | Y-axis label (applied to left axis) |
+| `xlim` | `tuple \| None` | `None` | X-axis limits as `(min, max)` |
+| `ylim` | `tuple \| None` | `None` | Y-axis limits as `(min, max)` (applied to left axis) |
+| `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
+| `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
+| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Draw collision debug overlay |
 
@@ -181,7 +207,6 @@ class Layer:
     units: UnitFormat | None = None
     highlight: HighlightInput = False
     metrics: str | list[str] | None = None
-    fill_between: tuple[str, str] | None = None
     axis: AxisSide = "left"
     kwargs: dict[str, Any] = field(default_factory=dict)
 ```
@@ -199,7 +224,6 @@ def layer(
     units: UnitFormat | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
-    fill_between: tuple[str, str] | None = None,
     axis: AxisSide = "left",
     **kwargs,
 ) -> Layer
@@ -275,7 +299,7 @@ df.chartkit.plot(kind='step', where='mid')
 After rendering, `ChartRenderer` automatically registers new artists for collision detection:
 - New `Line2D` artists -> `register_artist_obstacle(filled=False, colocate=True)`
 - New `PathCollection` (scatter) -> `register_artist_obstacle(filled=True)`
-- Other new collections -> `register_passive()`
+- Other new collections are left unregistered for auto-detection by `_collect_obstacles()`
 
 ### Register a Custom Enhancer
 
@@ -322,9 +346,15 @@ def plot(
     source: str | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
-    fill_between: tuple[str, str] | None = None,
     legend: bool | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    xlim: tuple | None = None,
+    ylim: tuple | None = None,
+    grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
+    tick_format: str | None = None,
+    tick_freq: str | None = None,
     collision: bool = True,
     debug: bool = False,
     **kwargs,
@@ -478,11 +508,21 @@ class ChartingConfig(BaseSettings):
 | `figsize` | `tuple[float, float]` | `(10.0, 6.0)` |
 | `dpi` | `int` | `300` |
 | `base_style` | `str` | `"seaborn-v0_8-white"` |
-| `grid` | `bool` | `False` |
+| `grid` | `GridConfig` | (see below) |
 | `spines` | `SpinesConfig` | (see below) |
 | `footer` | `FooterConfig` | (see below) |
 | `title` | `TitleConfig` | (see below) |
 | `zorder` | `ZOrderConfig` | (see below) |
+
+#### GridConfig
+
+| Field | Type | Default |
+|-------|------|---------|
+| `enabled` | `bool` | `False` |
+| `alpha` | `float` | `0.3` |
+| `color` | `str` | `"lightgray"` |
+| `linestyle` | `str` | `"-"` |
+| `axis` | `Literal["x", "y", "both"]` | `"both"` |
 
 #### SpinesConfig
 
@@ -565,7 +605,7 @@ class ChartingConfig(BaseSettings):
 |-------|------|---------|
 | `movement` | `Literal["x", "y", "xy"]` | `"y"` |
 | `obstacle_padding_px` | `float` | `8.0` |
-| `label_padding_px` | `float` | `4.0` |
+| `label_padding_px` | `float` | `2.0` |
 | `max_iterations` | `int` | `50` |
 | `connector_threshold_px` | `float` | `30.0` |
 | `connector_alpha` | `float` | `0.6` |
@@ -578,6 +618,8 @@ class ChartingConfig(BaseSettings):
 |-------|------|---------|
 | `rotation` | `int \| Literal["auto"]` | `"auto"` |
 | `auto_rotation_angle` | `int` | `45` |
+| `date_format` | `str \| None` | `None` |
+| `date_freq` | `str \| None` | `None` |
 
 #### TransformsConfig
 

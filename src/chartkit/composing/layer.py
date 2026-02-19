@@ -30,7 +30,6 @@ class Layer:
     units: UnitFormat | None = None
     highlight: HighlightInput = False
     metrics: str | list[str] | None = None
-    fill_between: tuple[str, str] | None = None
     axis: AxisSide = "left"
     kwargs: dict[str, Any] = field(default_factory=dict)
 
@@ -44,7 +43,6 @@ def create_layer(
     units: UnitFormat | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
-    fill_between: tuple[str, str] | None = None,
     axis: AxisSide = "left",
     **kwargs: Any,
 ) -> Layer:
@@ -74,7 +72,6 @@ def create_layer(
         units=units,
         highlight=highlight,
         metrics=metrics,
-        fill_between=fill_between,
         axis=axis,
         kwargs=kwargs,
     )

@@ -1,7 +1,6 @@
 """Visual overlays for charts (moving averages, reference lines, bands, markers)."""
 
 from .bands import add_band
-from .fill_between import add_fill_between
 from .markers import HIGHLIGHT_STYLES, HighlightMode, HighlightStyle, add_highlight
 from .moving_average import add_moving_average
 from .reference_lines import (
@@ -24,7 +23,6 @@ __all__ = [
     "add_band",
     "add_std_band",
     "add_vband",
-    "add_fill_between",
     "add_highlight",
     "HighlightMode",
     "HighlightStyle",

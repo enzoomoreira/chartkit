@@ -1,5 +1,30 @@
 # Project Changelog
 
+## [2026-02-18 21:11]
+### Added
+- **Controles de eixo** (`xlabel`, `ylabel`, `xlim`, `ylim`) em `plot()`, `compose()` e accessor: Controle direto de labels e limites dos eixos sem acessar o matplotlib diretamente
+- **Grid per-call** (`grid` parameter): `grid=True/False` em `plot()` e `compose()` habilita/desabilita grid para um grafico especifico, com precedencia sobre config global
+- **`GridConfig`** (`settings/schema.py`): Config estruturada substituindo o antigo `grid: bool` -- campos `enabled`, `alpha`, `color`, `linestyle`, `axis` configuraveis via TOML
+- **Sistema de tick formatting** (`_internal/tick_formatting.py`): Controle de frequencia e formato de ticks temporais no eixo X via `tick_format` (strftime) e `tick_freq` (`"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`) -- usa `matplotlib.dates` locators/formatters
+- **`TicksConfig.date_format` e `TicksConfig.date_freq`**: Campos de config para tick formatting, configuraveis via TOML e env vars
+- **Area chart fill-between semantics**: 2 colunas agora preenchem entre o par (spread/intervalo) em vez de independentemente a partir de zero; 3+ colunas manteem comportamento independente
+- **Passive obstacles no debug overlay**: Obstaculos passivos renderizados em cinza tracejado no modo `debug=True`
+- **Stackplot registra PolyCollections como passive**: Collision engine agora reconhece areas empilhadas como obstaculos passivos
+
+### Changed
+- **Theme aplica config completa de grid** (`theme.py`): rcParams agora incluem `axes.grid.axis`, `grid.alpha`, `grid.color`, `grid.linestyle` alem do `axes.grid`
+- **Debug overlay refatorado** (`collision.py`): `_draw_obstacles()` helper com suporte a passivos e `_collect_passive_obstacles()` para coleta cross-axis
+- **`label_padding_px` default reduzido** de 4.0 para 2.0 (`CollisionConfig`)
+- **Tick rotation: alinhamento para angulos negativos** corrigido de `"center"` para `"left"`
+- **Collections nao-PathCollection deixadas sem registro** no renderer post-render -- auto-detectadas por `_collect_obstacles()` em vez de registro explicito como passive
+- **`charting.example.toml` atualizado** com secao `[layout.grid]` e campos `date_format`/`date_freq` em `[ticks]`
+
+### Removed
+- **Parametro `fill_between`** de `plot()`, `compose()`, `Layer`, `create_layer()`, accessor e `TransformAccessor` -- funcionalidade absorvida pelo area enhancer (modo 2 colunas)
+- **`overlays/fill_between.py`** -- modulo inteiro deletado
+- **`add_fill_between()` da API publica de overlays**
+- **`scripts/test_tick_rotation.py`** -- substituido por `test_axis_controls.py`
+
 ## [2026-02-18 15:30]
 ### Added
 - **Parametro `collision`** em `plot()`, `compose()` e accessor: `collision=False` desabilita completamente a collision resolution engine -- util para graficos simples onde a resolucao de colisao e desnecessaria ou interfere no layout

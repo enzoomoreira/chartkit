@@ -12,6 +12,7 @@ from matplotlib.axes import Axes
 from ._internal import (
     FORMATTERS,
     add_right_margin,
+    apply_tick_formatting,
     apply_tick_rotation,
     extract_plot_data,
     normalize_highlight,
@@ -26,7 +27,7 @@ from .charts import ChartRenderer
 from .decorations import add_footer, add_title
 from .exceptions import StateError
 from .metrics import MetricRegistry
-from .overlays import HighlightMode, add_fill_between
+from .overlays import HighlightMode
 from .result import PlotResult
 from .settings import get_config
 from .styling import theme
@@ -54,9 +55,15 @@ class ChartingPlotter:
         source: str | None = None,
         highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
-        fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
+        xlabel: str | None = None,
+        ylabel: str | None = None,
+        xlim: tuple | None = None,
+        ylim: tuple | None = None,
+        grid: bool | None = None,
         tick_rotation: int | Literal["auto"] | None = None,
+        tick_format: str | None = None,
+        tick_freq: str | None = None,
         collision: bool = True,
         debug: bool = False,
         **kwargs,
@@ -76,12 +83,19 @@ class ChartingPlotter:
                 maximum/minimum. Accepts a list to combine modes.
             metrics: Declarative metric(s). Use ``|`` for custom legend label
                 (e.g.: ``'ath|Maximum'``, ``'ma:12@col|12M Average'``).
-            fill_between: Tuple ``(col1, col2)`` to shade the area between
-                two DataFrame columns.
             legend: Legend control. ``None`` = auto (shows when there are
                 2+ labeled artists), ``True`` = force, ``False`` = suppress.
+            xlabel: X-axis label.
+            ylabel: Y-axis label.
+            xlim: X-axis limits as ``(min, max)``.
+            ylim: Y-axis limits as ``(min, max)``.
+            grid: Grid override. ``None`` uses config, ``True``/``False``
+                enables/disables grid for this chart.
             tick_rotation: X-axis tick label rotation. ``"auto"`` detects
                 overlap; ``int`` forces a fixed angle. ``None`` uses config.
+            tick_format: Date format string for X-axis ticks (e.g. ``"%b/%Y"``).
+            tick_freq: Tick frequency (``"day"``, ``"week"``, ``"month"``,
+                ``"quarter"``, ``"semester"``, ``"year"``).
             collision: Enable collision resolution engine. ``False`` skips
                 all label collision processing.
             **kwargs: Chart-specific parameters (e.g.: ``y_origin='auto'`` for bars)
@@ -104,6 +118,10 @@ class ChartingPlotter:
         fig, ax = plt.subplots(figsize=config.layout.figsize)
         self._fig = fig
         self._ax = ax
+
+        # 1b. Grid override
+        if grid is not None:
+            ax.grid(grid)
 
         # 2. Data
         x_data, y_data = extract_plot_data(self.df, x, y)
@@ -132,14 +150,12 @@ class ChartingPlotter:
             logger.debug("Applying metric(s)")
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
-        # 5b. Fill between
-        if fill_between is not None:
-            col1, col2 = fill_between
-            add_fill_between(ax, x_data, self.df[col1], self.df[col2])
-
-        # 5c. Right margin for highlight labels
+        # 5b. Right margin for highlight labels
         if highlight_modes:
             add_right_margin(ax, ax_right=None)
+
+        # 5c. Tick formatting
+        apply_tick_formatting(ax, tick_format=tick_format, tick_freq=tick_freq)
 
         # 5d. Tick rotation
         apply_tick_rotation(fig, ax, tick_rotation=tick_rotation)
@@ -154,7 +170,19 @@ class ChartingPlotter:
                 register_artist_obstacle(ax, legend_artist, filled=True)
             resolve_collisions(ax, debug=debug)
 
-        # 8. Decorations
+        # 8. Axis limits (user override, after collision)
+        if xlim is not None:
+            ax.set_xlim(xlim)
+        if ylim is not None:
+            ax.set_ylim(ylim)
+
+        # 9. Axis labels
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+
+        # 10. Decorations
         add_title(ax, title)
         add_footer(fig, source)
 

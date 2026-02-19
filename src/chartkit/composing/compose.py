@@ -11,6 +11,7 @@ from loguru import logger
 from .._internal import (
     FORMATTERS,
     add_right_margin,
+    apply_tick_formatting,
     apply_tick_rotation,
     extract_plot_data,
     normalize_highlight,
@@ -24,7 +25,6 @@ from ..charts import ChartRenderer
 from ..decorations import add_footer, add_title
 from ..exceptions import ValidationError
 from ..metrics import MetricRegistry
-from ..overlays import add_fill_between
 from ..result import PlotResult
 from ..settings import get_config
 from ..styling.theme import theme
@@ -94,10 +94,6 @@ def _render_layer(
     if layer.metrics:
         MetricRegistry.apply(ax, x_data, y_data, layer.metrics)
 
-    if layer.fill_between is not None:
-        col1, col2 = layer.fill_between
-        add_fill_between(ax, x_data, layer.df[col1], layer.df[col2])
-
 
 def _apply_composed_legend(
     ax_left: plt.Axes,
@@ -132,7 +128,14 @@ def compose(
     source: str | None = None,
     legend: bool | None = None,
     figsize: tuple[float, float] | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    xlim: tuple | None = None,
+    ylim: tuple | None = None,
+    grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
+    tick_format: str | None = None,
+    tick_freq: str | None = None,
     collision: bool = True,
     debug: bool = False,
 ) -> PlotResult:
@@ -144,8 +147,17 @@ def compose(
         source: Data source for the footer.
         legend: Legend control. ``None`` = auto, ``True`` = force, ``False`` = suppress.
         figsize: Override figure size ``(width, height)`` in inches.
+        xlabel: X-axis label.
+        ylabel: Y-axis label (applied to the left axis).
+        xlim: X-axis limits as ``(min, max)``.
+        ylim: Y-axis limits as ``(min, max)`` (applied to the left axis).
+        grid: Grid override. ``None`` uses config, ``True``/``False``
+            enables/disables grid for this chart.
         tick_rotation: X-axis tick label rotation. ``"auto"`` detects
             overlap; ``int`` forces a fixed angle. ``None`` uses config.
+        tick_format: Date format string for X-axis ticks (e.g. ``"%b/%Y"``).
+        tick_freq: Tick frequency (``"day"``, ``"week"``, ``"month"``,
+            ``"quarter"``, ``"semester"``, ``"year"``).
         collision: Enable collision resolution engine. ``False`` skips
             all label collision processing.
 
@@ -161,6 +173,10 @@ def compose(
     theme.apply()
     effective_figsize = figsize or config.layout.figsize
     fig, ax_left = plt.subplots(figsize=effective_figsize)
+
+    # 1b. Grid override
+    if grid is not None:
+        ax_left.grid(grid)
 
     # 2. Right axis (if needed)
     ax_right: plt.Axes | None = None
@@ -187,7 +203,10 @@ def compose(
         )
         _render_layer(ax, layer, x_data, y_data)
 
-    # 4. Tick rotation
+    # 4. Tick formatting
+    apply_tick_formatting(ax_left, tick_format=tick_format, tick_freq=tick_freq)
+
+    # 4b. Tick rotation
     apply_tick_rotation(fig, ax_left, tick_rotation=tick_rotation)
 
     # 5. Right margin for highlight labels
@@ -209,7 +228,19 @@ def compose(
             all_axes.append(ax_right)
         resolve_composed_collisions(all_axes, debug=debug)
 
-    # 8. Decorations
+    # 8. Axis limits (user override, after collision)
+    if xlim is not None:
+        ax_left.set_xlim(xlim)
+    if ylim is not None:
+        ax_left.set_ylim(ylim)
+
+    # 9. Axis labels
+    if xlabel is not None:
+        ax_left.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax_left.set_ylabel(ylabel)
+
+    # 10. Decorations
     add_title(ax_left, title)
     add_footer(fig, source)
 

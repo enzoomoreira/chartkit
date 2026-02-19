@@ -89,7 +89,13 @@ fallback = "sans-serif"
 figsize = [10.0, 6.0]  # Largura x Altura em polegadas
 dpi = 300              # Resolucao para exportacao
 # base_style = "seaborn-v0_8-white"  # Estilo base matplotlib
-# grid = false                        # Mostrar grid no grafico
+
+[layout.grid]
+enabled = false       # Mostrar grid no grafico
+alpha = 0.3           # Transparencia do grid
+color = "lightgray"   # Cor das linhas do grid
+linestyle = "-"       # Estilo: "-", "--", "-.", ":"
+axis = "both"         # "x", "y", ou "both"
 
 # [layout.spines]
 # top = false      # Borda superior
@@ -148,6 +154,8 @@ dpi = 300              # Resolucao para exportacao
 # [ticks]
 # rotation = "auto"          # "auto" ou angulo em graus (0, 45, 90)
 # auto_rotation_angle = 45   # Angulo quando auto-detect ativa rotacao
+# date_format = "%b/%Y"      # Formato dos ticks temporais (strftime)
+# date_freq = "month"        # Frequencia: "day", "week", "month", "quarter", "semester", "year"
 
 # --- Barras ------------------------------------------------------------------
 

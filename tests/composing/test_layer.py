@@ -42,7 +42,6 @@ class TestLayer:
         assert layer.units is None
         assert layer.highlight is False
         assert layer.metrics is None
-        assert layer.fill_between is None
         assert layer.axis == "left"
         assert layer.kwargs == {}
 
@@ -56,7 +55,6 @@ class TestLayer:
             units="BRL",
             highlight="last",
             metrics=["ath"],
-            fill_between=("a", "b"),
             axis="right",
             kwargs={"color": "red"},
         )
@@ -66,7 +64,6 @@ class TestLayer:
         assert layer.units == "BRL"
         assert layer.highlight == "last"
         assert layer.metrics == ["ath"]
-        assert layer.fill_between == ("a", "b")
         assert layer.axis == "right"
         assert layer.kwargs == {"color": "red"}
 
@@ -99,7 +96,6 @@ class TestCreateLayer:
             units="%",
             highlight=True,
             metrics="ath",
-            fill_between=("a", "b"),
             axis="right",
         )
         assert layer.kind == "bar"
@@ -108,7 +104,6 @@ class TestCreateLayer:
         assert layer.units == "%"
         assert layer.highlight is True
         assert layer.metrics == "ath"
-        assert layer.fill_between == ("a", "b")
         assert layer.axis == "right"
 
     def test_dataframe_reference_preserved(self) -> None:

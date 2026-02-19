@@ -102,11 +102,14 @@ flowchart TD
     D4 --> D5["5. ChartRenderer.render(kind)"]
     D5 --> D6["6. MetricRegistry.apply()"]
     D6 --> D6a["7. add_right_margin() (if highlights)"]
-    D6a --> D6c["8. apply_tick_rotation()"]
-    D6c --> D6b["9. _apply_legend()"]
-    D6b --> D7["10. resolve_collisions() (if collision=True)"]
-    D7 --> D8["11. add_title()"]
-    D8 --> D9["12. add_footer()"]
+    D6a --> D6c["8. apply_tick_formatting()"]
+    D6c --> D6d["9. apply_tick_rotation()"]
+    D6d --> D6b["10. _apply_legend()"]
+    D6b --> D7["11. resolve_collisions() (if collision=True)"]
+    D7 --> D7a["12. set xlim/ylim (if provided)"]
+    D7a --> D7b["13. set xlabel/ylabel (if provided)"]
+    D7b --> D8["14. add_title()"]
+    D8 --> D9["15. add_footer()"]
     D9 --> E["PlotResult"]
 ```
 
@@ -154,7 +157,6 @@ src/chartkit/
 │   ├── moving_average.py # Moving average
 │   ├── reference_lines.py# ATH, ATL, AVG, hlines, target
 │   ├── bands.py          # Shaded bands
-│   ├── fill_between.py   # Area between two series
 │   ├── std_band.py       # Standard deviation band (Bollinger Band)
 │   ├── vband.py          # Vertical band between dates
 │   └── markers.py        # HighlightStyle + unified add_highlight (last/max/min/all)
@@ -183,6 +185,7 @@ src/chartkit/
     ├── highlight.py      # normalize_highlight()
     ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat
     ├── saving.py         # save_figure() with path resolution
+    ├── tick_formatting.py # apply_tick_formatting() - date locator/formatter for X-axis
     └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
 tests/                    # Test suite
@@ -239,7 +242,7 @@ tests/                    # Test suite
 | `charts/enhancers/stacked_bar.py` | Stacked bar enhancer (categorical support) |
 | `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |
 | `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions, _ComposePlotter |
-| `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, fill_between, std_band, vband) |
+| `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, std_band, vband) |
 | `decorations/footer.py` | Adds footer with branding and source |
 | `decorations/title.py` | Adds styled title on axes |
 

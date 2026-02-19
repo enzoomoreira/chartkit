@@ -49,7 +49,11 @@ class ChartingTheme:
             "ytick.color": config.colors.text,
             "axes.edgecolor": config.colors.text,
             # Grid
-            "axes.grid": config.layout.grid,
+            "axes.grid": config.layout.grid.enabled,
+            "axes.grid.axis": config.layout.grid.axis,
+            "grid.alpha": config.layout.grid.alpha,
+            "grid.color": config.layout.grid.color,
+            "grid.linestyle": config.layout.grid.linestyle,
             # Layout
             "figure.figsize": config.layout.figsize,
             "figure.facecolor": config.colors.background,

@@ -118,9 +118,11 @@ compose(s1, s2, s3, title="Three Series, One Axis")
 ```python
 from chartkit import compose
 
+# 2-column area chart fills between the pair automatically
 spread_layer = spread_df.chartkit.layer(
+    kind="area",
+    y=["upper", "lower"],
     units="%",
-    fill_between=("upper", "lower"),
     highlight="last",
 )
 target_layer = target_df.chartkit.layer(units="%", metrics=["hline:3.0"], axis="left")

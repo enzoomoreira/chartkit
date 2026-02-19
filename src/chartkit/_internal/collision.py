@@ -276,7 +276,16 @@ def resolve_collisions(ax: Axes, *, debug: bool = False) -> None:
     _add_connectors(positionable, original_positions, renderer, config)
 
     if debug:
-        _draw_debug_overlay(fig, positionable, fixed, renderer, axes_bbox, collision)
+        passive_obs = _collect_passive_obstacles(ax, renderer)
+        _draw_debug_overlay(
+            fig,
+            positionable,
+            fixed,
+            renderer,
+            axes_bbox,
+            collision,
+            passive=passive_obs,
+        )
 
 
 def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) -> None:
@@ -326,7 +335,22 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
     _add_connectors(positionable, original_positions, renderer, config)
 
     if debug:
-        _draw_debug_overlay(fig, positionable, fixed, renderer, axes_bbox, collision)
+        passive_obs: list[_PathObstacle] = []
+        seen_passive: set[int] = set()
+        for ax in axes:
+            for obs in _collect_passive_obstacles(ax, renderer):
+                if obs._source_id not in seen_passive:
+                    passive_obs.append(obs)
+                    seen_passive.add(obs._source_id)
+        _draw_debug_overlay(
+            fig,
+            positionable,
+            fixed,
+            renderer,
+            axes_bbox,
+            collision,
+            passive=passive_obs,
+        )
 
 
 # -- Core resolution --
@@ -611,6 +635,30 @@ def _add_connectors(
         ax.set_ylim(ylim)
 
 
+def _collect_passive_obstacles(ax: Axes, renderer: RendererBase) -> list[_PathObstacle]:
+    """Collect passive artists as obstacles for debug visualization."""
+    sibling_axes = list(ax.get_shared_x_axes().get_siblings(ax))
+    obstacles: list[_PathObstacle] = []
+    seen: set[int] = set()
+
+    for sibling in sibling_axes:
+        for artist in _passive.get(sibling, []):
+            aid = id(artist)
+            if aid in seen or not artist.get_visible():
+                continue
+            seen.add(aid)
+            if hasattr(artist, "get_paths") and hasattr(artist, "get_offsets"):
+                obs = _path_from_collection(sibling, artist, renderer)
+            elif hasattr(artist, "get_patch_transform"):
+                obs = _path_from_patch(sibling, artist)
+            else:
+                obs = _path_from_extent(sibling, artist, renderer)
+            obs._debug_color = "gray"
+            obstacles.append(obs)
+
+    return obstacles
+
+
 def _draw_debug_overlay(
     fig: Figure,
     moveables: Sequence[PositionableArtist],
@@ -618,9 +666,10 @@ def _draw_debug_overlay(
     renderer: RendererBase,
     axes_bbox: Bbox,
     collision: CollisionConfig,
+    *,
+    passive: list[_PathObstacle] | None = None,
 ) -> None:
     """Draw translucent collision visuals for debugging."""
-    obstacle_pad = collision.obstacle_padding_px
     label_pad = collision.label_padding_px
     inv = fig.transFigure.inverted()
 
@@ -650,29 +699,57 @@ def _draw_debug_overlay(
             )
         )
 
-    for obs in obstacles:
-        for path in obs._display_paths:
-            if obs._filled:
-                draw_path = path.clip_to_bbox(axes_bbox)
-                if len(draw_path.vertices) < 2:
-                    continue
-            else:
-                draw_path = path
-            fig_verts = inv.transform(draw_path.vertices)
-            fig.patches.append(
-                mpatches.PathPatch(
-                    MplPath(fig_verts, draw_path.codes),
-                    facecolor=obs._debug_color if obs._filled else "none",
-                    edgecolor=obs._debug_color,
-                    linewidth=1 if obs._filled else 4,
-                    alpha=0.25 if obs._filled else 0.5,
-                    joinstyle="round",
-                    capstyle="round",
-                    transform=fig.transFigure,
-                    clip_on=True,
-                    zorder=100,
+    def _draw_obstacles(
+        obs_list: list[_PathObstacle],
+        *,
+        linestyle: str = "solid",
+    ) -> None:
+        for obs in obs_list:
+            is_passive = linestyle == "dashed"
+            for path in obs._display_paths:
+                if obs._filled:
+                    draw_path = path.clip_to_bbox(axes_bbox)
+                    if len(draw_path.vertices) < 2:
+                        continue
+                else:
+                    draw_path = path
+                fig_verts = inv.transform(draw_path.vertices)
+                if is_passive:
+                    face_alpha = 0.15
+                    edge_alpha = 0.15
+                    lw = 1
+                elif obs._filled:
+                    face_alpha = 0.25
+                    edge_alpha = 0.25
+                    lw = 1
+                else:
+                    face_alpha = 0.0
+                    edge_alpha = 0.5
+                    lw = 4
+                fig.patches.append(
+                    mpatches.PathPatch(
+                        MplPath(fig_verts, draw_path.codes),
+                        facecolor=obs._debug_color
+                        if (obs._filled or is_passive)
+                        else "none",
+                        edgecolor=obs._debug_color,
+                        linewidth=lw,
+                        alpha=max(face_alpha, edge_alpha),
+                        linestyle=linestyle,
+                        joinstyle="round",
+                        capstyle="round",
+                        transform=fig.transFigure,
+                        clip_on=True,
+                        zorder=100,
+                    )
                 )
-            )
+
+    # Active obstacles
+    _draw_obstacles(obstacles)
+
+    # Passive obstacles (gray, dashed)
+    if passive:
+        _draw_obstacles(passive, linestyle="dashed")
 
     # Moveable labels (blue)
     for label in moveables:

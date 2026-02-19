@@ -26,24 +26,28 @@ class TestPlotArea:
         # fill_between creates PolyCollection
         assert len(ax.collections) >= 1
 
-    def test_multi_column_stacked(self, datetime_index: pd.DatetimeIndex) -> None:
+    def test_two_columns_fills_between(self, datetime_index: pd.DatetimeIndex) -> None:
         _, ax = plt.subplots()
         df = pd.DataFrame(
-            {"a": [1, 2, 3, 4, 5, 6], "b": [2, 3, 4, 5, 6, 7]},
+            {"lower": [1, 2, 3, 4, 5, 6], "upper": [2, 3, 4, 5, 6, 7]},
             index=datetime_index,
         )
         plot_area(ax, datetime_index, df, highlight=[])
-        # 2 fills + 2 contour lines
-        assert len(ax.collections) >= 2
+        # 1 fill between pair + 2 contour lines
+        assert len(ax.collections) == 1
+        assert len(ax.lines) == 2
 
-    def test_multi_column_unstacked(self, datetime_index: pd.DatetimeIndex) -> None:
+    def test_three_columns_fills_from_zero(
+        self, datetime_index: pd.DatetimeIndex
+    ) -> None:
         _, ax = plt.subplots()
         df = pd.DataFrame(
-            {"a": [1, 2, 3, 4, 5, 6], "b": [6, 5, 4, 3, 2, 1]},
+            {"a": [1, 2, 3, 4, 5, 6], "b": [6, 5, 4, 3, 2, 1], "c": [3, 3, 3, 3, 3, 3]},
             index=datetime_index,
         )
-        plot_area(ax, datetime_index, df, highlight=[], stacked=False)
-        assert len(ax.collections) >= 2
+        plot_area(ax, datetime_index, df, highlight=[])
+        # 3 fills from zero + 3 contour lines
+        assert len(ax.collections) >= 3
 
     def test_alpha_kwarg(self, datetime_index: pd.DatetimeIndex) -> None:
         _, ax = plt.subplots()

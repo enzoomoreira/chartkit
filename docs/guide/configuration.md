@@ -60,7 +60,13 @@ axis_label = 11
 figsize = [10.0, 6.0]
 dpi = 300
 base_style = "seaborn-v0_8-white"  # Base matplotlib style
-grid = false                        # Show grid on chart
+
+[layout.grid]
+enabled = false       # Show grid on chart
+alpha = 0.3           # Grid transparency
+color = "lightgray"   # Grid line color
+linestyle = "-"       # Line style: "-", "--", "-.", ":"
+axis = "both"         # "x", "y", or "both"
 
 [layout.spines]
 top = false      # Top border
@@ -118,7 +124,7 @@ alpha = 0.15
 [collision]
 movement = "y"
 obstacle_padding_px = 8.0
-label_padding_px = 4.0
+label_padding_px = 2.0
 max_iterations = 50
 connector_threshold_px = 30.0
 connector_alpha = 0.6
@@ -137,6 +143,8 @@ frameon = true
 [ticks]
 rotation = "auto"          # "auto" or angle in degrees (0, 45, 90)
 auto_rotation_angle = 45   # Angle when auto-detect triggers rotation
+# date_format = "%b/%Y"   # Date format for temporal ticks (strftime)
+# date_freq = "month"     # Frequency: "day", "week", "month", "quarter", "semester", "year"
 
 [paths]
 charts_subdir = "charts"

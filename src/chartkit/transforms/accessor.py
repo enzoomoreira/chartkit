@@ -95,7 +95,6 @@ class TransformAccessor:
         units: UnitFormat | None = None,
         highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
-        fill_between: tuple[str, str] | None = None,
         axis: AxisSide = "left",
         **kwargs,
     ) -> Layer:
@@ -110,7 +109,6 @@ class TransformAccessor:
             units=units,
             highlight=highlight,
             metrics=metrics,
-            fill_between=fill_between,
             axis=axis,
             **kwargs,
         )

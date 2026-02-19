@@ -19,6 +19,7 @@ __all__ = [
     "TitleConfig",
     "SpinesConfig",
     "ZOrderConfig",
+    "GridConfig",
     "LayoutConfig",
     "LegendConfig",
     "LinesConfig",
@@ -115,11 +116,19 @@ class ZOrderConfig(BaseModel):
     markers: int = 5
 
 
+class GridConfig(BaseModel):
+    enabled: bool = False
+    alpha: float = 0.3
+    color: str = "lightgray"
+    linestyle: str = "-"
+    axis: Literal["x", "y", "both"] = "both"
+
+
 class LayoutConfig(BaseModel):
     figsize: tuple[float, float] = (10.0, 6.0)
     dpi: int = 300
     base_style: str = "seaborn-v0_8-white"
-    grid: bool = False
+    grid: GridConfig = Field(default_factory=GridConfig)
     spines: SpinesConfig = Field(default_factory=SpinesConfig)
     footer: FooterConfig = Field(default_factory=FooterConfig)
     title: TitleConfig = Field(default_factory=TitleConfig)
@@ -134,7 +143,11 @@ class LegendConfig(BaseModel):
 
 class TicksConfig(BaseModel):
     rotation: int | Literal["auto"] = "auto"
-    auto_rotation_angle: int = 45
+    auto_rotation_angle: int = Field(default=45, gt=0, le=90)
+    date_format: str | None = None
+    date_freq: Literal["day", "week", "month", "quarter", "semester", "year"] | None = (
+        None
+    )
 
 
 class LinesConfig(BaseModel):
@@ -174,7 +187,7 @@ class MarkersConfig(BaseModel):
 class CollisionConfig(BaseModel):
     movement: Literal["x", "y", "xy"] = "y"
     obstacle_padding_px: float = 8.0
-    label_padding_px: float = 4.0
+    label_padding_px: float = 2.0
     max_iterations: int = 50
     connector_threshold_px: float = 30.0
     connector_alpha: float = 0.6

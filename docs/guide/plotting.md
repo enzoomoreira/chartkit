@@ -65,9 +65,15 @@ If `y` is not specified, all numeric columns will be plotted.
 | `source` | `str \| None` | `None` | Data source for footer |
 | `highlight` | `HighlightInput` | `False` | Highlight mode(s): `True`, `'last'`, `'max'`, `'min'`, `'all'`, or a list |
 | `metrics` | `str \| list[str] \| None` | `None` | Declarative metrics (see [Metrics Guide](metrics.md)) |
-| `fill_between` | `tuple[str, str] \| None` | `None` | Two column names to shade the area between |
 | `legend` | `bool \| None` | `None` | `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `xlabel` | `str \| None` | `None` | X-axis label |
+| `ylabel` | `str \| None` | `None` | Y-axis label |
+| `xlim` | `tuple \| None` | `None` | X-axis limits as `(min, max)` |
+| `ylim` | `tuple \| None` | `None` | Y-axis limits as `(min, max)` |
+| `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
+| `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
+| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Show collision debug overlay (see [Collision Guide](collision.md)) |
 | `**kwargs` | - | - | Chart-specific args (e.g., `sort`, `color`, `y_origin` for bars) |
@@ -273,7 +279,11 @@ Horizontal bars also support `y_origin` (`'zero'` or `'auto'`) which controls th
 
 ## Area Chart
 
-Use `kind='area'` (alias for `fill_between`) to create filled area charts. Each column fills from zero with a contour line on top.
+Use `kind='area'` (alias for `fill_between`) to create filled area charts. Behavior depends on the number of columns:
+
+- **1 column**: fills from zero to y (classic area chart).
+- **2 columns**: fills between the two series (spread / interval), with contour lines on each.
+- **3+ columns**: each column fills from zero independently.
 
 ```python
 df = pd.DataFrame({
@@ -281,11 +291,11 @@ df = pd.DataFrame({
     'costs': [80, 90, 85, 95, 100],
 }, index=pd.date_range('2024-01', periods=5, freq='ME'))
 
-# Single series area
+# Single series area (fill from zero)
 df[['revenue']].chartkit.plot(kind='area', title="Revenue", units='BRL_compact')
 
-# Multi-series area (overlapped, not stacked)
-df.chartkit.plot(kind='area', title="Revenue vs Costs", units='BRL_compact')
+# Two series: fills between the pair (spread/interval)
+df.chartkit.plot(kind='area', title="Revenue vs Costs Spread", units='BRL_compact')
 ```
 
 For stacked areas use `kind='stackplot'` instead.
@@ -342,28 +352,6 @@ Extra `**kwargs` are passed directly to the matplotlib method.
 Chart kinds that require 2D grid data or vector fields are explicitly blocked with descriptive error messages:
 
 `imshow`, `contour`, `contourf`, `pcolormesh`, `quiver`, `streamplot`, `barbs`, `spy`
-
----
-
-## Area Between Series (fill_between)
-
-The `fill_between` parameter shades the area between two DataFrame columns. Useful for visualizing spreads, confidence intervals, or differences between series.
-
-```python
-df = pd.DataFrame({
-    'selic': [13.75, 13.25, 12.75, 12.25, 11.75, 11.25],
-    'cpi': [5.5, 5.2, 4.8, 4.5, 4.2, 3.9],
-}, index=pd.date_range('2024-01', periods=6, freq='ME'))
-
-# Shade area between Selic and CPI
-df.chartkit.plot(
-    title="Selic - CPI Spread",
-    units='%',
-    fill_between=('selic', 'cpi')
-)
-```
-
-The parameter receives a tuple with two column names: `(col1, col2)`.
 
 ---
 

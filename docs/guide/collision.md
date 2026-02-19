@@ -116,11 +116,14 @@ final decorations:
 3. Y Formatter     FORMATTERS[units]()
 4. Plot Core       ChartRenderer dispatch + highlights (register_moveable)
 5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_passive) + band (register_passive)
-   Fill between    add_fill_between() (if configured)
    Right margin    add_right_margin() when highlights present (avoids label clipping)
-6. Legend           _apply_legend()
-7. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
-8. Decorations     add_title(ax), add_footer(fig)
+   Tick format     apply_tick_formatting() (date locator + formatter)
+6. Tick rotation   apply_tick_rotation() (auto-detect or fixed angle)
+7. Legend           _apply_legend()
+8. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
+   Axis limits     set xlim/ylim (if provided, after collision)
+   Axis labels     set xlabel/ylabel (if provided)
+9. Decorations     add_title(ax), add_footer(fig)
 -> PlotResult
 ```
 
@@ -217,6 +220,7 @@ The overlay draws translucent shapes over the figure:
 |-------|---------|
 | **Red** | Fixed obstacles (patches, labels) with padding |
 | **Orange** | Line path obstacles (continuous curves) |
+| **Gray (dashed)** | Passive obstacles (bands, stackplot areas) |
 | **Blue** | Moveable labels with padding |
 | **Green** | Axes bounding box |
 
@@ -274,7 +278,7 @@ All engine parameters are configurable via TOML:
 [collision]
 movement = "y"                  # Displacement axis: "y", "x", or "xy"
 obstacle_padding_px = 8.0       # Padding between label and obstacle (px)
-label_padding_px = 4.0          # Padding between labels (px)
+label_padding_px = 2.0          # Padding between labels (px)
 max_iterations = 50             # Push-apart iteration limit
 connector_threshold_px = 30.0   # Minimum distance to draw connector (px)
 connector_alpha = 0.6           # Connector line transparency
@@ -299,7 +303,7 @@ configure(collision={
 |-----------|---------|-------------|
 | `movement` | `"y"` | Allowed displacement axis. `"y"` is recommended for time series (preserves temporal position on X-axis) |
 | `obstacle_padding_px` | `8.0` | Minimum space between label and obstacle in pixels |
-| `label_padding_px` | `4.0` | Minimum space between two labels in pixels |
+| `label_padding_px` | `2.0` | Minimum space between two labels in pixels |
 | `max_iterations` | `50` | Maximum number of push-apart iterations between labels |
 | `connector_threshold_px` | `30.0` | Minimum displacement distance (px) to draw guide line |
 | `connector_alpha` | `0.6` | Guide line transparency (0.0 = invisible, 1.0 = opaque) |

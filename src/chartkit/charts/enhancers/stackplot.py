@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import pandas as pd
 from matplotlib.axes import Axes
 
+from ..._internal.collision import register_passive
 from ...settings import get_config
 from ...styling.theme import theme
 from ..renderer import ChartRenderer
@@ -47,4 +48,6 @@ def plot_stackplot(
     )
     labels = [str(col) for col in cols]
 
-    ax.stackplot(x, *arrays, colors=c, labels=labels, zorder=zorder, **kwargs)
+    polys = ax.stackplot(x, *arrays, colors=c, labels=labels, zorder=zorder, **kwargs)
+    for poly in polys:
+        register_passive(ax, poly)
