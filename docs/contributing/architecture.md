@@ -179,7 +179,12 @@ src/chartkit/
 │
 └── _internal/            # Private utilities (shared between engine and compose)
     ├── __init__.py       # Facade: collision, extraction, formatting, highlight, saving, validation
-    ├── collision.py      # Collision engine (single-axis + composed cross-axis)
+    ├── collision/        # Collision engine (modularized package)
+    │   ├── __init__.py   # Re-exports public API (register_*, resolve_*)
+    │   ├── _registry.py  # Global state and artist registration (WeakKeyDictionary)
+    │   ├── _obstacles.py # _PathObstacle and obstacle collection
+    │   ├── _engine.py    # Collision resolution algorithm
+    │   └── _debug.py     # Debug overlay rendering
     ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series(), add_right_margin()
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
     ├── highlight.py      # normalize_highlight()

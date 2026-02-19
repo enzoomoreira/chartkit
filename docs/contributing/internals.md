@@ -234,7 +234,7 @@ logger.debug(f"find_project_root: found {current}")
 | Module | DEBUG | WARNING |
 |--------|-------|---------|
 | `engine.py` | Plot params, chart dispatch, highlight modes | - |
-| `collision.py` | Collision iteration counts, label movements | - |
+| `collision/` | Collision iteration counts, label movements | - |
 | `temporal.py` | Transform resolution (freq, periods) | - |
 | `_validation.py` | Auto-detected frequency, non-numeric columns filtered | - |
 | `discovery.py` | Cache hits/misses, paths found | - |

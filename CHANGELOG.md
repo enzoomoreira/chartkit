@@ -1,5 +1,10 @@
 # Project Changelog
 
+## [2026-02-18 22:36]
+### Changed
+- **Collision engine modularizado**: Modulo monolitico `_internal/collision.py` (877 linhas) dividido em pacote `_internal/collision/` com 4 sub-modulos especializados: `_registry.py` (estado global e registro de artists), `_obstacles.py` (PathObstacle e coleta de obstaculos), `_engine.py` (resolucao de colisoes), `_debug.py` (overlay de debug)
+- API publica mantida identica via re-exports no `__init__.py`
+
 ## [2026-02-18 21:53]
 ### Added
 - **Fixtures de edge cases financeiros** (`conftest.py`): `irregular_daily_prices` (datas irregulares), `quarterly_rates` (dados trimestrais), `gapped_prices` (precos com NaN gaps) -- cenarios reais problematicos
