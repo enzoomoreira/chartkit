@@ -184,7 +184,7 @@ axis = "both"         # "x", "y", ou "both"
 # [collision]
 # movement = "y"
 # obstacle_padding_px = 8.0
-# label_padding_px = 4.0
+# label_padding_px = 2.0
 # max_iterations = 50
 # connector_threshold_px = 30.0
 # connector_alpha = 0.6

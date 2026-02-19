@@ -143,9 +143,18 @@ src/chartkit/
 │   ├── renderer.py       # ChartRenderer - generic rendering (ax.{kind}()) + enhancer dispatch
 │   ├── _helpers.py       # Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin)
 │   └── enhancers/        # Specialized handlers for complex chart types
-│       ├── __init__.py   # Auto-imports bar, stacked_bar
-│       ├── bar.py        # Bar chart enhancer (grouped bars, sort, color='cycle')
-│       └── stacked_bar.py # Stacked bar enhancer (categorical support)
+│       ├── __init__.py   # Auto-imports all enhancers (triggers registration)
+│       ├── area.py       # Area chart enhancer (fill_between semantics)
+│       ├── bar.py        # Bar + barh enhancer (grouped bars, sort, color='cycle')
+│       ├── ecdf.py       # Empirical CDF enhancer
+│       ├── eventplot.py  # Event position enhancer
+│       ├── hist.py       # Histogram enhancer
+│       ├── pie.py        # Pie chart enhancer
+│       ├── stackplot.py  # Stacked area enhancer
+│       ├── stacked_bar.py # Stacked bar enhancer (categorical support)
+│       ├── stairs.py     # Step function enhancer
+│       ├── statistical.py # Boxplot + violinplot enhancer
+│       └── stem.py       # Stem plot enhancer
 │
 ├── composing/            # Multi-layer chart composition
 │   ├── __init__.py       # Facade: compose, Layer, AxisSide, create_layer
@@ -193,19 +202,16 @@ src/chartkit/
     ├── tick_formatting.py # apply_tick_formatting() - date locator/formatter for X-axis
     └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
-tests/                    # Test suite
+tests/                    # Test suite (357 tests)
 ├── conftest.py           # Shared fixtures (financial DataFrames, edge cases, Agg backend)
-├── test_formatters.py    # Formatter tests
-├── test_accessor_layer.py # Accessor .layer() tests
-├── charts/               # Chart rendering tests
-├── collision/            # Collision engine tests
-├── composing/            # Composition system tests
-├── decorations/          # Title and footer tests
-├── engine/               # Engine internals tests
-├── internal/             # _internal module tests
-├── metrics/              # MetricRegistry tests
-├── settings/             # Configuration system tests
-└── transforms/           # Transform function tests
+├── charts/               # Chart rendering tests (67)
+├── collision/            # Collision engine tests (9)
+├── composing/            # Composition system tests (29)
+├── formatting/           # Formatters and highlight tests (41)
+├── integration/          # End-to-end tests (18)
+├── metrics/              # MetricRegistry tests (28)
+├── settings/             # Configuration system tests (23)
+└── transforms/           # Transform function tests (142)
 ```
 
 ---
@@ -243,8 +249,7 @@ tests/                    # Test suite
 |--------|---------------|
 | `charts/renderer.py` | ChartRenderer: generic rendering via `ax.{kind}()` + enhancer dispatch + line obstacle registration |
 | `charts/_helpers.py` | Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin) |
-| `charts/enhancers/bar.py` | Bar chart enhancer (grouped bars, sort, color='cycle', categorical) |
-| `charts/enhancers/stacked_bar.py` | Stacked bar enhancer (categorical support) |
+| `charts/enhancers/*.py` | 13 enhancers: bar, barh, stacked_bar, area, hist, pie, stackplot, stem, stairs, boxplot, violinplot, ecdf, eventplot |
 | `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |
 | `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions, _ComposePlotter |
 | `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, std_band, vband) |

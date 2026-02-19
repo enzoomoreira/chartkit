@@ -218,8 +218,9 @@ The overlay draws translucent shapes over the figure:
 
 | Color | Element |
 |-------|---------|
-| **Red** | Fixed obstacles (patches, labels) with padding |
+| **Red** | Fixed obstacles (patches, cross-axis labels) with padding |
 | **Orange** | Line path obstacles (continuous curves) |
+| **Purple** | Collection obstacles (scatter, violin, fill_between) |
 | **Gray (dashed)** | Passive obstacles (bands, stackplot areas) |
 | **Blue** | Moveable labels with padding |
 | **Green** | Axes bounding box |

@@ -134,8 +134,10 @@ class ChartingAccessor:
     ) -> Layer:
         """Create a Layer for use with ``compose()``.
 
-        Same parameters as ``plot()`` but without chart-level options
-        (title, source, legend). Those are passed to ``compose()`` instead.
+        Accepts data and rendering options (kind, x, y, units, highlight,
+        metrics, axis, **kwargs). Chart-level options (title, source, legend,
+        xlabel, ylabel, xlim, ylim, grid, tick_*, collision, debug) are
+        passed to ``compose()`` instead.
         """
         from .composing import create_layer
 

@@ -376,6 +376,11 @@ from .._internal.collision import register_artist_obstacle, register_moveable, r
 line = ax.axhline(y=value, ...)
 register_artist_obstacle(ax, line, filled=False)
 
+# Data lines: obstacles with co-location skip (labels that start ON
+# the line stay without being repelled by it)
+(plot_line,) = ax.plot(x, y, color="blue")
+register_artist_obstacle(ax, plot_line, filled=False, colocate=True)
+
 # Text labels: can be repositioned
 text = ax.text(x, y, "Label", ...)
 register_moveable(ax, text)

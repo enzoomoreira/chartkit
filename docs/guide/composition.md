@@ -163,6 +163,23 @@ Avoid `%` and `BRL` on the same side unless intentionally normalized first.
 
 `layer()` only prepares configuration. Rendering happens in `compose()`.
 
+### Passing chart-level options to `layer()`
+
+`layer()` only accepts data and rendering options: `kind`, `x`, `y`, `units`, `highlight`, `metrics`, `axis`, and chart-specific `**kwargs`.
+
+Chart-level options go to `compose()` instead:
+
+```python
+# INCORRECT -- these parameters are not accepted by layer()
+layer = df.chartkit.layer(title="Title", xlabel="X", grid=True)
+
+# CORRECT -- pass to compose()
+layer = df.chartkit.layer(units="%", highlight=True)
+compose(layer, title="Title", xlabel="X", grid=True)
+```
+
+Parameters only available in `compose()`: `title`, `source`, `legend`, `figsize`, `xlabel`, `ylabel`, `xlim`, `ylim`, `grid`, `tick_rotation`, `tick_format`, `tick_freq`, `collision`, `debug`.
+
 ---
 
 ## API Pointers

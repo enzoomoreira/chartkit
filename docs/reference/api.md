@@ -229,7 +229,7 @@ def layer(
 ) -> Layer
 ```
 
-Same parameters as `plot()` but without chart-level options (title, source, legend).
+Same parameters as `plot()` but limited to data and rendering options. Chart-level options (`title`, `source`, `legend`, `xlabel`, `ylabel`, `xlim`, `ylim`, `grid`, `tick_rotation`, `tick_format`, `tick_freq`, `collision`, `debug`) are passed to `compose()` instead.
 
 ---
 
