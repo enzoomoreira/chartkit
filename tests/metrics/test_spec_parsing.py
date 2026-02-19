@@ -1,3 +1,5 @@
+"""MetricSpec string parsing tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -9,7 +11,7 @@ from chartkit.metrics.registry import MetricRegistry, MetricSpec
 import chartkit.metrics.builtin  # noqa: F401
 
 
-class TestMetricParseBasic:
+class TestParseBasic:
     def test_simple_name(self) -> None:
         spec = MetricRegistry.parse("ath")
         assert spec.name == "ath"
@@ -27,8 +29,13 @@ class TestMetricParseBasic:
         assert spec.name == "band"
         assert spec.params == {"lower": 1.5, "upper": 4.5}
 
+    def test_metricspec_passthrough(self) -> None:
+        original = MetricSpec("ath", {}, None, None)
+        result = MetricRegistry.parse(original)
+        assert result is original
 
-class TestMetricParseCoercion:
+
+class TestParseCoercion:
     def test_int_coercion(self) -> None:
         spec = MetricRegistry.parse("ma:12")
         assert isinstance(spec.params["window"], int)
@@ -45,7 +52,7 @@ class TestMetricParseCoercion:
         assert spec.params["end"] == "2023-06"
 
 
-class TestMetricParseSeries:
+class TestParseSeries:
     def test_at_series(self) -> None:
         spec = MetricRegistry.parse("ath@revenue")
         assert spec.series == "revenue"
@@ -61,7 +68,7 @@ class TestMetricParseSeries:
             MetricRegistry.parse("ath@")
 
 
-class TestMetricParseLabel:
+class TestParseLabel:
     def test_label_pipe(self) -> None:
         spec = MetricRegistry.parse("ath|Maximo")
         assert spec.label == "Maximo"
@@ -78,7 +85,7 @@ class TestMetricParseLabel:
         assert spec.label is None
 
 
-class TestMetricParseValidation:
+class TestParseValidation:
     def test_unknown_metric_raises(self) -> None:
         with pytest.raises(RegistryError, match="Unknown metric"):
             MetricRegistry.parse("xyz")
@@ -87,36 +94,33 @@ class TestMetricParseValidation:
         with pytest.raises(ValidationError, match="requires parameter"):
             MetricRegistry.parse("ma")
 
-    def test_metricspec_passthrough(self) -> None:
-        original = MetricSpec("ath", {}, None, None)
-        result = MetricRegistry.parse(original)
-        assert result is original
 
+class TestParseBuiltins:
+    @pytest.mark.parametrize(
+        "spec_str, expected_name",
+        [
+            ("ath", "ath"),
+            ("atl", "atl"),
+            ("avg", "avg"),
+        ],
+    )
+    def test_simple_builtins_parse(self, spec_str: str, expected_name: str) -> None:
+        spec = MetricRegistry.parse(spec_str)
+        assert spec.name == expected_name
 
-class TestMetricParseBuiltins:
-    def test_ath_parses(self) -> None:
-        spec = MetricRegistry.parse("ath")
-        assert spec.name == "ath"
-
-    def test_atl_parses(self) -> None:
-        spec = MetricRegistry.parse("atl")
-        assert spec.name == "atl"
-
-    def test_avg_parses(self) -> None:
-        spec = MetricRegistry.parse("avg")
-        assert spec.name == "avg"
-
-    def test_hline_parses(self) -> None:
-        spec = MetricRegistry.parse("hline:100")
-        assert spec.params == {"value": 100}
-
-    def test_target_parses(self) -> None:
-        spec = MetricRegistry.parse("target:50")
-        assert spec.params == {"value": 50}
-
-    def test_std_band_parses(self) -> None:
-        spec = MetricRegistry.parse("std_band:20:2")
-        assert spec.params == {"window": 20, "num_std": 2}
+    @pytest.mark.parametrize(
+        "spec_str, expected_params",
+        [
+            ("hline:100", {"value": 100}),
+            ("target:50", {"value": 50}),
+            ("std_band:20:2", {"window": 20, "num_std": 2}),
+        ],
+    )
+    def test_parametrized_builtins_parse(
+        self, spec_str: str, expected_params: dict
+    ) -> None:
+        spec = MetricRegistry.parse(spec_str)
+        assert spec.params == expected_params
 
     def test_vband_parses(self) -> None:
         spec = MetricRegistry.parse("vband:2023-01-01:2023-06-30")

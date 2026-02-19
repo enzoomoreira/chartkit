@@ -1,5 +1,29 @@
 # Project Changelog
 
+## [2026-02-18 21:53]
+### Added
+- **Fixtures de edge cases financeiros** (`conftest.py`): `irregular_daily_prices` (datas irregulares), `quarterly_rates` (dados trimestrais), `gapped_prices` (precos com NaN gaps) -- cenarios reais problematicos
+- **Testes de integracao** (`tests/integration/`): `test_accessor_pipeline.py` e `test_end_to_end.py` para validacao end-to-end do fluxo completo
+- **Testes de formatting** (`tests/formatting/`): `test_axis_formatters.py` e `test_highlight.py` em diretorio dedicado
+- **Testes de edge cases financeiros** em transforms: dados trimestrais com `variation`, timeseries irregulares, NaN gaps em `drawdown`, taxa -100% em `accum`, multi-column em `normalize`/`zscore`/`drawdown`/`accum`
+- **Testes de MetricRegistry.apply** (`test_registry.py`): Validacao de chamada de handlers com ax/data e passagem de parametros
+
+### Changed
+- **Suite de testes reescrita**: Reorganizacao completa por dominio de negocio em vez de detalhe de implementacao -- testes focam em comportamento e corretude, nao em type-checking de inputs
+- **Nomes de testes descritivos**: Classes e metodos renomeados para expressar intent (`TestAccumKnownValues`, `test_minus_100_rate_zeroes_product`, etc.)
+- **Docstrings em todos os testes**: Cada teste documenta o que valida (`"""[1%, 2%, 3%] window=3 -> compound product."""`)
+- **Charts tests reestruturados**: Testes individuais por enhancer (`test_area_enhancer.py`, `test_bar_enhancer.py`, `test_stacked_bar_enhancer.py`) + renderer generico (`test_renderer.py`)
+- **Collision tests consolidados**: `test_collision_engine.py` substitui `test_collect_obstacles.py` e `test_pos_to_numeric.py`
+- **Composing tests reorganizados**: `test_compose_pipeline.py` e `test_layer_validation.py` substituem 6 arquivos separados
+- **Settings tests focados**: `test_config_precedence.py` substitui `test_deep_merge.py`, `test_loader.py` e `test_schema.py`
+- **Transform tests enxutos**: `test_freq_resolution.py` e `test_input_pipeline.py` consolidam validacao transversal
+
+### Removed
+- **41 arquivos de teste antigos** deletados: testes granulares que testavam detalhes de implementacao (input type acceptance, empty raises, internal state access) substituidos por testes focados em comportamento
+- **Testes redundantes de input type**: `test_accepts_series`, `test_accepts_dataframe` removidos de todos os transform tests -- testavam coercao do framework, nao logica de negocio
+- **Testes de empty raises generico**: Removidos de `accum`, `annualize`, `diff`, `normalize`, `zscore` -- validacao de input vazia e responsabilidade da camada de coercao
+- **Diretorios `tests/decorations/`, `tests/engine/`, `tests/internal/`**: Removidos junto com seus `__init__.py`
+
 ## [2026-02-18 21:11]
 ### Added
 - **Controles de eixo** (`xlabel`, `ylabel`, `xlim`, `ylim`) em `plot()`, `compose()` e accessor: Controle direto de labels e limites dos eixos sem acessar o matplotlib diretamente
