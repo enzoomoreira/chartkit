@@ -33,6 +33,7 @@ class ChartingTheme:
 
     def apply(self) -> "ChartingTheme":
         """Apply the theme globally to matplotlib rcParams."""
+        self._font = None
         config = get_config()
         plt.style.use(config.layout.base_style)
 

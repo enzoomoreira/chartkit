@@ -4,32 +4,27 @@ from __future__ import annotations
 
 from typing import Literal
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from loguru import logger
-from matplotlib.axes import Axes
 
 from ._internal import (
     FORMATTERS,
-    apply_tick_formatting,
-    apply_tick_rotation,
+    apply_legend,
+    create_figure,
     extract_plot_data,
+    finalize_chart,
     normalize_highlight,
     register_artist_obstacle,
     resolve_collisions,
     save_figure,
-    should_show_legend,
     validate_plot_params,
 )
-from ._internal.plot_validation import AxisLimits, UnitFormat, coerce_axis_limits
+from ._internal.plot_validation import AxisLimits, UnitFormat
 from .charts import ChartRenderer
-from .decorations import add_footer, add_title
 from .exceptions import StateError
 from .metrics import MetricRegistry
 from .overlays import HighlightMode
 from .result import PlotResult
-from .settings import get_config
-from .styling import theme
 
 ChartKind = str
 HighlightInput = bool | HighlightMode | list[HighlightMode]
@@ -104,7 +99,6 @@ class ChartingPlotter:
         """
         highlight_modes = normalize_highlight(highlight)
         validate_plot_params(units=units, legend=legend)
-        config = get_config()
 
         logger.debug(
             "plot: kind={}, shape={}, units={}, metrics={}",
@@ -114,15 +108,10 @@ class ChartingPlotter:
             metrics,
         )
 
-        # 1. Style
-        theme.apply()
-        fig, ax = plt.subplots(figsize=config.layout.figsize)
+        # 1. Style + figure
+        fig, ax = create_figure(grid=grid)
         self._fig = fig
         self._ax = ax
-
-        # 1b. Grid override
-        if grid is not None:
-            ax.grid(grid)
 
         # 2. Data
         x_data, y_data = extract_plot_data(self.df, x, y)
@@ -151,16 +140,8 @@ class ChartingPlotter:
             logger.debug("Applying metric(s)")
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
-        # 5b. Tick formatting
-        apply_tick_formatting(
-            ax, tick_format=tick_format, tick_freq=tick_freq, x_data=x_data
-        )
-
-        # 5c. Tick rotation
-        apply_tick_rotation(fig, ax, tick_rotation=tick_rotation)
-
         # 6. Legend
-        self._apply_legend(ax, legend)
+        apply_legend(ax, legend=legend)
 
         # 7. Collision resolution
         if collision:
@@ -169,36 +150,23 @@ class ChartingPlotter:
                 register_artist_obstacle(ax, legend_artist, filled=True)
             resolve_collisions(ax, debug=debug)
 
-        # 8. Axis limits (user override, after collision)
-        if xlim is not None:
-            ax.set_xlim(coerce_axis_limits(xlim))
-        if ylim is not None:
-            ax.set_ylim(coerce_axis_limits(ylim))
-
-        # 9. Axis labels
-        if xlabel is not None:
-            ax.set_xlabel(xlabel)
-        if ylabel is not None:
-            ax.set_ylabel(ylabel)
-
-        # 10. Decorations
-        add_title(ax, title)
-        add_footer(fig, source)
+        # 8. Finalize (ticks, axis limits, labels, decorations)
+        finalize_chart(
+            fig,
+            ax,
+            tick_format=tick_format,
+            tick_freq=tick_freq,
+            tick_rotation=tick_rotation,
+            x_data=x_data,
+            xlim=xlim,
+            ylim=ylim,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            title=title,
+            source=source,
+        )
 
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
-
-    def _apply_legend(self, ax: Axes, legend: bool | None) -> None:
-        _, labels = ax.get_legend_handles_labels()
-
-        if not should_show_legend(labels, legend) or not labels:
-            return
-
-        config = get_config()
-        ax.legend(
-            loc=config.legend.loc,
-            frameon=config.legend.frameon,
-            framealpha=config.legend.alpha,
-        )
 
     def save(self, path: str, dpi: int | None = None) -> None:
         """Save chart to file.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import tomllib
 from copy import deepcopy
 from pathlib import Path
@@ -53,6 +54,7 @@ class ConfigLoader:
     """Configuration loader with multi-source merge and path resolution."""
 
     def __init__(self) -> None:
+        self._lock = threading.Lock()
         self._config: ChartingConfig | None = None
         self._config_path: Path | None = None
         self._overrides: dict[str, Any] = {}
@@ -74,41 +76,43 @@ class ConfigLoader:
             **overrides: Nested dicts merged into the config.
                 Ex: ``branding={'company_name': 'Banco XYZ'}``
         """
-        logger.debug(
-            "configure() called: config_path={}, outputs_path={}, assets_path={}",
-            config_path,
-            outputs_path,
-            assets_path,
-        )
+        with self._lock:
+            logger.debug(
+                "configure() called: config_path={}, outputs_path={}, assets_path={}",
+                config_path,
+                outputs_path,
+                assets_path,
+            )
 
-        if config_path is not None:
-            self._config_path = Path(config_path)
+            if config_path is not None:
+                self._config_path = Path(config_path)
 
-        if outputs_path is not None:
-            self._outputs_path = Path(outputs_path)
+            if outputs_path is not None:
+                self._outputs_path = Path(outputs_path)
 
-        if assets_path is not None:
-            self._assets_path = Path(assets_path)
+            if assets_path is not None:
+                self._assets_path = Path(assets_path)
 
-        if overrides:
-            self._overrides = _deep_merge(self._overrides, overrides)
-            logger.debug("Overrides applied: {}", list(overrides.keys()))
+            if overrides:
+                self._overrides = _deep_merge(self._overrides, overrides)
+                logger.debug("Overrides applied: {}", list(overrides.keys()))
 
-        self._invalidate()
+            self._invalidate()
 
         return self
 
     def reset(self) -> ConfigLoader:
         """Reset all settings to initial state."""
-        logger.debug("reset() called - clearing all settings")
+        with self._lock:
+            logger.debug("reset() called - clearing all settings")
 
-        self._config_path = None
-        self._overrides = {}
-        self._outputs_path = None
-        self._assets_path = None
+            self._config_path = None
+            self._overrides = {}
+            self._outputs_path = None
+            self._assets_path = None
 
-        self._invalidate()
-        reset_project_root_cache()
+            self._invalidate()
+            reset_project_root_cache()
 
         return self
 
@@ -116,15 +120,13 @@ class ConfigLoader:
         """Return the current configuration, loading and merging if needed."""
         if self._config is not None:
             return self._config
-
-        logger.debug("Loading settings (cache miss)")
-
-        toml_data = self._load_merged_toml()
-
-        ChartingConfig._toml_data = toml_data
-
-        self._config = ChartingConfig(**self._overrides)
-
+        with self._lock:
+            if self._config is not None:
+                return self._config
+            logger.debug("Loading settings (cache miss)")
+            toml_data = self._load_merged_toml()
+            ChartingConfig._toml_data = toml_data
+            self._config = ChartingConfig(**self._overrides)
         return self._config
 
     @property

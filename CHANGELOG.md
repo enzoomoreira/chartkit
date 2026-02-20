@@ -1,5 +1,25 @@
 # Project Changelog
 
+## [2026-02-19 23:45]
+### Added
+- **`_internal/pipeline.py`**: Novo modulo com pipeline steps compartilhados (`create_figure`, `apply_legend`, `finalize_chart`) -- elimina duplicacao entre engine e compose
+- **`RenderContext`**: Dataclass frozen em `charts/_helpers.py` que encapsula config, color cycle, user_color, zorder e y_data pre-processado para enhancers
+- **`prepare_render_context()` e `resolve_color()`**: Helpers que extraem boilerplate repetido de todos os enhancers (config loading, Series->DataFrame coercion, color resolution)
+- **Thread-safety no `ConfigLoader`**: `threading.Lock` com double-checked locking em `configure()`, `reset()` e `get_config()`
+
+### Changed
+- **Enhancers unificados via RenderContext**: Todos os 9 enhancers (area, ecdf, eventplot, hist, stacked_bar, stackplot, stairs, statistical, stem) e o `ChartRenderer` agora usam `RenderContext` em vez de repetir config/color/zorder boilerplate individualmente
+- **Engine e compose unificados via pipeline**: Steps duplicados (theme.apply, figure creation, tick formatting, tick rotation, axis limits, labels, decorations) extraidos para funcoes compartilhadas em `pipeline.py`
+- **`apply_y_origin()` generalizado**: Novo parametro `axis` permite usar a mesma funcao para barras verticais (y) e horizontais (x), eliminando logica duplicada no enhancer barh
+- **`compute_bar_offsets()` usado no bar enhancer**: Substituiu calculo inline de offsets por helper ja existente
+- **`theme.apply()` reseta font cache**: Invalida `_font` antes de recarregar config, evitando fonte stale apos reconfiguracoes
+
+### Removed
+- **`_apply_composed_legend()`** de `compose.py` -- substituida por `apply_legend()` compartilhada
+- **`ChartingPlotter._apply_legend()`** de `engine.py` -- substituida pela mesma funcao compartilhada
+- **Pipeline steps duplicados**: ~50 linhas de codigo identico removidas entre engine e compose (theme.apply, plt.subplots, grid override, tick formatting, tick rotation, axis limits, labels, title, footer)
+- **Logica duplicada de barh origin**: 12 linhas de calculo manual de xlim no enhancer barh, substituidas por `apply_y_origin(axis="x")`
+
 ## [2026-02-19 21:21]
 ### Added
 - **Smart tick alignment**: Ticks posicionados nos pontos reais dos dados em vez de boundaries fixas do calendario -- dados trimestrais end-of-quarter (Mar/Jun/Sep/Dec) agora recebem ticks nos meses corretos, sem desalinhamento para Jan/Apr/Jul/Oct

@@ -12,8 +12,7 @@ from matplotlib.collections import PathCollection
 from .._internal.collision import register_artist_obstacle
 from ..exceptions import ValidationError
 from ..overlays import add_highlight
-from ..settings import get_config
-from ..styling.theme import theme
+from ._helpers import prepare_render_context, resolve_color
 
 if TYPE_CHECKING:
     from ..overlays import HighlightMode
@@ -123,37 +122,30 @@ class ChartRenderer:
         **kwargs: Any,
     ) -> None:
         """Render via ``ax.{kind}()`` with automatic color cycling and highlight."""
-        config = get_config()
-
-        if isinstance(y_data, pd.Series):
-            y_data = y_data.to_frame()
+        ctx = prepare_render_context(y_data, kwargs)
 
         logger.debug(
-            "generic_render: {} series, {} points", len(y_data.columns), len(y_data)
+            "generic_render: {} series, {} points",
+            len(ctx.y_data.columns),
+            len(ctx.y_data),
         )
 
-        user_color = kwargs.pop("color", None)
-        user_zorder = kwargs.pop("zorder", None)
-
-        defaults = cls._KIND_DEFAULTS.get(kind, lambda _: {})(config)
+        defaults = cls._KIND_DEFAULTS.get(kind, lambda _: {})(ctx.config)
         merged = {**defaults, **kwargs}
 
-        colors = theme.colors.cycle()
         plot_method = getattr(ax, kind)
 
         patches_before = set(id(p) for p in ax.patches)
 
-        for i, col in enumerate(y_data.columns):
-            c = user_color if user_color is not None else colors[i % len(colors)]
+        for i, col in enumerate(ctx.y_data.columns):
+            c = resolve_color(ctx, i)
 
             plot_method(
                 x,
-                y_data[col],
+                ctx.y_data[col],
                 color=c,
                 label=str(col),
-                zorder=user_zorder
-                if user_zorder is not None
-                else config.layout.zorder.data,
+                zorder=ctx.zorder,
                 **merged,
             )
 
@@ -161,7 +153,7 @@ class ChartRenderer:
                 style = cls._infer_highlight_style(ax, patches_before)
                 add_highlight(
                     ax,
-                    cast(pd.Series, y_data[col]),
+                    cast(pd.Series, ctx.y_data[col]),
                     style=style,
                     color=c,
                     modes=highlight,

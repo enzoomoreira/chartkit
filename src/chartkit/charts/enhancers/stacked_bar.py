@@ -8,13 +8,14 @@ from loguru import logger
 from matplotlib.axes import Axes
 
 from ...overlays import add_highlight
-from ...settings import get_config
 from ...styling.theme import theme
 from .._helpers import (
     apply_y_origin,
     detect_bar_width,
     is_categorical_index,
     prepare_categorical_axis,
+    prepare_render_context,
+    resolve_color,
     validate_y_origin,
 )
 from ..renderer import ChartRenderer
@@ -44,21 +45,14 @@ def plot_stacked_bar(
             ``'auto'`` adjusts limits to focus on data with margin.
     """
     y_origin = validate_y_origin(y_origin)
+    ctx = prepare_render_context(y_data, kwargs)
+    bars = ctx.config.bars
 
-    config = get_config()
-    bars = config.bars
-
-    if isinstance(y_data, pd.Series):
-        y_data = y_data.to_frame()
-
-    if len(y_data) > bars.warning_threshold:
+    if len(ctx.y_data) > bars.warning_threshold:
         logger.warning(
             "Stacked bar with {} points may be hard to read. Consider kind='line'.",
-            len(y_data),
+            len(ctx.y_data),
         )
-
-    user_color = kwargs.pop("color", None)
-    colors = theme.colors.cycle()
 
     categorical = is_categorical_index(x)
     if categorical:
@@ -68,10 +62,10 @@ def plot_stacked_bar(
         x_plot = x
         width = detect_bar_width(x, bars)
 
-    bottom = np.zeros(len(y_data))
-    for i, col in enumerate(y_data.columns):
-        c = user_color if user_color is not None else colors[i % len(colors)]
-        vals = y_data[col].fillna(0)
+    bottom = np.zeros(len(ctx.y_data))
+    for i, col in enumerate(ctx.y_data.columns):
+        c = resolve_color(ctx, i)
+        vals = ctx.y_data[col].fillna(0)
 
         ax.bar(
             x_plot,
@@ -80,14 +74,18 @@ def plot_stacked_bar(
             bottom=bottom,
             color=c,
             label=str(col),
-            zorder=config.layout.zorder.data,
+            zorder=ctx.zorder,
             **kwargs,
         )
         bottom = bottom + vals.values
 
-    total = y_data.sum(axis=1)
+    total = ctx.y_data.sum(axis=1)
     apply_y_origin(ax, y_origin, total, bars.auto_margin)
 
     if highlight:
-        color = user_color if user_color is not None else theme.colors.primary
+        color = (
+            resolve_color(ctx, 0)
+            if ctx.user_color is not None
+            else theme.colors.primary
+        )
         add_highlight(ax, total, style="bar", color=color, x=x_plot, modes=highlight)

@@ -7,9 +7,9 @@ import pandas as pd
 import pytest
 
 from chartkit._internal.extraction import extract_plot_data
+from chartkit._internal.pipeline import apply_legend  # noqa: F811
 from chartkit.composing.compose import (
     _apply_axis_formatter,
-    _apply_composed_legend,
     _validate_layers,
     compose,
 )
@@ -150,14 +150,14 @@ class TestComposedLegend:
     def test_auto_hidden_single_label(self) -> None:
         _, ax = plt.subplots()
         ax.plot([1, 2], [1, 2], label="series_a")
-        _apply_composed_legend(ax, None, legend=None)
+        apply_legend(ax, None, legend=None)
         assert ax.get_legend() is None
 
     def test_auto_shown_multiple_labels(self) -> None:
         _, ax = plt.subplots()
         ax.plot([1, 2], [1, 2], label="series_a")
         ax.plot([1, 2], [2, 3], label="series_b")
-        _apply_composed_legend(ax, None, legend=None)
+        apply_legend(ax, None, legend=None)
         legend = ax.get_legend()
         assert legend is not None
         texts = [t.get_text() for t in legend.get_texts()]
@@ -167,7 +167,7 @@ class TestComposedLegend:
         _, ax = plt.subplots()
         ax.plot([1, 2], [1, 2], label="a")
         ax.plot([1, 2], [2, 3], label="b")
-        _apply_composed_legend(ax, None, legend=False)
+        apply_legend(ax, None, legend=False)
         assert ax.get_legend() is None
 
     def test_consolidates_dual_axis_labels(self) -> None:
@@ -175,7 +175,7 @@ class TestComposedLegend:
         ax_right = ax_left.twinx()
         ax_left.plot([1, 2], [1, 2], label="left_series")
         ax_right.plot([1, 2], [10, 20], label="right_series")
-        _apply_composed_legend(ax_left, ax_right, legend=None)
+        apply_legend(ax_left, ax_right, legend=None)
 
         legend = ax_left.get_legend()
         assert legend is not None
@@ -191,7 +191,7 @@ class TestComposedLegend:
         ax_right.legend()
         assert ax_right.get_legend() is not None
 
-        _apply_composed_legend(ax_left, ax_right, legend=None)
+        apply_legend(ax_left, ax_right, legend=None)
         assert ax_right.get_legend() is None
 
 

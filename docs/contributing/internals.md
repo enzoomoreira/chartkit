@@ -17,11 +17,35 @@ use locks to prevent race conditions.
 
 | Module | Lock | Protects |
 |--------|------|----------|
+| `loader.py` | `Lock` | `ConfigLoader._config` (double-checked locking in `configure()`, `reset()`, `get_config()`) |
 | `discovery.py` | `RLock` | `_project_root_cache` (LRUCache) |
+
+### ConfigLoader Thread-Safety
+
+`ConfigLoader` uses `threading.Lock` with double-checked locking:
+
+```python
+class ConfigLoader:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._config: ChartingConfig | None = None
+
+    def get_config(self) -> ChartingConfig:
+        if self._config is not None:       # Fast path (no lock)
+            return self._config
+        with self._lock:                   # Slow path (lock)
+            if self._config is not None:   # Re-check after acquiring lock
+                return self._config
+            self._config = ChartingConfig(...)
+        return self._config
+```
+
+`configure()` and `reset()` also acquire the lock before modifying state, ensuring
+that concurrent calls to `get_config()` never observe partially-updated state.
 
 ### Usage Pattern
 
-We use `RLock` (reentrant lock) instead of a simple `Lock` because:
+We use `RLock` (reentrant lock) for `discovery.py` instead of a simple `Lock` because:
 - Allows the same thread to acquire the lock multiple times
 - Prevents deadlocks in recursive calls (e.g., `get_config()` -> `find_project_root()`)
 
@@ -118,6 +142,12 @@ root = find_project_root()
 # Subsequent calls: ~0.01ms (cache hit)
 root = find_project_root()
 ```
+
+### Font Cache
+
+`ChartingTheme` caches the loaded font in `_font`. `theme.apply()` invalidates
+this cache (`self._font = None`) before reloading config, ensuring that font
+changes via `configure()` take effect on the next plot.
 
 ### Config Cache
 

@@ -19,6 +19,7 @@ from .extraction import (
 )
 from .formatting import FORMATTERS
 from .highlight import normalize_highlight
+from .pipeline import apply_legend, create_figure, finalize_chart
 from .plot_validation import coerce_axis_limits, validate_plot_params
 from .saving import save_figure
 from .tick_formatting import apply_tick_formatting
@@ -26,10 +27,13 @@ from .tick_rotation import apply_tick_rotation
 
 __all__ = [
     "FORMATTERS",
+    "apply_legend",
     "apply_tick_formatting",
     "apply_tick_rotation",
     "coerce_axis_limits",
+    "create_figure",
     "extract_plot_data",
+    "finalize_chart",
     "normalize_highlight",
     "register_artist_obstacle",
     "register_moveable",

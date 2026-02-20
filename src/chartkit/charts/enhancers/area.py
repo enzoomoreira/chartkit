@@ -6,8 +6,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 
 from ...overlays import add_highlight
-from ...settings import get_config
-from ...styling.theme import theme
+from .._helpers import RenderContext, prepare_render_context, resolve_color
 from ..renderer import ChartRenderer
 
 if TYPE_CHECKING:
@@ -33,78 +32,85 @@ def plot_area(
 
     For stacked areas use ``kind='stackplot'`` instead.
     """
-    config = get_config()
-
-    if isinstance(y_data, pd.Series):
-        y_data = y_data.to_frame()
-
-    user_color = kwargs.pop("color", None)
-    user_zorder = kwargs.pop("zorder", None)
+    ctx = prepare_render_context(y_data, kwargs)
     alpha = kwargs.pop("alpha", 0.3)
-    colors = theme.colors.cycle()
-    zorder = user_zorder if user_zorder is not None else config.layout.zorder.data
 
-    if y_data.shape[1] == 2:
-        _fill_between_pair(ax, x, y_data, alpha, user_color, colors, zorder, **kwargs)
+    if ctx.y_data.shape[1] == 2:
+        _fill_between_pair(ax, x, ctx, alpha, **kwargs)
     else:
-        _fill_from_zero(ax, x, y_data, alpha, user_color, colors, zorder, **kwargs)
+        _fill_from_zero(ax, x, ctx, alpha, **kwargs)
 
-    if highlight and y_data.shape[1] == 1:
-        col = y_data.columns[0]
-        c = user_color if user_color is not None else colors[0]
-        add_highlight(ax, y_data[col], style="line", color=c, modes=highlight)
+    if highlight and ctx.y_data.shape[1] == 1:
+        col = ctx.y_data.columns[0]
+        c = resolve_color(ctx, 0)
+        add_highlight(ax, ctx.y_data[col], style="line", color=c, modes=highlight)
 
 
 def _fill_between_pair(
     ax: Axes,
     x: pd.Index | pd.Series,
-    y_data: pd.DataFrame,
+    ctx: RenderContext,
     alpha: float,
-    user_color: str | None,
-    colors: list[str],
-    zorder: int,
     **kwargs: Any,
 ) -> None:
     """Fill the area between two columns with contour lines on each."""
-    col1, col2 = y_data.columns
-    c = user_color if user_color is not None else colors[0]
+    col1, col2 = ctx.y_data.columns
+    c = resolve_color(ctx, 0)
 
     ax.fill_between(
         x,
-        y_data[col1],
-        y_data[col2],
+        ctx.y_data[col1],
+        ctx.y_data[col2],
         alpha=alpha,
         color=c,
-        zorder=zorder,
+        zorder=ctx.zorder,
         **kwargs,
     )
-    ax.plot(x, y_data[col1], color=c, linewidth=1, label=str(col1), zorder=zorder + 1)
+    lw = ctx.config.lines.main_width
+    ax.plot(
+        x,
+        ctx.y_data[col1],
+        color=c,
+        linewidth=lw,
+        label=str(col1),
+        zorder=ctx.zorder + 1,
+    )
 
-    c2 = user_color if user_color is not None else colors[1 % len(colors)]
-    ax.plot(x, y_data[col2], color=c2, linewidth=1, label=str(col2), zorder=zorder + 1)
+    c2 = resolve_color(ctx, 1)
+    ax.plot(
+        x,
+        ctx.y_data[col2],
+        color=c2,
+        linewidth=lw,
+        label=str(col2),
+        zorder=ctx.zorder + 1,
+    )
 
 
 def _fill_from_zero(
     ax: Axes,
     x: pd.Index | pd.Series,
-    y_data: pd.DataFrame,
+    ctx: RenderContext,
     alpha: float,
-    user_color: str | None,
-    colors: list[str],
-    zorder: int,
     **kwargs: Any,
 ) -> None:
     """Fill from zero to y for each column independently."""
-    for i, col in enumerate(y_data.columns):
-        c = user_color if user_color is not None else colors[i % len(colors)]
+    for i, col in enumerate(ctx.y_data.columns):
+        c = resolve_color(ctx, i)
         ax.fill_between(
             x,
             0,
-            y_data[col],
+            ctx.y_data[col],
             alpha=alpha,
             color=c,
             label=str(col),
-            zorder=zorder,
+            zorder=ctx.zorder,
             **kwargs,
         )
-        ax.plot(x, y_data[col], color=c, linewidth=1, zorder=zorder + 1)
+        ax.plot(
+            x,
+            ctx.y_data[col],
+            color=c,
+            linewidth=ctx.config.lines.main_width,
+            zorder=ctx.zorder + 1,
+        )

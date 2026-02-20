@@ -10,25 +10,21 @@ from loguru import logger
 
 from .._internal import (
     FORMATTERS,
-    apply_tick_formatting,
-    apply_tick_rotation,
-    coerce_axis_limits,
+    apply_legend,
+    create_figure,
     extract_plot_data,
+    finalize_chart,
     normalize_highlight,
     register_artist_obstacle,
     resolve_composed_collisions,
     save_figure,
-    should_show_legend,
     validate_plot_params,
 )
 from .._internal.plot_validation import AxisLimits
 from ..charts import ChartRenderer
-from ..decorations import add_footer, add_title
 from ..exceptions import ValidationError
 from ..metrics import MetricRegistry
 from ..result import PlotResult
-from ..settings import get_config
-from ..styling.theme import theme
 from .layer import AxisSide, Layer
 
 if TYPE_CHECKING:
@@ -96,33 +92,6 @@ def _render_layer(
         MetricRegistry.apply(ax, x_data, y_data, layer.metrics)
 
 
-def _apply_composed_legend(
-    ax_left: plt.Axes,
-    ax_right: plt.Axes | None,
-    legend: bool | None,
-) -> None:
-    handles, labels = ax_left.get_legend_handles_labels()
-    if ax_right is not None:
-        h_right, l_right = ax_right.get_legend_handles_labels()
-        handles += h_right
-        labels += l_right
-        existing = ax_right.get_legend()
-        if existing is not None:
-            existing.remove()
-
-    if not should_show_legend(labels, legend) or not labels:
-        return
-
-    config = get_config()
-    ax_left.legend(
-        handles,
-        labels,
-        loc=config.legend.loc,
-        frameon=config.legend.frameon,
-        framealpha=config.legend.alpha,
-    )
-
-
 def compose(
     *layers: Layer,
     title: str | None = None,
@@ -169,17 +138,10 @@ def compose(
     """
     _validate_layers(layers, legend)
 
-    config = get_config()
     logger.debug("compose: {} layer(s), title={}", len(layers), title)
 
     # 1. Style + figure
-    theme.apply()
-    effective_figsize = figsize or config.layout.figsize
-    fig, ax_left = plt.subplots(figsize=effective_figsize)
-
-    # 1b. Grid override
-    if grid is not None:
-        ax_left.grid(grid)
+    fig, ax_left = create_figure(figsize=figsize, grid=grid)
 
     # 2. Right axis (if needed)
     ax_right: plt.Axes | None = None
@@ -209,18 +171,10 @@ def compose(
         )
         _render_layer(ax, layer, x_data, y_data)
 
-    # 4. Tick formatting
-    apply_tick_formatting(
-        ax_left, tick_format=tick_format, tick_freq=tick_freq, x_data=first_x_data
-    )
+    # 4. Legend (consolidated from both axes)
+    apply_legend(ax_left, ax_right, legend=legend)
 
-    # 4b. Tick rotation
-    apply_tick_rotation(fig, ax_left, tick_rotation=tick_rotation)
-
-    # 5. Legend (consolidated from both axes)
-    _apply_composed_legend(ax_left, ax_right, legend)
-
-    # 6. Collision resolution (unified cross-axis)
+    # 5. Collision resolution (unified cross-axis)
     if collision:
         legend_artist = ax_left.get_legend()
         if legend_artist is not None:
@@ -231,20 +185,20 @@ def compose(
             all_axes.append(ax_right)
         resolve_composed_collisions(all_axes, debug=debug)
 
-    # 8. Axis limits (user override, after collision)
-    if xlim is not None:
-        ax_left.set_xlim(coerce_axis_limits(xlim))
-    if ylim is not None:
-        ax_left.set_ylim(coerce_axis_limits(ylim))
-
-    # 9. Axis labels
-    if xlabel is not None:
-        ax_left.set_xlabel(xlabel)
-    if ylabel is not None:
-        ax_left.set_ylabel(ylabel)
-
-    # 10. Decorations
-    add_title(ax_left, title)
-    add_footer(fig, source)
+    # 6. Finalize (ticks, axis limits, labels, decorations)
+    finalize_chart(
+        fig,
+        ax_left,
+        tick_format=tick_format,
+        tick_freq=tick_freq,
+        tick_rotation=tick_rotation,
+        x_data=first_x_data,
+        xlim=xlim,
+        ylim=ylim,
+        xlabel=xlabel,
+        ylabel=ylabel,
+        title=title,
+        source=source,
+    )
 
     return PlotResult(fig=fig, ax=ax_left, plotter=_ComposePlotter(fig))

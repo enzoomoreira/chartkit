@@ -6,8 +6,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 
 from ..._internal.collision import register_passive
-from ...settings import get_config
-from ...styling.theme import theme
+from .._helpers import prepare_render_context, resolve_color
 from ..renderer import ChartRenderer
 
 if TYPE_CHECKING:
@@ -29,25 +28,15 @@ def plot_stackplot(
     ``ax.stackplot(x, *ys, labels=, colors=)`` requires all series at
     once for correct stacking. Each DataFrame column becomes a layer.
     """
-    config = get_config()
+    ctx = prepare_render_context(y_data, kwargs)
 
-    if isinstance(y_data, pd.Series):
-        y_data = y_data.to_frame()
-
-    user_color = kwargs.pop("color", None)
-    user_zorder = kwargs.pop("zorder", None)
-    colors = theme.colors.cycle()
-    zorder = user_zorder if user_zorder is not None else config.layout.zorder.data
-
-    cols = y_data.columns.tolist()
-    arrays = [y_data[col].fillna(0).values for col in cols]
-    c = (
-        [user_color] * len(cols)
-        if user_color is not None
-        else [colors[i % len(colors)] for i in range(len(cols))]
-    )
+    cols = ctx.y_data.columns.tolist()
+    arrays = [ctx.y_data[col].fillna(0).values for col in cols]
+    c = [resolve_color(ctx, i) for i in range(len(cols))]
     labels = [str(col) for col in cols]
 
-    polys = ax.stackplot(x, *arrays, colors=c, labels=labels, zorder=zorder, **kwargs)
+    polys = ax.stackplot(
+        x, *arrays, colors=c, labels=labels, zorder=ctx.zorder, **kwargs
+    )
     for poly in polys:
         register_passive(ax, poly)

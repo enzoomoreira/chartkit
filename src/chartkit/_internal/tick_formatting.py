@@ -92,9 +92,20 @@ def _strip_multiplier(freq: str) -> str:
     return freq[i:]
 
 
-def _is_sparse(freq_base: str) -> bool:
-    """Return True for sparse frequencies that benefit from data-aligned ticks."""
-    return freq_base.startswith(("YE", "YS", "BY", "QE", "QS", "BQ"))
+def _is_sparse(freq: str) -> bool:
+    """Return True for sparse frequencies that benefit from data-aligned ticks.
+
+    Handles both base frequencies (``"QE"``, ``"YE"``) and multiplied
+    month frequencies (``"6ME"`` for semestrual, ``"3ME"`` for quarterly
+    reported as month multiples).
+    """
+    base = _strip_multiplier(freq)
+    if base.startswith(("YE", "YS", "BY", "QE", "QS", "BQ")):
+        return True
+    if base.startswith(("ME", "MS", "BME", "BMS")):
+        mult_str = freq[: len(freq) - len(base)]
+        return mult_str.isdigit() and int(mult_str) >= 3
+    return False
 
 
 def _infer_locator(x_data: pd.Index | pd.Series) -> FixedLocator | None:
@@ -121,9 +132,7 @@ def _infer_locator(x_data: pd.Index | pd.Series) -> FixedLocator | None:
     if freq is None:
         return None
 
-    base = _strip_multiplier(freq)
-
-    if _is_sparse(base):
+    if _is_sparse(freq):
         tick_nums = [mdates.date2num(d) for d in index]
         return FixedLocator(tick_nums)
 

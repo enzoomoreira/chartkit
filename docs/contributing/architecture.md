@@ -63,22 +63,21 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - **Composed** (`layer()` + `compose()`): `Layer` captures intent without rendering; `compose()` orchestrates multi-layer rendering with optional dual axes via `twinx()`
 
 5. **ChartingPlotter**: Main engine for direct plotting:
-   - Applies theme via `theme.apply()`
+   - Creates figure via `create_figure()` (theme + plt.subplots + grid override)
    - Extracts data via `extract_plot_data()`
    - Applies axis formatters via `FORMATTERS` dispatch table
    - Dispatches via `ChartRenderer.render(ax, kind, ...)` (enhancer or generic `ax.{kind}()`)
    - Applies metrics via `MetricRegistry.apply()`
-   - Applies tick formatting via `apply_tick_formatting()` (data-aligned ticks, auto-inference, phantom tick clipping)
-   - Applies tick rotation via `apply_tick_rotation()` (auto-detect overlap or fixed angle)
-   - Applies legend
+   - Applies legend via `apply_legend()`
    - Resolves label collisions via `resolve_collisions(ax)` (when `collision=True`)
-   - Adds decorations via `add_title(ax)` and `add_footer(fig)`
+   - Finalizes via `finalize_chart()` (tick formatting, tick rotation, axis limits, labels, decorations)
 
 6. **compose()**: Orchestrator for multi-layer charts:
-   - Creates figure with optional twinx for right axis
+   - Creates figure via `create_figure()` with optional twinx for right axis
    - Renders each layer on its target axes
-   - Consolidates legend from both axes
+   - Applies legend via `apply_legend()` (consolidates handles from both axes)
    - Resolves cross-axis collisions via `resolve_composed_collisions(axes)`
+   - Finalizes via `finalize_chart()` (shared pipeline)
    - Returns `PlotResult` with `_ComposePlotter` (satisfies `Saveable` Protocol)
 
 7. **PlotResult**: Encapsulated result with:
@@ -103,7 +102,7 @@ flowchart TD
     D5 --> D6["6. MetricRegistry.apply()"]
     D6 --> D6c["7. apply_tick_formatting(x_data)"]
     D6c --> D6d["8. apply_tick_rotation()"]
-    D6d --> D6b["9. _apply_legend()"]
+    D6d --> D6b["9. apply_legend()"]
     D6b --> D7["10. resolve_collisions() (if collision=True)"]
     D7 --> D7a["11. set xlim/ylim (coerce_axis_limits)"]
     D7a --> D7b["12. set xlabel/ylabel (if provided)"]
@@ -140,7 +139,7 @@ src/chartkit/
 ├── charts/               # Generic rendering + enhancers
 │   ├── __init__.py       # Enhancer imports trigger automatic registration
 │   ├── renderer.py       # ChartRenderer - generic rendering (ax.{kind}()) + enhancer dispatch
-│   ├── _helpers.py       # Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin)
+│   ├── _helpers.py       # RenderContext, prepare_render_context(), resolve_color() + bar/category utilities
 │   └── enhancers/        # Specialized handlers for complex chart types
 │       ├── __init__.py   # Auto-imports all enhancers (triggers registration)
 │       ├── area.py       # Area chart enhancer (fill_between semantics)
@@ -186,7 +185,7 @@ src/chartkit/
 │   └── accessor.py       # TransformAccessor for chaining
 │
 └── _internal/            # Private utilities (shared between engine and compose)
-    ├── __init__.py       # Facade: collision, extraction, formatting, highlight, saving, validation
+    ├── __init__.py       # Facade: collision, extraction, formatting, highlight, pipeline, saving, validation
     ├── collision/        # Collision engine (modularized package)
     │   ├── __init__.py   # Re-exports public API (register_*, resolve_*)
     │   ├── _registry.py  # Global state and artist registration (WeakKeyDictionary)
@@ -196,6 +195,7 @@ src/chartkit/
     ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series()
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
     ├── highlight.py      # normalize_highlight()
+    ├── pipeline.py       # Shared pipeline steps: create_figure(), apply_legend(), finalize_chart()
     ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat
     ├── saving.py         # save_figure() with path resolution
     ├── tick_formatting.py # apply_tick_formatting(x_data) - data-aware date locator/formatter for X-axis
@@ -223,7 +223,7 @@ tests/                    # Test suite (357 tests)
 |--------|---------------|
 | `_logging.py` | loguru setup (`logger.disable`) + `configure_logging()` |
 | `accessor.py` | Registers `.chartkit` on DataFrames and Series; delegates to TransformAccessor, ChartingPlotter, or create_layer |
-| `engine.py` | Orchestrates single-chart creation; delegates to `_internal` and `decorations` |
+| `engine.py` | Orchestrates single-chart creation; delegates to `_internal` (pipeline, rendering, collision) |
 | `result.py` | Encapsulates result (`Saveable` Protocol); enables chaining with `.save()` and `.show()` |
 
 ### Settings
@@ -247,9 +247,10 @@ tests/                    # Test suite (357 tests)
 | Module | Responsibility |
 |--------|---------------|
 | `charts/renderer.py` | ChartRenderer: generic rendering via `ax.{kind}()` + enhancer dispatch + line obstacle registration |
-| `charts/_helpers.py` | Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin) |
+| `charts/_helpers.py` | RenderContext dataclass + prepare_render_context/resolve_color for enhancers + bar/category utilities (detect_bar_width, apply_y_origin, etc.) |
 | `charts/enhancers/*.py` | 13 enhancers: bar, barh, stacked_bar, area, hist, pie, stackplot, stem, stairs, boxplot, violinplot, ecdf, eventplot |
 | `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |
+| `_internal/pipeline.py` | Shared pipeline steps: create_figure(), apply_legend(), finalize_chart() |
 | `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions, _ComposePlotter |
 | `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, std_band, vband) |
 | `decorations/footer.py` | Adds footer with branding and source |

@@ -9,14 +9,14 @@ from matplotlib.axes import Axes
 
 from ...exceptions import ValidationError
 from ...overlays import add_highlight
-from ...settings import get_config
-from ...styling.theme import theme
 from .._helpers import (
     apply_y_origin,
     compute_bar_offsets,
     detect_bar_width,
     is_categorical_index,
     prepare_categorical_axis,
+    prepare_render_context,
+    resolve_color,
     validate_y_origin,
 )
 from ..renderer import ChartRenderer
@@ -50,15 +50,10 @@ def plot_bar(
             ``'cycle'`` is single-column only.
     """
     y_origin = validate_y_origin(y_origin)
-
-    config = get_config()
-    bars = config.bars
-
-    user_color = kwargs.pop("color", None)
     sort = kwargs.pop("sort", None)
-    colors = theme.colors.cycle()
-
     multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
+    ctx = prepare_render_context(y_data, kwargs)
+    bars = ctx.config.bars
 
     if sort not in _VALID_SORT:
         raise ValidationError(
@@ -66,16 +61,16 @@ def plot_bar(
         )
     if sort is not None and multi_col:
         raise ValidationError("sort is not supported for multi-column bar charts")
-    if user_color == "cycle" and multi_col:
+    if ctx.user_color == "cycle" and multi_col:
         raise ValidationError(
             "color='cycle' is not supported for multi-column bar charts"
         )
 
     if multi_col:
-        if len(y_data) > bars.warning_threshold:
+        if len(ctx.y_data) > bars.warning_threshold:
             logger.warning(
                 "Bar chart with {} points may be hard to read. Consider kind='line'.",
-                len(y_data),
+                len(ctx.y_data),
             )
 
         categorical = is_categorical_index(x)
@@ -87,30 +82,30 @@ def plot_bar(
             x_numeric = x
             group_width = detect_bar_width(x, bars)
 
-        n_cols = len(y_data.columns)
-        bar_width = group_width / n_cols
+        n_cols = len(ctx.y_data.columns)
+        bar_width, offsets = compute_bar_offsets(n_cols, group_width)
         is_datetime = not categorical and pd.api.types.is_datetime64_any_dtype(x)
 
-        for i, col in enumerate(y_data.columns):
-            c = user_color if user_color is not None else colors[i % len(colors)]
-            offset = (i - n_cols / 2 + 0.5) * bar_width
+        for i, col in enumerate(ctx.y_data.columns):
+            c = resolve_color(ctx, i)
+            offset = offsets[i]
             if is_datetime:
                 x_pos = x + pd.Timedelta(days=offset)
             else:
                 x_pos = x_numeric + offset
             ax.bar(
                 x_pos,
-                y_data[col],
+                ctx.y_data[col],
                 width=bar_width,
                 color=c,
                 label=str(col),
-                zorder=config.layout.zorder.data,
+                zorder=ctx.zorder,
                 **kwargs,
             )
 
-        all_vals = y_data.stack().dropna()
+        all_vals = ctx.y_data.stack().dropna()
     else:
-        vals = y_data.iloc[:, 0] if isinstance(y_data, pd.DataFrame) else y_data
+        vals = y_data if isinstance(y_data, pd.Series) else y_data.iloc[:, 0]
 
         if len(vals) > bars.warning_threshold:
             logger.warning(
@@ -123,10 +118,10 @@ def plot_bar(
             vals = vals.sort_values(ascending=ascending)
             x = vals.index
 
-        if user_color == "cycle":
-            c = [colors[i % len(colors)] for i in range(len(vals))]
+        if ctx.user_color == "cycle":
+            c = [ctx.colors[i % len(ctx.colors)] for i in range(len(vals))]
         else:
-            c = user_color if user_color is not None else colors[0]
+            c = resolve_color(ctx, 0)
 
         width = detect_bar_width(x, bars)
         label = str(vals.name) if vals.name is not None else None
@@ -136,7 +131,7 @@ def plot_bar(
             width=width,
             color=c,
             label=label,
-            zorder=config.layout.zorder.data,
+            zorder=ctx.zorder,
             **kwargs,
         )
 
@@ -145,7 +140,7 @@ def plot_bar(
     apply_y_origin(ax, y_origin, all_vals, bars.auto_margin)
 
     if highlight and not multi_col:
-        highlight_color = config.colors.text if user_color == "cycle" else c
+        highlight_color = ctx.config.colors.text if ctx.user_color == "cycle" else c
         add_highlight(
             ax, vals, style="bar", color=highlight_color, x=x, modes=highlight
         )
@@ -170,15 +165,10 @@ def plot_barh(
         color: Explicit color or ``'cycle'`` to cycle theme colors per bar.
     """
     y_origin = validate_y_origin(y_origin)
-
-    config = get_config()
-    bars = config.bars
-
-    user_color = kwargs.pop("color", None)
     sort = kwargs.pop("sort", None)
-    colors = theme.colors.cycle()
-
     multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
+    ctx = prepare_render_context(y_data, kwargs)
+    bars = ctx.config.bars
 
     if sort not in _VALID_SORT:
         raise ValidationError(
@@ -186,7 +176,7 @@ def plot_barh(
         )
     if sort is not None and multi_col:
         raise ValidationError("sort is not supported for multi-column barh charts")
-    if user_color == "cycle" and multi_col:
+    if ctx.user_color == "cycle" and multi_col:
         raise ValidationError(
             "color='cycle' is not supported for multi-column barh charts"
         )
@@ -195,7 +185,7 @@ def plot_barh(
         categorical = is_categorical_index(x)
 
         if categorical:
-            y_numeric = prepare_categorical_axis(ax, x)
+            y_numeric = prepare_categorical_axis(ax, x, axis="y")
             group_height = bars.width_default
         else:
             y_numeric = np.arange(len(x))
@@ -203,33 +193,33 @@ def plot_barh(
             ax.set_yticklabels(list(x))
             group_height = bars.width_default
 
-        n_cols = len(y_data.columns)
+        n_cols = len(ctx.y_data.columns)
         bar_height, offsets = compute_bar_offsets(n_cols, group_height)
 
-        for i, col in enumerate(y_data.columns):
-            c = user_color if user_color is not None else colors[i % len(colors)]
+        for i, col in enumerate(ctx.y_data.columns):
+            c = resolve_color(ctx, i)
             ax.barh(
                 y_numeric + offsets[i],
-                y_data[col],
+                ctx.y_data[col],
                 height=bar_height,
                 color=c,
                 label=str(col),
-                zorder=config.layout.zorder.data,
+                zorder=ctx.zorder,
                 **kwargs,
             )
-        all_vals = y_data.stack().dropna()
+        all_vals = ctx.y_data.stack().dropna()
     else:
-        vals = y_data.iloc[:, 0] if isinstance(y_data, pd.DataFrame) else y_data
+        vals = y_data if isinstance(y_data, pd.Series) else y_data.iloc[:, 0]
 
         if sort is not None:
             ascending = sort == "ascending"
             vals = vals.sort_values(ascending=ascending)
             x = vals.index
 
-        if user_color == "cycle":
-            c = [colors[i % len(colors)] for i in range(len(vals))]
+        if ctx.user_color == "cycle":
+            c = [ctx.colors[i % len(ctx.colors)] for i in range(len(vals))]
         else:
-            c = user_color if user_color is not None else colors[0]
+            c = resolve_color(ctx, 0)
 
         label = str(vals.name) if vals.name is not None else None
         ax.barh(
@@ -238,7 +228,7 @@ def plot_barh(
             height=bars.width_default,
             color=c,
             label=label,
-            zorder=config.layout.zorder.data,
+            zorder=ctx.zorder,
             **kwargs,
         )
         ax.set_yticks(range(len(vals)))
@@ -246,19 +236,7 @@ def plot_barh(
 
         all_vals = vals
 
-    # Apply x-axis origin (analogous to y_origin for vertical bars)
-    if y_origin == "auto":
-        clean = all_vals.dropna()
-        if not clean.empty:
-            xmin, xmax = clean.min(), clean.max()
-            margin = (xmax - xmin) * bars.auto_margin
-            ax.set_xlim(xmin - margin, xmax + margin)
-    else:
-        xmin, xmax = ax.get_xlim()
-        if xmin > 0:
-            ax.set_xlim(0, xmax)
-        elif xmax < 0:
-            ax.set_xlim(xmin, 0)
+    apply_y_origin(ax, y_origin, all_vals, bars.auto_margin, axis="x")
 
     if highlight:
         logger.debug("barh: highlight not supported for horizontal bars, skipping")

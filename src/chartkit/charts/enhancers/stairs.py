@@ -6,8 +6,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 
 from ...overlays import add_highlight
-from ...settings import get_config
-from ...styling.theme import theme
+from .._helpers import prepare_render_context, resolve_color
 from ..renderer import ChartRenderer
 
 if TYPE_CHECKING:
@@ -30,27 +29,19 @@ def plot_stairs(
     positional arg. Without explicit edges matplotlib auto-generates
     ``range(len(values) + 1)``.
     """
-    config = get_config()
+    ctx = prepare_render_context(y_data, kwargs)
 
-    if isinstance(y_data, pd.Series):
-        y_data = y_data.to_frame()
-
-    user_color = kwargs.pop("color", None)
-    user_zorder = kwargs.pop("zorder", None)
-    colors = theme.colors.cycle()
-    zorder = user_zorder if user_zorder is not None else config.layout.zorder.data
-
-    for i, col in enumerate(y_data.columns):
-        c = user_color if user_color is not None else colors[i % len(colors)]
+    for i, col in enumerate(ctx.y_data.columns):
+        c = resolve_color(ctx, i)
         ax.stairs(
-            y_data[col],
+            ctx.y_data[col],
             color=c,
             label=str(col),
-            zorder=zorder,
+            zorder=ctx.zorder,
             **kwargs,
         )
 
-    if highlight and y_data.shape[1] == 1:
-        col = y_data.columns[0]
-        c = user_color if user_color is not None else colors[0]
-        add_highlight(ax, y_data[col], style="line", color=c, modes=highlight)
+    if highlight and ctx.y_data.shape[1] == 1:
+        col = ctx.y_data.columns[0]
+        c = resolve_color(ctx, 0)
+        add_highlight(ax, ctx.y_data[col], style="line", color=c, modes=highlight)

@@ -242,7 +242,9 @@ When a chart type needs custom logic beyond a simple `ax.{kind}()` call (e.g., b
 
 #### 1. Create the enhancer file
 
-The function must follow the `Enhancer` protocol:
+The function must follow the `Enhancer` protocol. Use `prepare_render_context()`
+to extract common boilerplate (config, color cycle, zorder, Series-to-DataFrame
+coercion) into a `RenderContext`:
 
 ```python
 # In src/chartkit/charts/enhancers/waterfall.py
@@ -254,9 +256,8 @@ from typing import TYPE_CHECKING
 import pandas as pd
 from matplotlib.axes import Axes
 
-from ...settings import get_config
-from ...styling.theme import theme
 from ..renderer import ChartRenderer
+from .._helpers import prepare_render_context, resolve_color
 
 if TYPE_CHECKING:
     from ...overlays.markers import HighlightMode
@@ -270,9 +271,11 @@ def plot_waterfall(
     highlight: list[HighlightMode],
     **kwargs,
 ) -> None:
-    config = get_config()
-    # Custom rendering logic here
-    ...
+    ctx = prepare_render_context(y_data, kwargs)
+    for i, col in enumerate(ctx.y_data.columns):
+        color = resolve_color(ctx, i)
+        # Custom rendering logic using ctx.config, ctx.zorder, etc.
+        ...
 ```
 
 #### 2. Import in `charts/enhancers/__init__.py`
