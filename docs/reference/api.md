@@ -80,6 +80,7 @@ Metrics support custom labels via `|` syntax: `'ath|Maximum'`, `'ma:12@col|12M A
 ```python
 ChartKind = str  # any valid matplotlib Axes method or registered enhancer
 UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x"]
+TickFreq = Literal["day", "week", "month", "quarter", "semester", "year"]
 HighlightMode = Literal["last", "max", "min", "all"]
 HighlightInput = bool | HighlightMode | list[HighlightMode]
 AxisValue = str | int | float | datetime | date | pd.Timestamp | None
@@ -146,7 +147,7 @@ Chainable accessor for transformations. Each method returns a new `TransformAcce
 | `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Annualize periodic rate via compound interest (frequency auto-detection) |
 | `to_month_end()` | `to_month_end() -> TransformAccessor` | Normalize index to month-end (consolidates duplicates) |
 | `layer()` | `layer(kind, x, y, *, units, highlight, metrics, axis, **kwargs) -> Layer` | Create a Layer for `compose()` |
-| `plot()` | `plot(**kwargs) -> PlotResult` | Finalize chain and plot |
+| `plot()` | `plot(x, y, *, kind, title, units, source, highlight, metrics, legend, xlabel, ylabel, xlim, ylim, grid, tick_rotation, tick_format, tick_freq, collision, debug, **kwargs) -> PlotResult` | Finalize chain and plot (same parameters as `df.chartkit.plot()`) |
 | `df` | `@property -> pd.DataFrame` | Access to transformed DataFrame |
 
 ---
@@ -698,6 +699,8 @@ The new exceptions inherit from corresponding built-in types, maintaining compat
 - `plot()` receives an invalid value in `units` (e.g., `"EUR"` instead of `"BRL"`)
 - `y_origin` receives a value outside `"zero"` / `"auto"` in bar charts
 - `plot()` or `layer()` receives a `kind` that is not a valid matplotlib Axes method or registered enhancer
+- `tick_freq` receives an invalid value (not one of `TickFreq` options)
+- `tick_rotation` receives a value that is not `int` or `"auto"`
 - `diff(periods=0)` (returns all-zeros, almost certainly a user error)
 - `zscore(window=1)` (std of 1 value is undefined)
 

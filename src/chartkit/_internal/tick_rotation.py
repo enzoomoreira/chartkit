@@ -7,6 +7,7 @@ from typing import Literal
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
+from ..exceptions import ValidationError
 from ..settings import get_config
 
 __all__ = ["apply_tick_rotation"]
@@ -80,6 +81,10 @@ def apply_tick_rotation(
             return
         angle = config.ticks.auto_rotation_angle
     else:
+        if not isinstance(effective, int):
+            raise ValidationError(
+                f"tick_rotation must be an int or 'auto', got {type(effective).__name__}: {effective!r}"
+            )
         angle = effective
 
     if angle == 0:

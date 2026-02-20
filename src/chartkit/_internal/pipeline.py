@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 import matplotlib.pyplot as plt
+from loguru import logger
 from matplotlib.axes import Axes
 
 from .extraction import should_show_legend
@@ -42,6 +43,12 @@ def create_figure(
     if grid is not None:
         ax.grid(grid)
 
+    logger.debug(
+        "create_figure: figsize={}, grid_override={}",
+        effective_figsize,
+        grid,
+    )
+
     return fig, ax
 
 
@@ -68,6 +75,11 @@ def apply_legend(
             existing.remove()
 
     if not should_show_legend(labels, legend) or not labels:
+        logger.debug(
+            "Legend skipped: {} label(s), legend={}",
+            len(labels),
+            legend,
+        )
         return
 
     config = get_config()
@@ -77,6 +89,12 @@ def apply_legend(
         loc=config.legend.loc,
         frameon=config.legend.frameon,
         framealpha=config.legend.alpha,
+    )
+
+    logger.debug(
+        "Legend applied: {} handle(s), loc='{}'",
+        len(handles),
+        config.legend.loc,
     )
 
 
@@ -117,3 +135,19 @@ def finalize_chart(
 
     add_title(ax, title)
     add_footer(fig, source)
+
+    # Logs explicit overrides only (config-based defaults are not tracked here)
+    applied = []
+    if tick_format or tick_freq:
+        applied.append("ticks")
+    if tick_rotation is not None:
+        applied.append("rotation")
+    if xlim or ylim:
+        applied.append("limits")
+    if xlabel or ylabel:
+        applied.append("labels")
+    if title:
+        applied.append("title")
+    if source:
+        applied.append("footer")
+    logger.debug("finalize_chart: overrides=[{}]", ", ".join(applied))

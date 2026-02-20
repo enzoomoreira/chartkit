@@ -31,26 +31,31 @@ class PlotResult:
     plotter: Saveable
 
     def save(self, path: str, dpi: int | None = None) -> PlotResult:
-        """Save the chart to a file.
+        """Save the chart to a file. Returns ``self`` for chaining.
 
         Args:
-            path: If relative, saves to the configured charts directory.
+            path: Output file path. If relative, saves to the configured
+                charts directory. Format is inferred from extension
+                (``.png``, ``.jpg``, ``.svg``, ``.pdf``).
+            dpi: Resolution override. ``None`` uses config ``layout.dpi``.
         """
         self.plotter.save(path, dpi=dpi)
         return self
 
     def show(self) -> PlotResult:
-        """Display the chart in an interactive window."""
+        """Display the chart in an interactive window. Returns ``self`` for chaining."""
         logger.debug("PlotResult.show: '{}'", self.ax.get_title() or "Untitled")
         plt.show()
         return self
 
     @property
     def axes(self) -> Axes:
+        """The matplotlib Axes for manual customization."""
         return self.ax
 
     @property
     def figure(self) -> Figure:
+        """The matplotlib Figure for manual customization."""
         return self.fig
 
     def _ipython_display_(self, **kwargs: object) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import cast
 
 import pandas as pd
+from loguru import logger
 
 from ..exceptions import ValidationError
 
@@ -74,6 +75,13 @@ def extract_plot_data(
                 f"Column(s) not found: {missing}. Available: {list(df.columns)}"
             )
         y_data = df[y]
+
+    logger.debug(
+        "extract_plot_data: x={}, y_columns={}, rows={}",
+        "index" if x is None else x,
+        list(y_data.columns) if isinstance(y_data, pd.DataFrame) else [y_data.name],
+        len(df),
+    )
 
     return x_data, y_data
 

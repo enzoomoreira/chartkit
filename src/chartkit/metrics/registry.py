@@ -17,6 +17,12 @@ class MetricSpec:
     """Parsed metric specification.
 
     String syntax: ``name:param1:param2@column|label``
+
+    Attributes:
+        name: Metric name (e.g. ``'ath'``, ``'ma'``, ``'band'``).
+        params: Parsed positional parameters (e.g. ``{'window': 12}``).
+        series: Target column when using ``@`` syntax.
+        label: Custom legend label when using ``|`` syntax.
     """
 
     name: str
@@ -141,7 +147,15 @@ class MetricRegistry:
         y_data: pd.Series | pd.DataFrame,
         specs: str | Sequence[str | MetricSpec],
     ) -> None:
-        """Apply list of metrics to the chart."""
+        """Apply metric(s) to the chart.
+
+        Args:
+            ax: Target matplotlib Axes.
+            x_data: X-axis values (index or column).
+            y_data: Y-axis data (Series or DataFrame).
+            specs: One or more metric specs as strings or ``MetricSpec``
+                objects. Strings are parsed via ``parse()``.
+        """
         if isinstance(specs, str):
             specs = [specs]
         for spec in specs:
@@ -156,6 +170,7 @@ class MetricRegistry:
 
     @classmethod
     def available(cls) -> list[str]:
+        """Return sorted list of registered metric names."""
         return sorted(cls._metrics.keys())
 
     @classmethod

@@ -522,7 +522,9 @@ class TestApplyTickFormatting:
         assert isinstance(formatter, mdates.DateFormatter)
 
     def test_invalid_tick_freq_raises(self, ax: plt.Axes) -> None:
-        with pytest.raises(ValueError, match="Invalid tick_freq"):
+        from chartkit.exceptions import ValidationError
+
+        with pytest.raises(ValidationError, match="Invalid tick_freq"):
             apply_tick_formatting(ax, tick_freq="biweekly")
 
     def test_no_x_data_no_auto_detect(self, ax: plt.Axes) -> None:

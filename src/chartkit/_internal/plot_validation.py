@@ -6,6 +6,7 @@ from datetime import date, datetime
 from typing import Any, Literal
 
 import pandas as pd
+from loguru import logger
 from pydantic import BaseModel, StrictBool
 from pydantic import ValidationError as PydanticValidationError
 
@@ -15,6 +16,8 @@ UnitFormat = Literal[
     "BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x"
 ]
 
+TickFreq = Literal["day", "week", "month", "quarter", "semester", "year"]
+
 AxisValue = str | int | float | datetime | date | pd.Timestamp | None
 AxisLimits = tuple[AxisValue, AxisValue]
 
@@ -22,12 +25,17 @@ AxisLimits = tuple[AxisValue, AxisValue]
 class PlotParamsModel(BaseModel):
     units: UnitFormat | None = None
     legend: StrictBool | None = None
+    tick_freq: TickFreq | None = None
 
 
-def validate_plot_params(units: UnitFormat | None, legend: bool | None) -> None:
+def validate_plot_params(
+    units: UnitFormat | None,
+    legend: bool | None,
+    tick_freq: str | None = None,
+) -> None:
     """Validate generic plot params and normalize pydantic errors."""
     try:
-        PlotParamsModel(units=units, legend=legend)
+        PlotParamsModel(units=units, legend=legend, tick_freq=tick_freq)
     except PydanticValidationError as exc:
         errors = exc.errors()
         msgs = [
@@ -47,12 +55,16 @@ def _coerce_limit_value(value: AxisValue) -> Any:
         return value
 
     try:
-        return float(value)
+        result = float(value)
+        logger.debug("Coerced axis limit '{}' -> float({})", value, result)
+        return result
     except ValueError:
         pass
 
     try:
-        return pd.to_datetime(value)
+        result = pd.to_datetime(value)
+        logger.debug("Coerced axis limit '{}' -> datetime({})", value, result)
+        return result
     except (ValueError, TypeError):
         raise ValidationError(
             f"Cannot interpret '{value}' as a number or date for axis limit."
@@ -72,4 +84,10 @@ def coerce_axis_limits(limits: tuple[Any, Any]) -> tuple[Any, Any]:
     return (_coerce_limit_value(limits[0]), _coerce_limit_value(limits[1]))
 
 
-__all__ = ["AxisLimits", "UnitFormat", "coerce_axis_limits", "validate_plot_params"]
+__all__ = [
+    "AxisLimits",
+    "TickFreq",
+    "UnitFormat",
+    "coerce_axis_limits",
+    "validate_plot_params",
+]

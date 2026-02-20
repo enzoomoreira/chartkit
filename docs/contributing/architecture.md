@@ -196,7 +196,7 @@ src/chartkit/
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
     ├── highlight.py      # normalize_highlight()
     ├── pipeline.py       # Shared pipeline steps: create_figure(), apply_legend(), finalize_chart()
-    ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat
+    ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat, TickFreq, AxisLimits
     ├── saving.py         # save_figure() with path resolution
     ├── tick_formatting.py # apply_tick_formatting(x_data) - data-aware date locator/formatter for X-axis
     └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation

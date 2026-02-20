@@ -264,6 +264,10 @@ logger.debug(f"find_project_root: found {current}")
 | Module | DEBUG | WARNING |
 |--------|-------|---------|
 | `engine.py` | Plot params, chart dispatch, highlight modes | - |
+| `extraction.py` | x/y columns selected, row count | - |
+| `pipeline.py` | Figure creation (figsize, grid), legend application/skip, finalize steps applied | - |
+| `plot_validation.py` | Axis limit coercion (string -> float/datetime) | - |
+| `tick_formatting.py` | Locator type and freq, data-aligned tick count, date format applied | - |
 | `collision/` | Collision iteration counts, label movements | - |
 | `temporal.py` | Transform resolution (freq, periods) | - |
 | `_validation.py` | Auto-detected frequency, non-numeric columns filtered | - |

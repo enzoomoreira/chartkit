@@ -43,8 +43,12 @@ class _ComposePlotter:
         save_figure(self._fig, path, dpi)
 
 
-def _validate_layers(layers: tuple[Layer, ...], legend: bool | None) -> None:
-    validate_plot_params(units=None, legend=legend)
+def _validate_layers(
+    layers: tuple[Layer, ...],
+    legend: bool | None,
+    tick_freq: str | None = None,
+) -> None:
+    validate_plot_params(units=None, legend=legend, tick_freq=tick_freq)
 
     if not layers:
         raise ValidationError("compose() requires at least one layer.")
@@ -132,11 +136,12 @@ def compose(
             ``"quarter"``, ``"semester"``, ``"year"``).
         collision: Enable collision resolution engine. ``False`` skips
             all label collision processing.
+        debug: Show collision debug overlay.
 
     Raises:
         ValidationError: No layers provided or all layers on right axis.
     """
-    _validate_layers(layers, legend)
+    _validate_layers(layers, legend, tick_freq=tick_freq)
 
     logger.debug("compose: {} layer(s), title={}", len(layers), title)
 

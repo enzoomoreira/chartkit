@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 import matplotlib.dates as mdates
 import pandas as pd
+from loguru import logger
 from matplotlib.axes import Axes
 from matplotlib.ticker import FixedLocator
 
+from ..exceptions import ValidationError
 from ..settings import get_config
-
-TickFreq = Literal["day", "week", "month", "quarter", "semester", "year"]
+from .plot_validation import TickFreq
 
 _FREQ_LOCATORS: dict[TickFreq, type[mdates.DateLocator] | tuple] = {
     "day": (mdates.DayLocator, {}),
@@ -134,6 +133,11 @@ def _infer_locator(x_data: pd.Index | pd.Series) -> FixedLocator | None:
 
     if _is_sparse(freq):
         tick_nums = [mdates.date2num(d) for d in index]
+        logger.debug(
+            "Auto-inferred sparse freq '{}', using {} data-aligned ticks",
+            freq,
+            len(tick_nums),
+        )
         return FixedLocator(tick_nums)
 
     return None
@@ -206,10 +210,10 @@ def apply_tick_formatting(
     locator_was_set = False
 
     if effective_freq is not None:
-        # Validate freq before anything else
+        # Defensive guard: config.ticks.date_freq bypasses validate_plot_params
         if effective_freq not in _FREQ_LOCATORS:
             valid = ", ".join(f"'{k}'" for k in _FREQ_LOCATORS)
-            raise ValueError(
+            raise ValidationError(
                 f"Invalid tick_freq '{effective_freq}'. Valid options: {valid}"
             )
 
@@ -221,9 +225,19 @@ def apply_tick_formatting(
 
         if aligned is not None:
             ax.xaxis.set_major_locator(aligned)
+            logger.debug(
+                "Tick locator: data-aligned freq='{}', {} ticks",
+                effective_freq,
+                len(aligned.locs),
+            )
         else:
             locator_cls, locator_kwargs = _FREQ_LOCATORS[effective_freq]
             ax.xaxis.set_major_locator(locator_cls(**locator_kwargs))
+            logger.debug(
+                "Tick locator: {} freq='{}'",
+                locator_cls.__name__,
+                effective_freq,
+            )
 
         locator_was_set = True
     elif x_data is not None:
@@ -237,3 +251,4 @@ def apply_tick_formatting(
 
     if effective_format is not None:
         ax.xaxis.set_major_formatter(mdates.DateFormatter(effective_format))
+        logger.debug("Tick format: '{}'", effective_format)

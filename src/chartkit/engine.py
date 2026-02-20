@@ -94,11 +94,12 @@ class ChartingPlotter:
                 ``"quarter"``, ``"semester"``, ``"year"``).
             collision: Enable collision resolution engine. ``False`` skips
                 all label collision processing.
+            debug: Show collision debug overlay.
             **kwargs: Chart-specific parameters (e.g.: ``y_origin='auto'`` for bars)
                 and matplotlib parameters passed directly to the renderer.
         """
         highlight_modes = normalize_highlight(highlight)
-        validate_plot_params(units=units, legend=legend)
+        validate_plot_params(units=units, legend=legend, tick_freq=tick_freq)
 
         logger.debug(
             "plot: kind={}, shape={}, units={}, metrics={}",
@@ -115,16 +116,6 @@ class ChartingPlotter:
 
         # 2. Data
         x_data, y_data = extract_plot_data(self.df, x, y)
-
-        y_cols = (
-            list(y_data.columns) if isinstance(y_data, pd.DataFrame) else [y_data.name]
-        )
-        logger.debug(
-            "Data: x={}, y_columns={}, y_shape={}",
-            "index" if x is None else x,
-            y_cols,
-            y_data.shape,
-        )
 
         # 3. Y formatter
         if units:

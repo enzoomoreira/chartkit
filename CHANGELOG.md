@@ -1,5 +1,19 @@
 # Project Changelog
 
+## [2026-02-20 01:07]
+### Added
+- **Debug logging no pipeline interno**: Instrumentacao completa com `loguru.logger.debug()` nos pontos-chave do fluxo de plotagem -- `extract_plot_data` (x/y/rows), `create_figure` (figsize/grid), `apply_legend` (handles/skip), `finalize_chart` (steps aplicados), `coerce_axis_limits` (conversoes), `apply_tick_formatting` (locator type/freq/format)
+- **Validacao de `tick_freq` via Pydantic**: `validate_plot_params()` agora valida `tick_freq` com `TickFreq` Literal type, capturando valores invalidos antes de chegar ao tick engine
+- **Validacao de tipo em `tick_rotation`**: Guard defensivo rejeita valores que nao sao `int` nem `"auto"`, com `ValidationError` descritiva
+- **Docstrings completas na API publica**: Documentacao Args/Attributes em `ChartingAccessor` (plot, layer, transforms), `TransformAccessor` (plot com signature explicita, layer, transforms), `PlotResult` (save, show, axes, figure), `Layer`, `create_layer()`, `MetricSpec`, `MetricRegistry.apply()`, `ChartingTheme` properties, e todos os 17 config models em `settings/schema.py`
+- **`TickFreq` type centralizado**: Novo Literal type em `plot_validation.py` reusado por `tick_formatting.py` e `PlotParamsModel`
+
+### Changed
+- **`TransformAccessor.plot()` com signature explicita**: Substituiu `**kwargs` opaco por todos os parametros tipados (x, y, kind, title, units, source, highlight, metrics, legend, xlabel, ylabel, xlim, ylim, grid, tick_rotation, tick_format, tick_freq, collision, debug) -- habilita autocomplete e type checking no IDE
+- **`ValidationError` em vez de `ValueError`**: `tick_formatting.py` e `tick_rotation.py` agora usam `chartkit.exceptions.ValidationError` para erros de input invalido, consistente com o resto da library
+- **Logging de data extraction movido para `extraction.py`**: Debug log de x/y_columns/rows extraido de `engine.py` para `extract_plot_data()`, onde a logica de extracao realmente vive
+- **`_validate_layers()` propaga `tick_freq`**: Validacao de compose agora passa `tick_freq` para `validate_plot_params()`, garantindo mesma validacao do plot direto
+
 ## [2026-02-19 23:45]
 ### Added
 - **`_internal/pipeline.py`**: Novo modulo com pipeline steps compartilhados (`create_figure`, `apply_legend`, `finalize_chart`) -- elimina duplicacao entre engine e compose
