@@ -29,9 +29,13 @@ def register_builtin_metrics() -> None:
     def metric_avg(ax, x_data, y_data, **kwargs) -> None:
         add_avg_line(ax, y_data, **kwargs)
 
-    @MetricRegistry.register("ma", param_names=["window"])
-    def metric_ma(ax, x_data, y_data, window: int, **kwargs) -> None:
-        add_moving_average(ax, x_data, y_data, window=window, **kwargs)
+    @MetricRegistry.register("ma", param_names=["window"], uses_freq=True)
+    def metric_ma(
+        ax, x_data, y_data, window: int, detected_freq: str | None = None, **kwargs
+    ) -> None:
+        add_moving_average(
+            ax, x_data, y_data, window=window, detected_freq=detected_freq, **kwargs
+        )
 
     @MetricRegistry.register("hline", param_names=["value"], uses_series=False)
     def metric_hline(ax, x_data, y_data, value: float, **kwargs) -> None:
@@ -45,11 +49,27 @@ def register_builtin_metrics() -> None:
     def metric_target(ax, x_data, y_data, value: float, **kwargs) -> None:
         add_target_line(ax, value=value, **kwargs)
 
-    @MetricRegistry.register("std_band", param_names=["window", "num_std"])
+    @MetricRegistry.register(
+        "std_band", param_names=["window", "num_std"], uses_freq=True
+    )
     def metric_std_band(
-        ax, x_data, y_data, window: int, num_std: float = 2.0, **kwargs
+        ax,
+        x_data,
+        y_data,
+        window: int,
+        num_std: float = 2.0,
+        detected_freq: str | None = None,
+        **kwargs,
     ) -> None:
-        add_std_band(ax, x_data, y_data, window=window, num_std=num_std, **kwargs)
+        add_std_band(
+            ax,
+            x_data,
+            y_data,
+            window=window,
+            num_std=num_std,
+            detected_freq=detected_freq,
+            **kwargs,
+        )
 
     @MetricRegistry.register("vband", param_names=["start", "end"], uses_series=False)
     def metric_vband(ax, x_data, y_data, start: str, end: str, **kwargs) -> None:

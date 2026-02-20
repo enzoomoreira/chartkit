@@ -68,6 +68,11 @@ df.chartkit.plot(title="Data with MA12", metrics=['ma:12'])
 | Label | "MM{window}" | `labels.moving_average_format` |
 | zorder | 2 | Above reference lines, below data |
 
+The `ma` metric is **frequency-aware**: the label format supports a `{freq}` placeholder
+that is replaced with the detected data frequency (e.g., `"M"` for monthly, `"T"` for
+quarterly). To enable it, set `moving_average_format = "MM{window}{freq}"` in your TOML
+config. When the frequency cannot be detected, `{freq}` resolves to an empty string.
+
 ### Example
 
 ```python
@@ -318,6 +323,10 @@ df.chartkit.plot(metrics=['std_band:20:2'])
 | Central line style | Dashed (--) | `lines.reference_style` |
 | Width | 1.5 | `lines.overlay_width` |
 | Label | "BB({window}, {num_std})" | `labels.std_band_format` |
+
+The `std_band` metric is **frequency-aware**: the label format supports a `{freq}`
+placeholder that is replaced with the detected data frequency. To enable it, set
+`std_band_format = "BB({window}{freq}, {num_std})"` in your TOML config.
 
 ### Example
 

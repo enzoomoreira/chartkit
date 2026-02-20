@@ -6,6 +6,8 @@ Do not import directly from this module in external code.
 """
 
 from .collision import (
+    draw_composed_debug_overlay,
+    draw_debug_overlay,
     register_artist_obstacle,
     register_moveable,
     register_passive,
@@ -18,6 +20,7 @@ from .extraction import (
     should_show_legend,
 )
 from .formatting import FORMATTERS
+from .frequency import infer_freq
 from .highlight import normalize_highlight
 from .pipeline import apply_legend, create_figure, finalize_chart
 from .plot_validation import coerce_axis_limits, validate_plot_params
@@ -32,8 +35,11 @@ __all__ = [
     "apply_tick_rotation",
     "coerce_axis_limits",
     "create_figure",
+    "draw_composed_debug_overlay",
+    "draw_debug_overlay",
     "extract_plot_data",
     "finalize_chart",
+    "infer_freq",
     "normalize_highlight",
     "register_artist_obstacle",
     "register_moveable",

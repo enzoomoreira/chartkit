@@ -3,6 +3,7 @@ from matplotlib.axes import Axes
 
 from .._internal.collision import register_passive
 from .._internal.extraction import resolve_series
+from .._internal.frequency import freq_display_label
 from ..exceptions import ValidationError
 from ..settings import get_config
 from ..styling.theme import theme
@@ -21,6 +22,7 @@ def add_std_band(
     label: str | None = None,
     show_center: bool = True,
     series: str | None = None,
+    detected_freq: str | None = None,
 ) -> None:
     """Add standard deviation band (Bollinger Bands) over the data.
 
@@ -32,6 +34,7 @@ def add_std_band(
         num_std: Number of standard deviations for the bands.
         show_center: Whether to plot the center line (moving average).
         series: Column to use if y_data is DataFrame (default: first).
+        detected_freq: Detected frequency code for label formatting.
     """
     if window < 2:
         raise ValidationError(f"window must be >= 2, got {window}")
@@ -51,10 +54,13 @@ def add_std_band(
 
     band_color = color if color is not None else theme.colors.grid
     band_alpha = alpha if alpha is not None else config.bands.alpha
+    freq = freq_display_label(detected_freq)
     band_label = (
         label
         if label is not None
-        else config.labels.std_band_format.format(window=window, num_std=num_std)
+        else config.labels.std_band_format.format(
+            window=window, num_std=num_std, freq=freq
+        )
     )
 
     patch = ax.fill_between(

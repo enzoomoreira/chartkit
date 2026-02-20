@@ -21,6 +21,7 @@ import pandas as pd
 from loguru import logger
 from pydantic import BaseModel, PositiveInt, ValidationError, model_validator
 
+from .._internal.frequency import FREQ_ALIASES, infer_freq, normalize_freq_code
 from ..exceptions import TransformError
 
 # ---------------------------------------------------------------------------
@@ -51,25 +52,6 @@ TransformName = Literal["month", "year", "accum", "annualize"]
 # Frequency -> periods mapping constants
 # ---------------------------------------------------------------------------
 
-# Friendly aliases the user can pass in the freq= parameter
-FREQ_ALIASES: dict[str, str] = {
-    "D": "D",
-    "daily": "D",
-    "B": "B",
-    "business": "B",
-    "W": "W",
-    "weekly": "W",
-    "M": "ME",
-    "monthly": "ME",
-    "Q": "QE",
-    "quarterly": "QE",
-    "Y": "YE",
-    "yearly": "YE",
-    "annual": "YE",
-    "BME": "BME",
-    "BMS": "BMS",
-}
-
 # Mapping of normalized freq code -> periods per transform type.
 # Codes here are those returned by pd.infer_freq() or normalized via FREQ_ALIASES.
 FREQ_PERIODS_MAP: dict[str, dict[TransformName, int]] = {
@@ -89,20 +71,6 @@ FREQ_PERIODS_MAP: dict[str, dict[TransformName, int]] = {
     "BYE": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
     "BYS": {"month": 1, "year": 1, "accum": 1, "annualize": 1},
 }
-
-# Prefixes of anchored freq codes that pd.infer_freq() may return.
-# E.g.: "W-SUN" -> "W", "QE-DEC" -> "QE", "BYE-DEC" -> "BYE"
-_ANCHORED_PREFIXES = (
-    "W-",
-    "QE-",
-    "QS-",
-    "BQE-",
-    "BQS-",
-    "YE-",
-    "YS-",
-    "BYE-",
-    "BYS-",
-)
 
 
 # ---------------------------------------------------------------------------
@@ -289,47 +257,6 @@ def sanitize_result(
 # ---------------------------------------------------------------------------
 
 
-def _normalize_freq_code(raw: str) -> str:
-    """Normalize freq code to FREQ_PERIODS_MAP key.
-
-    Handles friendly aliases (``'M'`` -> ``'ME'``) and anchored freq codes
-    (``'W-SUN'`` -> ``'W'``, ``'BQE-DEC'`` -> ``'BQE'``).
-    """
-    if raw in FREQ_ALIASES:
-        return FREQ_ALIASES[raw]
-
-    for prefix in _ANCHORED_PREFIXES:
-        if raw.startswith(prefix):
-            return prefix.rstrip("-")
-
-    if raw in FREQ_PERIODS_MAP:
-        return raw
-
-    return raw
-
-
-def _infer_freq(df: pd.DataFrame | pd.Series) -> str | None:
-    """Try to infer index frequency via pandas.
-
-    Returns normalized freq code or None if unable to determine.
-    """
-    if not isinstance(df.index, pd.DatetimeIndex):
-        return None
-
-    if len(df.index) < 3:
-        return None
-
-    try:
-        raw = pd.infer_freq(df.index)
-    except (TypeError, ValueError):
-        return None
-
-    if raw is None:
-        return None
-
-    return _normalize_freq_code(raw)
-
-
 def resolve_periods(
     df: pd.DataFrame | pd.Series,
     transform: TransformName,
@@ -359,7 +286,7 @@ def resolve_periods(
 
     # 2. Explicit freq -> lookup
     if freq is not None:
-        normalized = _normalize_freq_code(freq)
+        normalized = normalize_freq_code(freq)
         mapping = FREQ_PERIODS_MAP.get(normalized)
         if mapping is None:
             raise TransformError(
@@ -369,7 +296,7 @@ def resolve_periods(
         return mapping[transform]
 
     # 3. Auto-detect
-    detected = _infer_freq(df)
+    detected = infer_freq(df)
     if detected is not None:
         mapping = FREQ_PERIODS_MAP.get(detected)
         if mapping is not None:

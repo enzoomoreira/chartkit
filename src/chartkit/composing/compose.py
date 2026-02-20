@@ -12,6 +12,7 @@ from .._internal import (
     FORMATTERS,
     apply_legend,
     create_figure,
+    draw_composed_debug_overlay,
     extract_plot_data,
     finalize_chart,
     normalize_highlight,
@@ -180,15 +181,15 @@ def compose(
     apply_legend(ax_left, ax_right, legend=legend)
 
     # 5. Collision resolution (unified cross-axis)
+    all_axes: list[plt.Axes] = [ax_left]
+    if ax_right is not None:
+        all_axes.append(ax_right)
+
     if collision:
         legend_artist = ax_left.get_legend()
         if legend_artist is not None:
             register_artist_obstacle(ax_left, legend_artist, filled=True)
-
-        all_axes: list[plt.Axes] = [ax_left]
-        if ax_right is not None:
-            all_axes.append(ax_right)
-        resolve_composed_collisions(all_axes, debug=debug)
+        resolve_composed_collisions(all_axes)
 
     # 6. Finalize (ticks, axis limits, labels, decorations)
     finalize_chart(
@@ -205,5 +206,9 @@ def compose(
         title=title,
         source=source,
     )
+
+    # 7. Debug overlay (after finalize so geometry is final)
+    if debug:
+        draw_composed_debug_overlay(all_axes)
 
     return PlotResult(fig=fig, ax=ax_left, plotter=_ComposePlotter(fig))

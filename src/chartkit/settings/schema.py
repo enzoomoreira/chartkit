@@ -338,6 +338,11 @@ class LabelsConfig(BaseModel):
     """Default label text for metrics and overlays.
 
     Format strings use ``{param}`` placeholders filled at render time.
+    Available placeholders for frequency-aware metrics:
+    ``{freq}`` -- short display label for the detected data frequency
+    (e.g. ``"M"`` for monthly, ``"T"`` for quarterly). Empty string when
+    frequency is unknown. Opt-in: add ``{freq}`` to the format string
+    in your TOML config (e.g. ``moving_average_format = "MM{window}{freq}"``).
     """
 
     ath: str = "ATH"

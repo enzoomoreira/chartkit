@@ -11,6 +11,7 @@ from ._internal import (
     FORMATTERS,
     apply_legend,
     create_figure,
+    draw_debug_overlay,
     extract_plot_data,
     finalize_chart,
     normalize_highlight,
@@ -139,7 +140,7 @@ class ChartingPlotter:
             legend_artist = ax.get_legend()
             if legend_artist is not None:
                 register_artist_obstacle(ax, legend_artist, filled=True)
-            resolve_collisions(ax, debug=debug)
+            resolve_collisions(ax)
 
         # 8. Finalize (ticks, axis limits, labels, decorations)
         finalize_chart(
@@ -156,6 +157,10 @@ class ChartingPlotter:
             title=title,
             source=source,
         )
+
+        # 9. Debug overlay (after finalize so geometry is final)
+        if debug:
+            draw_debug_overlay(ax)
 
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
 

@@ -116,18 +116,20 @@ final decorations:
 3. Y Formatter     FORMATTERS[units]()
 4. Plot Core       ChartRenderer dispatch + highlights (register_moveable)
 5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_passive) + band (register_passive)
-   Tick format     apply_tick_formatting(x_data) (data-aware date locator + formatter + phantom clipping)
-6. Tick rotation   apply_tick_rotation() (auto-detect or fixed angle)
-7. Legend           _apply_legend()
-8. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
-   Axis limits     set xlim/ylim (if provided, after collision)
-   Axis labels     set xlabel/ylabel (if provided)
-9. Decorations     add_title(ax), add_footer(fig)
+6. Legend          apply_legend()
+7. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
+8. Finalize        finalize_chart() (tick formatting, rotation, limits, labels, decorations)
+9. Debug overlay   if debug=True: draw_debug_overlay(ax) (after finalize so geometry is final)
 -> PlotResult
 ```
 
 For composed charts, `resolve_composed_collisions(axes)` replaces step 7,
-merging labels from all axes (left + right) into a single pool.
+merging labels from all axes (left + right) into a single pool. Similarly,
+`draw_composed_debug_overlay(axes)` replaces step 9.
+
+The debug overlay is a separate step from collision resolution. It runs after
+`finalize_chart()` so the overlay reflects the final axes geometry (after tick
+rotation, `subplots_adjust`, etc.).
 
 ### Unified Resolution Algorithm
 
@@ -212,6 +214,11 @@ df.chartkit.plot(
 # Composed chart
 compose(layer1, layer2, title="Debug", debug=True)
 ```
+
+Internally, `debug=True` triggers standalone functions (`draw_debug_overlay(ax)` for
+single charts, `draw_composed_debug_overlay(axes)` for composed charts) that run
+**after** `finalize_chart()`. This ensures the overlay reflects the final axes
+geometry, including tick rotation and layout adjustments.
 
 The overlay draws translucent shapes over the figure:
 

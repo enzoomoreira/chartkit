@@ -665,6 +665,8 @@ class ChartingConfig(BaseSettings):
 | `target_format` | `str` | `"Meta: {value}"` |
 | `std_band_format` | `str` | `"BB({window}, {num_std})"` |
 
+Frequency-aware metrics (`ma`, `std_band`) support a `{freq}` placeholder in their format strings. The placeholder is replaced with a short display label for the detected data frequency (e.g., `"M"` for monthly, `"T"` for quarterly, `"A"` for annual). When the frequency cannot be detected, `{freq}` resolves to an empty string. This is opt-in: add `{freq}` to the format string in your TOML config (e.g., `moving_average_format = "MM{window}{freq}"`).
+
 #### PathsConfig
 
 | Field | Type | Default |

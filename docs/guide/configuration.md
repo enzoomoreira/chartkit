@@ -114,9 +114,9 @@ babel_locale = "pt_BR"
 ath = "ATH"
 atl = "ATL"
 avg = "AVG"
-moving_average_format = "MM{window}"
+moving_average_format = "MM{window}"    # Supports {freq} placeholder for detected frequency
 target_format = "Meta: {value}"
-std_band_format = "BB({window}, {num_std})"
+std_band_format = "BB({window}, {num_std})"  # Supports {freq} placeholder for detected frequency
 
 [bands]
 alpha = 0.15
@@ -473,5 +473,5 @@ babel_locale = "en_US"
 [labels]
 ath = "All-Time High"
 atl = "All-Time Low"
-moving_average_format = "MA{window}"
+moving_average_format = "MA{window}{freq}"  # e.g. "MA12M" for 12-period monthly MA
 ```

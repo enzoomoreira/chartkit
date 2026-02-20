@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 
+from .._internal.frequency import infer_freq, normalize_freq_code
 from ..exceptions import TransformError
 from ..settings import get_config
 from ._validation import (
@@ -24,8 +25,6 @@ from ._validation import (
     _NormalizeParams,
     _RollingParams,
     _ZScoreParams,
-    _infer_freq,
-    _normalize_freq_code,
     coerce_input,
     resolve_periods,
     sanitize_result,
@@ -102,9 +101,9 @@ def variation(
     # Warn when horizon='month' does not mean "calendar month"
     if horizon == "month" and resolved == 1 and params.periods is None:
         detected = (
-            _infer_freq(data)
+            infer_freq(data)
             if params.freq is None
-            else _normalize_freq_code(params.freq)
+            else normalize_freq_code(params.freq)
         )
         if detected in ("QE", "QS", "YE", "YS"):
             logger.warning(

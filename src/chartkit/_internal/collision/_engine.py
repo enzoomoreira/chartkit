@@ -53,7 +53,7 @@ def _prepare_resolution(
 # -- Public entry points --
 
 
-def resolve_collisions(ax: Axes, *, debug: bool = False) -> None:
+def resolve_collisions(ax: Axes) -> None:
     """Resolve all registered collisions in a single axes."""
     moveables = _labels.get(ax, [])
     if not moveables:
@@ -75,20 +75,8 @@ def resolve_collisions(ax: Axes, *, debug: bool = False) -> None:
     _resolve_all(positionable, fixed, renderer, axes_bbox, collision)
     _add_connectors(positionable, original_positions, renderer, config)
 
-    if debug:
-        passive_obs = _collect_passive_obstacles(ax, renderer)
-        _draw_debug_overlay(
-            ax.figure,
-            positionable,
-            fixed,
-            renderer,
-            axes_bbox,
-            collision,
-            passive=passive_obs,
-        )
 
-
-def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) -> None:
+def resolve_composed_collisions(axes: Sequence[Axes]) -> None:
     """Resolve collisions across multiple axes simultaneously.
 
     Merges all moveable labels from every axes into a single pool
@@ -126,23 +114,77 @@ def resolve_composed_collisions(axes: Sequence[Axes], *, debug: bool = False) ->
     _resolve_all(positionable, fixed, renderer, axes_bbox, collision)
     _add_connectors(positionable, original_positions, renderer, config)
 
-    if debug:
-        passive_obs: list[_PathObstacle] = []
-        seen_passive: set[int] = set()
-        for ax in axes:
-            for obs in _collect_passive_obstacles(ax, renderer):
-                if obs._source_id not in seen_passive:
-                    passive_obs.append(obs)
-                    seen_passive.add(obs._source_id)
-        _draw_debug_overlay(
-            axes[0].figure,
-            positionable,
-            fixed,
-            renderer,
-            axes_bbox,
-            collision,
-            passive=passive_obs,
-        )
+
+def draw_debug_overlay(ax: Axes) -> None:
+    """Draw collision debug overlay with fresh geometry.
+
+    Call after ``finalize_chart()`` so the overlay reflects the final
+    axes position (after tick rotation / subplots_adjust).
+    """
+    moveables = _labels.get(ax, [])
+    if not moveables:
+        return
+
+    config = get_config()
+    fig = ax.figure
+    fig.draw_without_rendering()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+
+    positionable = [m for m in moveables if isinstance(m, PositionableArtist)]
+    if not positionable:
+        return
+
+    fixed = _collect_obstacles(ax, moveables, renderer)
+    passive = _collect_passive_obstacles(ax, renderer)
+    axes_bbox = ax.get_window_extent(renderer)
+
+    _draw_debug_overlay(
+        fig, positionable, fixed, renderer, axes_bbox, config.collision, passive=passive
+    )
+
+
+def draw_composed_debug_overlay(axes: Sequence[Axes]) -> None:
+    """Draw collision debug overlay for composed charts with fresh geometry.
+
+    Call after ``finalize_chart()`` so the overlay reflects the final
+    axes position (after tick rotation / subplots_adjust).
+    """
+    all_moveables: list[Artist] = []
+    for ax in axes:
+        all_moveables.extend(_labels.get(ax, []))
+    if not all_moveables:
+        return
+
+    config = get_config()
+    fig = axes[0].figure
+    fig.draw_without_rendering()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+
+    positionable = [m for m in all_moveables if isinstance(m, PositionableArtist)]
+    if not positionable:
+        return
+
+    seen_ids: set[int] = set()
+    fixed: list[_PathObstacle] = []
+    for ax in axes:
+        for obs in _collect_obstacles(ax, all_moveables, renderer):
+            if obs._source_id not in seen_ids:
+                fixed.append(obs)
+                seen_ids.add(obs._source_id)
+
+    passive: list[_PathObstacle] = []
+    seen_passive: set[int] = set()
+    for ax in axes:
+        for obs in _collect_passive_obstacles(ax, renderer):
+            if obs._source_id not in seen_passive:
+                passive.append(obs)
+                seen_passive.add(obs._source_id)
+
+    axes_bbox = axes[0].get_window_extent(renderer)
+
+    _draw_debug_overlay(
+        fig, positionable, fixed, renderer, axes_bbox, config.collision, passive=passive
+    )
 
 
 # -- Core resolution --

@@ -9,6 +9,7 @@ import pandas as pd
 from loguru import logger
 from matplotlib.axes import Axes
 
+from .._internal.frequency import infer_freq
 from ..exceptions import RegistryError, ValidationError
 
 
@@ -36,6 +37,7 @@ class _MetricEntry(NamedTuple):
     param_names: list[str]
     required_params: list[str]
     uses_series: bool
+    uses_freq: bool
 
 
 class MetricRegistry:
@@ -49,6 +51,7 @@ class MetricRegistry:
         name: str,
         param_names: list[str] | None = None,
         uses_series: bool = True,
+        uses_freq: bool = False,
     ) -> Callable[[Callable], Callable]:
         """Decorator to register a metric.
 
@@ -58,6 +61,8 @@ class MetricRegistry:
                 E.g.: ``['window']`` makes ``'ma:12'`` become ``{'window': 12}``.
             uses_series: Whether the metric uses the ``series`` parameter to
                 select a column in multi-series DataFrames.
+            uses_freq: Whether the metric receives ``detected_freq`` from
+                automatic frequency detection.
         """
         names = param_names or []
 
@@ -69,7 +74,9 @@ class MetricRegistry:
                 if p in sig.parameters
                 and sig.parameters[p].default is inspect.Parameter.empty
             ]
-            cls._metrics[name] = _MetricEntry(func, names, required, uses_series)
+            cls._metrics[name] = _MetricEntry(
+                func, names, required, uses_series, uses_freq
+            )
             return func
 
         return decorator
@@ -158,14 +165,22 @@ class MetricRegistry:
         """
         if isinstance(specs, str):
             specs = [specs]
-        for spec in specs:
-            parsed = cls.parse(spec)
+
+        parsed_specs = [cls.parse(s) for s in specs]
+
+        detected_freq: str | None = None
+        if any(cls._metrics[p.name].uses_freq for p in parsed_specs):
+            detected_freq = infer_freq(x_data)
+
+        for parsed in parsed_specs:
             entry = cls._metrics[parsed.name]
             kwargs = parsed.params.copy()
             if parsed.series is not None and entry.uses_series:
                 kwargs["series"] = parsed.series
             if parsed.label is not None:
                 kwargs["label"] = parsed.label
+            if entry.uses_freq:
+                kwargs["detected_freq"] = detected_freq
             entry.func(ax, x_data, y_data, **kwargs)
 
     @classmethod

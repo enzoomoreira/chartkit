@@ -1,4 +1,4 @@
-"""Tests for frequency resolution: _normalize_freq_code, _infer_freq, resolve_periods.
+"""Tests for frequency resolution: normalize_freq_code, infer_freq, resolve_periods.
 
 Consolidates test_resolve_periods.py (26 tests -> 12) + test_validate_params.py.
 Uses parametrize for freq alias mappings.
@@ -9,6 +9,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
+from chartkit._internal.frequency import infer_freq, normalize_freq_code
 from chartkit.exceptions import TransformError
 from chartkit.transforms._validation import (
     _DiffParams,
@@ -16,15 +17,13 @@ from chartkit.transforms._validation import (
     _NormalizeParams,
     _RollingParams,
     _ZScoreParams,
-    _infer_freq,
-    _normalize_freq_code,
     resolve_periods,
     validate_params,
 )
 
 
 # ---------------------------------------------------------------------------
-# _normalize_freq_code
+# normalize_freq_code
 # ---------------------------------------------------------------------------
 
 
@@ -61,7 +60,7 @@ class TestNormalizeFreqCode:
         ],
     )
     def test_alias_mapping(self, raw: str, expected: str) -> None:
-        assert _normalize_freq_code(raw) == expected
+        assert normalize_freq_code(raw) == expected
 
     @pytest.mark.parametrize(
         "raw, expected",
@@ -74,44 +73,44 @@ class TestNormalizeFreqCode:
         ids=["W-SUN", "QE-DEC", "BYE-DEC", "YS-JAN"],
     )
     def test_anchored_prefix_stripping(self, raw: str, expected: str) -> None:
-        assert _normalize_freq_code(raw) == expected
+        assert normalize_freq_code(raw) == expected
 
     def test_already_normalized_passthrough(self) -> None:
-        assert _normalize_freq_code("ME") == "ME"
+        assert normalize_freq_code("ME") == "ME"
 
     def test_unknown_passthrough(self) -> None:
-        assert _normalize_freq_code("UNKNOWN") == "UNKNOWN"
+        assert normalize_freq_code("UNKNOWN") == "UNKNOWN"
 
 
 # ---------------------------------------------------------------------------
-# _infer_freq
+# infer_freq
 # ---------------------------------------------------------------------------
 
 
 class TestInferFreq:
     def test_monthly_data(self, monthly_index: pd.DatetimeIndex) -> None:
         df = pd.DataFrame({"val": range(len(monthly_index))}, index=monthly_index)
-        result = _infer_freq(df)
+        result = infer_freq(df)
         assert result in ("ME", "MS")
 
     def test_daily_business_data(self, daily_index: pd.DatetimeIndex) -> None:
         df = pd.DataFrame({"val": range(len(daily_index))}, index=daily_index)
-        result = _infer_freq(df)
+        result = infer_freq(df)
         assert result in ("B", "D")
 
     def test_too_short_returns_none(self) -> None:
         idx = pd.date_range("2023-01-01", periods=2, freq="ME")
         df = pd.DataFrame({"val": [1, 2]}, index=idx)
-        assert _infer_freq(df) is None
+        assert infer_freq(df) is None
 
     def test_non_datetime_returns_none(self) -> None:
         df = pd.DataFrame({"val": [1, 2, 3, 4]})
-        assert _infer_freq(df) is None
+        assert infer_freq(df) is None
 
     def test_irregular_returns_none(self) -> None:
         idx = pd.DatetimeIndex(["2023-01-01", "2023-02-15", "2023-05-20", "2023-11-01"])
         df = pd.DataFrame({"val": [1, 2, 3, 4]}, index=idx)
-        assert _infer_freq(df) is None
+        assert infer_freq(df) is None
 
 
 # ---------------------------------------------------------------------------

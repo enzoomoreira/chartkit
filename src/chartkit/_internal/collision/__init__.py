@@ -7,6 +7,8 @@ Path.intersects_bbox() (Cython) for precise detection.
 
 from ._engine import (
     _pos_to_numeric,
+    draw_composed_debug_overlay,
+    draw_debug_overlay,
     resolve_collisions,
     resolve_composed_collisions,
 )
@@ -29,6 +31,8 @@ __all__ = [
     "_labels",
     "_passive",
     "_pos_to_numeric",
+    "draw_composed_debug_overlay",
+    "draw_debug_overlay",
     "register_artist_obstacle",
     "register_moveable",
     "register_passive",

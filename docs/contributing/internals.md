@@ -269,6 +269,7 @@ logger.debug(f"find_project_root: found {current}")
 | `plot_validation.py` | Axis limit coercion (string -> float/datetime) | - |
 | `tick_formatting.py` | Locator type and freq, data-aligned tick count, date format applied | - |
 | `collision/` | Collision iteration counts, label movements | - |
+| `frequency.py` | Inferred frequency (raw and normalized) | - |
 | `temporal.py` | Transform resolution (freq, periods) | - |
 | `_validation.py` | Auto-detected frequency, non-numeric columns filtered | - |
 | `discovery.py` | Cache hits/misses, paths found | - |

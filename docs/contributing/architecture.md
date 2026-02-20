@@ -71,6 +71,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Applies legend via `apply_legend()`
    - Resolves label collisions via `resolve_collisions(ax)` (when `collision=True`)
    - Finalizes via `finalize_chart()` (tick formatting, tick rotation, axis limits, labels, decorations)
+   - Draws debug overlay via `draw_debug_overlay(ax)` (when `debug=True`, after finalize)
 
 6. **compose()**: Orchestrator for multi-layer charts:
    - Creates figure via `create_figure()` with optional twinx for right axis
@@ -78,6 +79,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Applies legend via `apply_legend()` (consolidates handles from both axes)
    - Resolves cross-axis collisions via `resolve_composed_collisions(axes)`
    - Finalizes via `finalize_chart()` (shared pipeline)
+   - Draws debug overlay via `draw_composed_debug_overlay(axes)` (when `debug=True`, after finalize)
    - Returns `PlotResult` with `_ComposePlotter` (satisfies `Saveable` Protocol)
 
 7. **PlotResult**: Encapsulated result with:
@@ -94,20 +96,15 @@ flowchart TD
     B --> C["ChartingAccessor.plot()"]
     C --> D["ChartingPlotter.plot()"]
 
-    D --> D1["1. get_config()"]
-    D1 --> D2["2. theme.apply()"]
-    D2 --> D3["3. extract_plot_data()"]
-    D3 --> D4["4. FORMATTERS[units]()"]
-    D4 --> D5["5. ChartRenderer.render(kind)"]
-    D5 --> D6["6. MetricRegistry.apply()"]
-    D6 --> D6c["7. apply_tick_formatting(x_data)"]
-    D6c --> D6d["8. apply_tick_rotation()"]
-    D6d --> D6b["9. apply_legend()"]
-    D6b --> D7["10. resolve_collisions() (if collision=True)"]
-    D7 --> D7a["11. set xlim/ylim (coerce_axis_limits)"]
-    D7a --> D7b["12. set xlabel/ylabel (if provided)"]
-    D7b --> D8["13. add_title()"]
-    D8 --> D9["14. add_footer()"]
+    D --> D1["1. create_figure() (theme + fig/ax + grid)"]
+    D1 --> D3["2. extract_plot_data()"]
+    D3 --> D4["3. FORMATTERS[units]()"]
+    D4 --> D5["4. ChartRenderer.render(kind)"]
+    D5 --> D6["5. MetricRegistry.apply()"]
+    D6 --> D6b["6. apply_legend()"]
+    D6b --> D7["7. resolve_collisions() (if collision=True)"]
+    D7 --> D8["8. finalize_chart() (ticks, rotation, limits, labels, decorations)"]
+    D8 --> D9["9. draw_debug_overlay() (if debug=True)"]
     D9 --> E["PlotResult"]
 ```
 
@@ -185,15 +182,16 @@ src/chartkit/
 │   └── accessor.py       # TransformAccessor for chaining
 │
 └── _internal/            # Private utilities (shared between engine and compose)
-    ├── __init__.py       # Facade: collision, extraction, formatting, highlight, pipeline, saving, validation
+    ├── __init__.py       # Facade: collision, extraction, formatting, frequency, highlight, pipeline, saving, validation
     ├── collision/        # Collision engine (modularized package)
-    │   ├── __init__.py   # Re-exports public API (register_*, resolve_*)
+    │   ├── __init__.py   # Re-exports public API (register_*, resolve_*, draw_*_debug_overlay)
     │   ├── _registry.py  # Global state and artist registration (WeakKeyDictionary)
     │   ├── _obstacles.py # _PathObstacle and obstacle collection
-    │   ├── _engine.py    # Collision resolution algorithm
+    │   ├── _engine.py    # Collision resolution algorithm + standalone debug overlay entry points
     │   └── _debug.py     # Debug overlay rendering
     ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series()
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
+    ├── frequency.py      # Frequency detection and display (FREQ_ALIASES, infer_freq, normalize_freq_code, freq_display_label, FREQ_DISPLAY_MAP)
     ├── highlight.py      # normalize_highlight()
     ├── pipeline.py       # Shared pipeline steps: create_figure(), apply_legend(), finalize_chart()
     ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat, TickFreq, AxisLimits
@@ -260,15 +258,22 @@ tests/                    # Test suite (357 tests)
 
 | Module | Responsibility |
 |--------|---------------|
-| `registry.py` | MetricRegistry for registering and applying metrics |
-| `builtin.py` | Registers standard metrics as overlay wrappers (ath, atl, avg, ma, hline, band, target, std_band, vband) |
+| `registry.py` | MetricRegistry for registering and applying metrics; supports `uses_freq` for frequency-aware metrics |
+| `builtin.py` | Registers standard metrics as overlay wrappers (ath, atl, avg, ma, hline, band, target, std_band, vband); `ma` and `std_band` are frequency-aware |
 
 ### Transforms
 
 | Module | Responsibility |
 |--------|---------------|
 | `temporal.py` | Pure transformation functions (variation, accum, drawdown, zscore, etc.) |
+| `_validation.py` | Validation, coercion, and frequency-to-periods resolution (imports `infer_freq`/`normalize_freq_code` from `_internal/frequency.py`) |
 | `accessor.py` | TransformAccessor for transform chaining |
+
+### Internal Utilities
+
+| Module | Responsibility |
+|--------|---------------|
+| `_internal/frequency.py` | Shared frequency detection and display: `FREQ_ALIASES`, `normalize_freq_code()`, `infer_freq()` (accepts DataFrame, Series, or Index), `FREQ_DISPLAY_MAP`, `freq_display_label()` |
 
 ---
 

@@ -1,5 +1,22 @@
 # Project Changelog
 
+## [2026-02-20 02:13]
+### Added
+- **`_internal/frequency.py`**: Novo modulo compartilhado de deteccao e display de frequencia -- centraliza `FREQ_ALIASES`, `normalize_freq_code()`, `infer_freq()` (antes em `transforms/_validation.py`) e adiciona `FREQ_DISPLAY_MAP` com labels curtos pt-BR (D, DU, S, M, T, A) e `freq_display_label()` para conversao
+- **Metricas frequency-aware**: `MetricRegistry.register()` aceita `uses_freq=True` -- metricas marcadas recebem `detected_freq` automaticamente via `MetricRegistry.apply()`, que infere a frequencia uma unica vez e propaga para todas as metricas que precisam
+- **Placeholder `{freq}` em labels de metricas**: `moving_average_format` e `std_band_format` agora suportam `{freq}` para exibir a frequencia detectada dos dados (ex: "MM12M" para media movel de 12 meses) -- opt-in via config TOML
+- **`draw_debug_overlay()` e `draw_composed_debug_overlay()`**: Funcoes standalone para overlay de debug com geometria atualizada -- chamadas apos `finalize_chart()` para refletir posicao final dos axes (tick rotation, subplots_adjust)
+
+### Changed
+- **Debug overlay desacoplado da resolucao de colisao**: `resolve_collisions()` e `resolve_composed_collisions()` nao recebem mais `debug` -- overlay agora e step separado no pipeline (step 9 no engine, step 7 no compose), garantindo que geometria reflete o layout final
+- **`infer_freq()` aceita `pd.Index` diretamente**: Alem de DataFrame e Series, simplificando uso no MetricRegistry onde x_data pode ser Index
+- **`ma` e `std_band` marcados como `uses_freq=True`**: Labels de media movel e banda de desvio padrao exibem frequencia quando disponivel
+
+### Removed
+- **`_infer_freq()` e `_normalize_freq_code()` de `transforms/_validation.py`**: Movidos para `_internal/frequency.py` como `infer_freq()` e `normalize_freq_code()` (API publica do modulo interno)
+- **`_ANCHORED_PREFIXES` e `FREQ_ALIASES` de `transforms/_validation.py`**: Movidos para `_internal/frequency.py`
+- **Parametro `debug` de `resolve_collisions()` e `resolve_composed_collisions()`**: Substituido por funcoes standalone de overlay
+
 ## [2026-02-20 01:07]
 ### Added
 - **Debug logging no pipeline interno**: Instrumentacao completa com `loguru.logger.debug()` nos pontos-chave do fluxo de plotagem -- `extract_plot_data` (x/y/rows), `create_figure` (figsize/grid), `apply_legend` (handles/skip), `finalize_chart` (steps aplicados), `coerce_axis_limits` (conversoes), `apply_tick_formatting` (locator type/freq/format)

@@ -44,6 +44,7 @@ df.chartkit.plot(metrics=['my_metric:10.0'])
     name='metric_name',                  # Name used in the spec string
     param_names=['param1', 'param2'],    # Names of positional parameters
     uses_series=True,                    # Whether it receives 'series' for multi-column DataFrames
+    uses_freq=False,                     # Whether it receives 'detected_freq' from auto-detection
 )
 def function(ax, x_data, y_data, param1, param2, **kwargs):
     ...
@@ -64,6 +65,13 @@ def function(ax, x_data, y_data, param1, param2, **kwargs):
 - Default `True`: the metric receives `series=col` via kwargs when the user
   uses `@` syntax (e.g., `'ath@revenue'`)
 - Use `False` for metrics that don't depend on data (e.g., `hline`, `band`)
+
+**`uses_freq`:**
+- Default `False`: the metric does not receive frequency information
+- When `True`: `MetricRegistry.apply()` infers the data frequency once (via
+  `infer_freq()`) and passes `detected_freq=<str|None>` to the function. This
+  enables frequency-aware labels (e.g., `{freq}` placeholder in label format
+  strings). Built-in examples: `ma` and `std_band`
 
 ### Complex Metric Examples
 
