@@ -1,7 +1,7 @@
 import pandas as pd
 from matplotlib.axes import Axes
 
-from .._internal.collision import register_passive
+from .._internal.collision import register_artist_obstacle, register_passive
 from .._internal.extraction import resolve_series
 from .._internal.frequency import freq_display_label
 from ..exceptions import ValidationError
@@ -83,4 +83,4 @@ def add_std_band(
             linestyle=config.lines.reference_style,
             zorder=config.layout.zorder.moving_average,
         )
-        register_passive(ax, lines[0])
+        register_artist_obstacle(ax, lines[0], filled=False)

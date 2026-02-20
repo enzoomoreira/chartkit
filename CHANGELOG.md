@@ -1,5 +1,15 @@
 # Project Changelog
 
+## [2026-02-20 11:47]
+### Changed
+- **Collision: unified artist dispatch via `_classify_artist()`**: Logica duplicada de conversao Artist->_PathObstacle em `_collect_obstacles()` e `_collect_passive_obstacles()` extraida para funcao unica com dispatch estrutural (Collection > Patch > Line > fallback extent)
+- **Debug overlay diferencia passive lines de passive shapes**: Obstaculos passivos nao-preenchidos (linhas) agora renderizam com estilo de linha (face transparente, linewidth fino) em vez de estilo shape -- facecolor simplificado para depender apenas de `_filled`
+- **Auto-rotation escala para 90 graus quando angulo configurado nao resolve overlap**: `apply_tick_rotation()` com `"auto"` agora aplica o angulo configurado primeiro e, se sobreposicao persistir, escala para 90 graus. Logica de rotacao extraida para helper `_apply_angle()`
+- **Moving average e std_band center line promovidos a obstaculos ativos**: `register_passive()` substituido por `register_artist_obstacle(filled=False)` -- linhas de media movel e centro da banda de desvio padrao agora causam repulsao real no collision engine, nao apenas aparecem no debug overlay
+
+### Added
+- **Area fills registrados como obstaculos passivos**: `fill_between` PolyCollections do area enhancer agora sao registrados via `register_passive()`, tornando preenchimentos de area visiveis no debug overlay do collision engine
+
 ## [2026-02-20 10:44]
 ### Changed
 - **Collision engine: cost-based candidate selection**: Substituido o sistema greedy (primeiro candidato livre vence) por funcao de custo continua com 3 componentes ponderados -- distancia do anchor (w=1.0), preferencia de eixo (w=3.0) e proximidade de borda (w=5.0). O solver agora avalia todos os candidatos validos e escolhe o de menor custo

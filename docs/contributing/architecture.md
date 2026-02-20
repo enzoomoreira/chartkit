@@ -186,7 +186,7 @@ src/chartkit/
     ├── collision/        # Collision engine (modularized package)
     │   ├── __init__.py   # Re-exports public API (register_*, resolve_*, draw_*_debug_overlay)
     │   ├── _registry.py  # Global state and artist registration (WeakKeyDictionary)
-    │   ├── _obstacles.py # _PathObstacle and obstacle collection
+    │   ├── _obstacles.py # _PathObstacle, _classify_artist(), and obstacle collection
     │   ├── _engine.py    # Collision resolution algorithm + standalone debug overlay entry points
     │   └── _debug.py     # Debug overlay rendering
     ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series()

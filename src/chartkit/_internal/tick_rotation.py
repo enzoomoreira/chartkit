@@ -59,37 +59,8 @@ def _adjust_bottom_margin(fig: plt.Figure, ax: Axes) -> None:
     fig.subplots_adjust(bottom=current_bottom + (clearance - min_y))
 
 
-def apply_tick_rotation(
-    fig: plt.Figure,
-    ax: Axes,
-    *,
-    tick_rotation: int | Literal["auto"] | None = None,
-) -> None:
-    """Apply rotation to X-axis tick labels.
-
-    Resolution order: ``tick_rotation`` parameter > ``config.ticks.rotation``.
-    When ``"auto"``, rotation is applied only if adjacent labels overlap.
-    After rotation, the bottom margin is adjusted so labels do not overlap
-    the footer.
-    """
-    config = get_config()
-    effective = tick_rotation if tick_rotation is not None else config.ticks.rotation
-
-    if effective == "auto":
-        fig.canvas.draw()
-        if not _has_overlap(fig, ax):
-            return
-        angle = config.ticks.auto_rotation_angle
-    else:
-        if not isinstance(effective, int):
-            raise ValidationError(
-                f"tick_rotation must be an int or 'auto', got {type(effective).__name__}: {effective!r}"
-            )
-        angle = effective
-
-    if angle == 0:
-        return
-
+def _apply_angle(ax: Axes, angle: int) -> None:
+    """Set rotation, horizontal alignment and rotation mode on X tick labels."""
     if abs(angle) == 90:
         ha, rotation_mode = "center", "default"
     elif angle > 0:
@@ -103,5 +74,49 @@ def apply_tick_rotation(
         ha=ha,
         rotation_mode=rotation_mode,
     )
+
+
+def apply_tick_rotation(
+    fig: plt.Figure,
+    ax: Axes,
+    *,
+    tick_rotation: int | Literal["auto"] | None = None,
+) -> None:
+    """Apply rotation to X-axis tick labels.
+
+    Resolution order: ``tick_rotation`` parameter > ``config.ticks.rotation``.
+    When ``"auto"``, rotation is applied only if adjacent labels overlap.
+    If the configured angle is insufficient, escalates to 90 degrees.
+    After rotation, the bottom margin is adjusted so labels do not overlap
+    the footer.
+    """
+    config = get_config()
+    effective = tick_rotation if tick_rotation is not None else config.ticks.rotation
+
+    if effective == "auto":
+        fig.canvas.draw()
+        if not _has_overlap(fig, ax):
+            return
+        angle = config.ticks.auto_rotation_angle
+
+        _apply_angle(ax, angle)
+
+        if angle != 90:
+            fig.canvas.draw()
+            if _has_overlap(fig, ax):
+                angle = 90
+                _apply_angle(ax, angle)
+    else:
+        if not isinstance(effective, int):
+            raise ValidationError(
+                f"tick_rotation must be an int or 'auto', got {type(effective).__name__}: {effective!r}"
+            )
+        angle = effective
+
+    if angle == 0:
+        return
+
+    if effective != "auto":
+        _apply_angle(ax, angle)
 
     _adjust_bottom_margin(fig, ax)

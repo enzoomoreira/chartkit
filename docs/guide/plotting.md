@@ -71,7 +71,7 @@ If `y` is not specified, all numeric columns will be plotted.
 | `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `ylim` | `AxisLimits \| None` | `None` | Y-axis limits as `(min, max)`. Accepts strings (`"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
-| `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
+| `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
 | `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config. See [Smart Tick Alignment](#smart-tick-alignment) |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |

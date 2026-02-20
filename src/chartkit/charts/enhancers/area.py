@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import pandas as pd
 from matplotlib.axes import Axes
 
+from ..._internal.collision import register_passive
 from ...overlays import add_highlight
 from .._helpers import RenderContext, prepare_render_context, resolve_color
 from ..renderer import ChartRenderer
@@ -57,7 +58,7 @@ def _fill_between_pair(
     col1, col2 = ctx.y_data.columns
     c = resolve_color(ctx, 0)
 
-    ax.fill_between(
+    poly = ax.fill_between(
         x,
         ctx.y_data[col1],
         ctx.y_data[col2],
@@ -66,6 +67,7 @@ def _fill_between_pair(
         zorder=ctx.zorder,
         **kwargs,
     )
+    register_passive(ax, poly)
     lw = ctx.config.lines.main_width
     ax.plot(
         x,
@@ -97,7 +99,7 @@ def _fill_from_zero(
     """Fill from zero to y for each column independently."""
     for i, col in enumerate(ctx.y_data.columns):
         c = resolve_color(ctx, i)
-        ax.fill_between(
+        poly = ax.fill_between(
             x,
             0,
             ctx.y_data[col],
@@ -107,6 +109,7 @@ def _fill_from_zero(
             zorder=ctx.zorder,
             **kwargs,
         )
+        register_passive(ax, poly)
         ax.plot(
             x,
             ctx.y_data[col],

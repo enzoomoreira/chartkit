@@ -185,6 +185,41 @@ def _path_from_extent(
     )
 
 
+# -- Unified type dispatch --
+
+
+def _classify_artist(
+    ax: Axes,
+    artist: Artist,
+    renderer: RendererBase,
+    *,
+    filled: bool = False,
+    colocate: bool = False,
+    debug_color: str | None = None,
+) -> _PathObstacle:
+    """Convert any Artist to a ``_PathObstacle`` via structural type detection.
+
+    Dispatch order (first match wins):
+    1. Collection (``get_paths`` + ``get_offsets``) -> path-per-element
+    2. Patch (``get_patch_transform``) -> single transformed path
+    3. Line (``get_path`` when not filled) -> display-space polyline
+    4. Fallback -> bounding-box rectangle
+    """
+    if hasattr(artist, "get_paths") and hasattr(artist, "get_offsets"):
+        obs = _path_from_collection(ax, artist, renderer)
+    elif hasattr(artist, "get_patch_transform"):
+        obs = _path_from_patch(ax, artist)
+    elif not filled and hasattr(artist, "get_path"):
+        obs = _path_from_line(ax, artist)
+    else:
+        obs = _path_from_extent(ax, artist, renderer)
+
+    obs._colocate = colocate
+    if debug_color is not None:
+        obs._debug_color = debug_color
+    return obs
+
+
 # -- Obstacle collection --
 
 
@@ -226,7 +261,7 @@ def _collect_obstacles(
                 if _should_include(label):
                     obstacles.append(_path_from_extent(sibling, label, renderer))
 
-    # 4. Explicitly registered artist obstacles -> dispatch by type
+    # 4. Explicitly registered artist obstacles -> unified dispatch
     for sibling in sibling_axes:
         for artist, filled, colocate in _artist_obstacles.get(sibling, []):
             if not artist.get_visible():
@@ -235,16 +270,11 @@ def _collect_obstacles(
             if aid in seen or aid in passive_ids:
                 continue
             seen.add(aid)
-            if not filled and hasattr(artist, "get_path"):
-                obs = _path_from_line(sibling, artist)
-                obs._colocate = colocate
-                obstacles.append(obs)
-            elif hasattr(artist, "get_paths") and hasattr(artist, "get_offsets"):
-                obstacles.append(_path_from_collection(sibling, artist, renderer))
-            elif hasattr(artist, "get_patch_transform"):
-                obstacles.append(_path_from_patch(sibling, artist))
-            else:
-                obstacles.append(_path_from_extent(sibling, artist, renderer))
+            obstacles.append(
+                _classify_artist(
+                    sibling, artist, renderer, filled=filled, colocate=colocate
+                )
+            )
 
     return obstacles
 
@@ -261,13 +291,7 @@ def _collect_passive_obstacles(ax: Axes, renderer: RendererBase) -> list[_PathOb
             if aid in seen or not artist.get_visible():
                 continue
             seen.add(aid)
-            if hasattr(artist, "get_paths") and hasattr(artist, "get_offsets"):
-                obs = _path_from_collection(sibling, artist, renderer)
-            elif hasattr(artist, "get_patch_transform"):
-                obs = _path_from_patch(sibling, artist)
-            else:
-                obs = _path_from_extent(sibling, artist, renderer)
-            obs._debug_color = "gray"
+            obs = _classify_artist(sibling, artist, renderer, debug_color="gray")
             obstacles.append(obs)
 
     return obstacles

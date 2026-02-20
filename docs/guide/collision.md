@@ -114,8 +114,8 @@ final decorations:
 1. Style           theme.apply()
 2. Data            extract_plot_data()
 3. Y Formatter     FORMATTERS[units]()
-4. Plot Core       ChartRenderer dispatch + highlights (register_moveable)
-5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_passive) + band (register_passive)
+4. Plot Core       ChartRenderer dispatch + highlights (register_moveable) + area fills (register_passive)
+5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_artist_obstacle) + band (register_passive)
 6. Legend          apply_legend()
 7. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
 8. Finalize        finalize_chart() (tick formatting, rotation, limits, labels, decorations)
@@ -187,7 +187,7 @@ The engine combines multiple obstacle sources:
 1. **Auto-detected patches**: `ax.patches` on all sibling axes sharing the X-axis (bars, boxes, etc.) -> `_path_from_patch()`
 2. **Auto-detected collections**: `ax.collections` on siblings (scatter, violin, fill_between) -> `_path_from_collection()`
 3. **Cross-axis labels**: labels from twinx sibling axes act as obstacles -> `_path_from_extent()`
-4. **Registered artist obstacles**: elements registered via `register_artist_obstacle()` (reference lines, data lines, legend) -> dispatched by type
+4. **Registered artist obstacles**: elements registered via `register_artist_obstacle()` (reference lines, data lines, moving averages, legend) -> unified structural dispatch via `_classify_artist()`
 
 All obstacles are converted to `_PathObstacle` instances with display-space `Path` geometry.
 Collision detection uses matplotlib's Cython-based `Path.intersects_bbox()` for precise
@@ -234,7 +234,7 @@ The overlay draws translucent shapes over the figure:
 | **Red** | Fixed obstacles (patches, cross-axis labels) with padding |
 | **Orange** | Line path obstacles (continuous curves) |
 | **Purple** | Collection obstacles (scatter, violin, fill_between) |
-| **Gray (dashed)** | Passive obstacles (bands, stackplot areas) |
+| **Gray (dashed)** | Passive obstacles -- filled shapes (bands, area fills, stackplot) render with shaded area; unfilled lines render as path outlines |
 | **Blue** | Moveable labels with padding |
 | **Green** | Axes bounding box |
 

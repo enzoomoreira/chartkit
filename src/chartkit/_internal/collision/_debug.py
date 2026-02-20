@@ -85,10 +85,14 @@ def _draw_debug_overlay(
                 else:
                     draw_path = path
                 fig_verts = inv.transform(draw_path.vertices)
-                if is_passive:
+                if is_passive and obs._filled:
                     face_alpha = _PASSIVE_FACE_ALPHA
                     edge_alpha = _PASSIVE_EDGE_ALPHA
                     lw = _SHAPE_LW
+                elif is_passive:
+                    face_alpha = _LINE_FACE_ALPHA
+                    edge_alpha = _PASSIVE_EDGE_ALPHA
+                    lw = _LINE_LW
                 elif obs._filled:
                     face_alpha = _FILLED_FACE_ALPHA
                     edge_alpha = _FILLED_EDGE_ALPHA
@@ -100,9 +104,7 @@ def _draw_debug_overlay(
                 fig.patches.append(
                     mpatches.PathPatch(
                         MplPath(fig_verts, draw_path.codes),
-                        facecolor=obs._debug_color
-                        if (obs._filled or is_passive)
-                        else "none",
+                        facecolor=obs._debug_color if obs._filled else "none",
                         edgecolor=obs._debug_color,
                         linewidth=lw,
                         alpha=max(face_alpha, edge_alpha),
