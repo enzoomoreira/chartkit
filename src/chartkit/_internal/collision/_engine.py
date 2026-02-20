@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Sequence
+from itertools import chain
 from math import sqrt
 
 import matplotlib.dates as mdates
@@ -187,6 +188,27 @@ def draw_composed_debug_overlay(axes: Sequence[Axes]) -> None:
     )
 
 
+# -- Cost function weights (not user-configurable) --
+
+_WEIGHT_DISTANCE = 1.0
+_WEIGHT_AXIS = 3.0
+_WEIGHT_EDGE = 5.0
+
+# 8 cardinal directions: N, NE, E, SE, S, SW, W, NW
+_DIRECTIONS: list[tuple[float, float]] = [
+    (0, 1),
+    (1, 1),
+    (1, 0),
+    (1, -1),
+    (0, -1),
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+]
+
+_SQRT2 = sqrt(2)
+
+
 # -- Core resolution --
 
 
@@ -200,6 +222,12 @@ def _resolve_all(
     """Resolve all collisions (obstacles + inter-label) in a unified pass."""
     obstacle_pad = collision.obstacle_padding_px
     label_pad = collision.label_padding_px
+
+    # Snapshot anchor bboxes before any movement
+    anchor_bboxes: dict[int, Bbox] = {}
+    for label in moveables:
+        raw = label.get_window_extent(renderer)
+        anchor_bboxes[id(label)] = Bbox.from_extents(raw.x0, raw.y0, raw.x1, raw.y1)
 
     for _ in range(collision.max_iterations):
         any_moved = False
@@ -251,6 +279,7 @@ def _resolve_all(
 
             result = _find_free_position(
                 raw_bbox,
+                anchor_bboxes[id(label)],
                 colliding,
                 label_bboxes,
                 active_obs,
@@ -259,6 +288,8 @@ def _resolve_all(
                 axes_bbox,
                 label_pad,
                 renderer,
+                collision.candidate_distances,
+                collision.edge_margin_factor,
             )
             if result is not None:
                 dx, dy = result
@@ -285,26 +316,9 @@ def _position_is_free(
     )
 
 
-def _axis_priority(c: tuple[float, float, float], movement: str) -> tuple[int, float]:
-    """Unified sort key that combines axis preference and distance."""
-    dx, dy, dist = c
-    is_y_only = dx == 0
-    is_x_only = dy == 0
-
-    if movement == "y":
-        return (0 if is_y_only else 1, dist)
-    if movement == "x":
-        return (0 if is_x_only else 1, dist)
-    # "both" -- prefer Y-only, then X-only, then diagonal
-    if is_y_only:
-        return (0, dist)
-    if is_x_only:
-        return (1, dist)
-    return (2, dist)
-
-
 def _find_free_position(
     label_bbox: Bbox,
+    anchor_bbox: Bbox,
     colliding_bboxes: list[Bbox],
     label_bboxes: list[Bbox],
     obstacles: list[_PathObstacle],
@@ -313,62 +327,124 @@ def _find_free_position(
     axes_bbox: Bbox,
     label_pad: float,
     renderer: RendererBase,
+    candidate_distances: tuple[float, ...],
+    edge_margin_factor: float,
 ) -> tuple[float, float] | None:
-    """Find the smallest displacement that frees label_bbox from all obstacles.
+    """Find the lowest-cost displacement that frees label_bbox from collisions.
 
-    Generates candidate displacements from each colliding obstacle, validates
-    them against all obstacles, and returns the best option.
-    Falls back to diagonal displacement if no single-axis solution exists.
+    Generates proactive candidates in 8 cardinal directions at multiple
+    distances, plus reactive snap-to-edge candidates per colliding obstacle.
+    Scores each valid candidate with a continuous cost function and returns
+    the one with the lowest cost.
     """
-    candidates: list[tuple[float, float, float]] = []
+    edge_margin = edge_margin_factor * label_bbox.height
+
+    proactive = _generate_proactive_candidates(
+        anchor_bbox, label_bbox, axes_bbox, candidate_distances
+    )
     clearance = label_pad + 1.0
+    reactive: list[tuple[float, float, float]] = []
     for obs in colliding_bboxes:
-        candidates.extend(
-            _compute_displacement_options(label_bbox, obs, clearance, axes_bbox)
+        reactive.extend(
+            _generate_reactive_candidates(label_bbox, obs, clearance, axes_bbox)
         )
 
-    if not candidates:
-        return None
+    logger.debug("Candidates: {} proactive, {} reactive", len(proactive), len(reactive))
 
-    candidates.sort(key=lambda c: _axis_priority(c, movement))
+    best_cost = float("inf")
+    best_displacement: tuple[float, float] | None = None
+    valid_count = 0
 
-    for dx, dy, _ in candidates:
+    total = len(proactive) + len(reactive)
+    for dx, dy, _ in chain(proactive, reactive):
         shifted_padded = _pad_bbox(_shift_bbox(label_bbox, dx, dy), label_pad)
-        if _position_is_free(
+        if not _position_is_free(
             shifted_padded, label_bboxes, obstacles, obstacle_pad, renderer
         ):
-            return (dx, dy)
+            continue
 
-    # Fallback: diagonal combination of best Y + best X
-    y_opts = [(dx, dy, d) for dx, dy, d in candidates if dx == 0]
-    x_opts = [(dx, dy, d) for dx, dy, d in candidates if dy == 0]
-    if y_opts and x_opts:
-        for yc in y_opts:
-            for xc in x_opts:
-                dx_combo = xc[0]
-                dy_combo = yc[1]
-                shifted_padded = _pad_bbox(
-                    _shift_bbox(label_bbox, dx_combo, dy_combo), label_pad
-                )
-                if _position_is_free(
-                    shifted_padded, label_bboxes, obstacles, obstacle_pad, renderer
-                ):
-                    return (dx_combo, dy_combo)
+        valid_count += 1
+        cost = _compute_placement_cost(
+            dx, dy, anchor_bbox, label_bbox, axes_bbox, movement, edge_margin
+        )
+        if cost < best_cost:
+            best_cost = cost
+            best_displacement = (dx, dy)
 
-    return None
+    if best_displacement is not None:
+        dx, dy = best_displacement
+        logger.debug(
+            "Best candidate: cost={:.2f} (dist={:.2f}, valid={}/{})",
+            best_cost,
+            sqrt(dx**2 + dy**2) / max(label_bbox.height, 1.0),
+            valid_count,
+            total,
+        )
+
+    return best_displacement
 
 
-# -- Geometry helpers --
+# -- Candidate generation --
 
 
-def _compute_displacement_options(
+def _generate_proactive_candidates(
+    anchor_bbox: Bbox,
+    label_bbox: Bbox,
+    axes_bbox: Bbox,
+    distances: tuple[float, ...],
+) -> list[tuple[float, float, float]]:
+    """Generate candidates in 8 cardinal directions at multiple distances.
+
+    Each distance is a multiplier of the label height. Candidates are
+    positioned relative to the anchor point (original label position).
+    """
+    label_h = label_bbox.height
+    anchor_cx = (anchor_bbox.x0 + anchor_bbox.x1) / 2
+    anchor_cy = (anchor_bbox.y0 + anchor_bbox.y1) / 2
+    label_cx = (label_bbox.x0 + label_bbox.x1) / 2
+    label_cy = (label_bbox.y0 + label_bbox.y1) / 2
+
+    candidates: list[tuple[float, float, float]] = []
+    for dist_mult in distances:
+        step = dist_mult * label_h
+        for dir_x, dir_y in _DIRECTIONS:
+            # Normalize diagonal directions
+            norm = _SQRT2 if dir_x != 0 and dir_y != 0 else 1.0
+            target_cx = anchor_cx + (dir_x / norm) * step
+            target_cy = anchor_cy + (dir_y / norm) * step
+
+            dx = target_cx - label_cx
+            dy = target_cy - label_cy
+
+            # Bounds check
+            new_x0 = label_bbox.x0 + dx
+            new_x1 = label_bbox.x1 + dx
+            new_y0 = label_bbox.y0 + dy
+            new_y1 = label_bbox.y1 + dy
+            if (
+                new_x0 >= axes_bbox.x0
+                and new_x1 <= axes_bbox.x1
+                and new_y0 >= axes_bbox.y0
+                and new_y1 <= axes_bbox.y1
+            ):
+                distance = sqrt(dx**2 + dy**2)
+                candidates.append((dx, dy, distance))
+
+    return candidates
+
+
+def _generate_reactive_candidates(
     mov_bbox: Bbox,
     fix_bbox: Bbox,
     padding_px: float,
     axes_bbox: Bbox,
 ) -> list[tuple[float, float, float]]:
-    """Compute valid displacement options in both axes."""
-    options: list[tuple[float, float, float]] = []  # (dx, dy, abs_distance)
+    """Compute snap-to-edge displacement options per colliding obstacle.
+
+    Generates up to 4 candidates (above, below, right, left) that place
+    the label just outside the obstacle bounding box.
+    """
+    options: list[tuple[float, float, float]] = []
 
     dy_up = fix_bbox.y1 + padding_px - mov_bbox.y0
     dy_down = fix_bbox.y0 - padding_px - mov_bbox.y1
@@ -396,6 +472,76 @@ def _compute_displacement_options(
         options.append((dx_left, 0, abs(dx_left)))
 
     return options
+
+
+# -- Cost function --
+
+
+def _edge_proximity_cost(bbox: Bbox, axes_bbox: Bbox, margin: float) -> float:
+    """Linear penalty when label is within ``margin`` pixels of any axes edge.
+
+    Returns 0.0 when safely away, scales to 1.0 when touching the edge.
+    """
+    if margin <= 0:
+        return 0.0
+
+    gaps = [
+        bbox.x0 - axes_bbox.x0,  # left
+        axes_bbox.x1 - bbox.x1,  # right
+        bbox.y0 - axes_bbox.y0,  # bottom
+        axes_bbox.y1 - bbox.y1,  # top
+    ]
+    min_gap = min(gaps)
+    if min_gap >= margin:
+        return 0.0
+    return max(0.0, min(1.0, 1.0 - min_gap / margin))
+
+
+def _compute_placement_cost(
+    dx: float,
+    dy: float,
+    anchor_bbox: Bbox,
+    label_bbox: Bbox,
+    axes_bbox: Bbox,
+    movement: str,
+    edge_margin: float,
+) -> float:
+    """Continuous cost function for candidate placement.
+
+    Three weighted components:
+    - Distance from anchor (w=1.0): normalized by label height
+    - Axis preference (w=3.0): penalizes off-axis movement
+    - Edge proximity (w=5.0): penalizes placements near axes borders
+    """
+    label_h = max(label_bbox.height, 1.0)
+
+    # 1. Distance from anchor (scale-independent)
+    dist_cost = sqrt(dx**2 + dy**2) / label_h
+
+    # 2. Axis preference
+    is_y_only = abs(dx) < 0.5
+    is_x_only = abs(dy) < 0.5
+    is_diagonal = not is_y_only and not is_x_only
+
+    if movement == "y":
+        axis_cost = 0.0 if is_y_only else (1.5 if is_diagonal else 1.0)
+    elif movement == "x":
+        axis_cost = 0.0 if is_x_only else (1.5 if is_diagonal else 1.0)
+    else:  # "xy"
+        if is_y_only or is_x_only:
+            axis_cost = 0.0 if is_y_only else 0.5
+        else:
+            axis_cost = 1.0
+
+    # 3. Edge proximity
+    shifted = _shift_bbox(label_bbox, dx, dy)
+    edge_cost = _edge_proximity_cost(shifted, axes_bbox, edge_margin)
+
+    return (
+        _WEIGHT_DISTANCE * dist_cost
+        + _WEIGHT_AXIS * axis_cost
+        + _WEIGHT_EDGE * edge_cost
+    )
 
 
 # -- Connectors --

@@ -1,5 +1,23 @@
 # Project Changelog
 
+## [2026-02-20 10:44]
+### Changed
+- **Collision engine: cost-based candidate selection**: Substituido o sistema greedy (primeiro candidato livre vence) por funcao de custo continua com 3 componentes ponderados -- distancia do anchor (w=1.0), preferencia de eixo (w=3.0) e proximidade de borda (w=5.0). O solver agora avalia todos os candidatos validos e escolhe o de menor custo
+- **Candidatos proativos em 8 direcoes cardinais**: Novo gerador `_generate_proactive_candidates()` posiciona candidatos em N/NE/E/SE/S/SW/W/NW a multiplas distancias (configuraveis via `candidate_distances`), com normalizacao de diagonais para distancia uniforme
+- **Candidatos reativos renomeados**: `_compute_displacement_options()` renomeado para `_generate_reactive_candidates()` -- semantica snap-to-edge preservada como complemento dos candidatos proativos
+- **Anchor bboxes snapshot**: `_resolve_all()` agora captura bounding boxes originais antes de qualquer movimento, garantindo que a funcao de custo mede distancia ao ponto de ancoragem real
+
+### Added
+- **`CollisionConfig.candidate_distances`**: Tupla de multiplicadores de distancia (em alturas de label) para geracao de candidatos proativos. Default: `(1.0, 1.5, 2.0)`
+- **`CollisionConfig.edge_margin_factor`**: Margem de borda como fracao da altura do label. Labels dentro dessa margem recebem penalidade crescente. Default: `1.0`
+- **`_edge_proximity_cost()`**: Penalidade linear quando label esta proximo a qualquer borda dos axes -- retorna 0.0 quando seguro, escala ate 1.0 quando tocando a borda
+- **`_compute_placement_cost()`**: Funcao de custo unificada combinando distancia normalizada, preferencia de eixo e proximidade de borda
+- **Testes para proactive candidates e cost function**: `TestProactiveCandidates` (geracao em 8 direcoes, bounds check, normalizacao diagonal), `TestPlacementCost` (monotonicidade, preferencia de eixo, penalidade de borda), `TestBestCostSelection` (resolucao realista com dois labels sobrepostos)
+
+### Removed
+- **`_axis_priority()`**: Substituida pela funcao de custo continua `_compute_placement_cost()` -- o sort discreto por bins de prioridade nao escala para avaliacao multi-criterio
+- **Fallback diagonal em `_find_free_position()`**: Eliminado -- candidatos proativos em 8 direcoes ja cobrem diagonais nativamente
+
 ## [2026-02-20 02:13]
 ### Added
 - **`_internal/frequency.py`**: Novo modulo compartilhado de deteccao e display de frequencia -- centraliza `FREQ_ALIASES`, `normalize_freq_code()`, `infer_freq()` (antes em `transforms/_validation.py`) e adiciona `FREQ_DISPLAY_MAP` com labels curtos pt-BR (D, DU, S, M, T, A) e `freq_display_label()` para conversao

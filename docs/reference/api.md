@@ -612,6 +612,8 @@ class ChartingConfig(BaseSettings):
 | `obstacle_padding_px` | `float` | `8.0` |
 | `label_padding_px` | `float` | `2.0` |
 | `max_iterations` | `int` | `50` |
+| `candidate_distances` | `tuple[float, ...]` | `(1.0, 1.5, 2.0)` |
+| `edge_margin_factor` | `float` | `1.0` |
 | `connector_threshold_px` | `float` | `30.0` |
 | `connector_alpha` | `float` | `0.6` |
 | `connector_style` | `str` | `"-"` |

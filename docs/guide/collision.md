@@ -134,34 +134,41 @@ rotation, `subplots_adjust`, etc.).
 ### Unified Resolution Algorithm
 
 The engine uses a unified algorithm that handles both fixed obstacles and
-inter-label collisions in a single iterative pass:
+inter-label collisions in a single iterative pass with cost-based candidate
+selection:
 
-1. **For each label**, collect all `_PathObstacle` instances (lines, patches, collections, labels from other axes)
-2. **Co-location skip**: if a label starts ON a `colocate=True` obstacle on the same axes, that obstacle is excluded
-3. **Identify collisions**: `Path.intersects_bbox()` for path obstacles, bbox overlap for other moveable labels
-4. **Generate displacement candidates** from each colliding obstacle (up, down, left, right)
-5. **Sort candidates** by preference: Y-only first, X-only second, diagonal last (by distance within each group)
-6. **Reorder by movement preference** (`"y"`, `"x"`, or `"xy"`) -- preferred-axis candidates go first, others are kept as fallback
-7. **Validate** each candidate against ALL obstacles (bbox + path) via `_position_is_free()`
-8. **Fallback**: if no single-axis solution exists, try diagonal combinations (best Y + best X)
+1. **Snapshot anchors**: before any movement, capture the original bounding box of each moveable label as its anchor point
+2. **For each label**, collect all `_PathObstacle` instances (lines, patches, collections, labels from other axes)
+3. **Co-location skip**: if a label starts ON a `colocate=True` obstacle on the same axes, that obstacle is excluded
+4. **Identify collisions**: `Path.intersects_bbox()` for path obstacles, bbox overlap for other moveable labels
+5. **Generate candidates** from two sources:
+   - **Proactive**: 8 cardinal directions (N, NE, E, SE, S, SW, W, NW) at multiple distances (`candidate_distances`), positioned relative to the anchor point. Diagonal distances are normalized for uniformity
+   - **Reactive**: snap-to-edge displacements per colliding obstacle (up, down, left, right)
+6. **Validate** each candidate against ALL obstacles (bbox + path) via `_position_is_free()`
+7. **Score valid candidates** with a continuous cost function combining three weighted components:
+   - **Distance from anchor** (w=1.0): displacement normalized by label height
+   - **Axis preference** (w=3.0): penalizes off-axis movement (e.g., X movement when `movement="y"`)
+   - **Edge proximity** (w=5.0): linear penalty when label is within `edge_margin_factor` of any axes border
+8. **Select lowest-cost candidate** and apply displacement
 
 ```
 Example with movement="y" (default):
 
     Label collides with ATH line and another label.
 
-    Candidates from ATH: UP +15px, DOWN -42px
-    Candidates from label: UP +8px, DOWN -20px
+    Proactive: 8 directions x 3 distances = 24 candidates (from anchor)
+    Reactive: snap-to-edge from ATH (UP, DOWN) + from label (UP, DOWN)
 
-    Sorted: UP +8px, UP +15px, DOWN -20px, DOWN -42px
+    Validate all candidates -> 12 are collision-free
+    Score each: UP +15px (cost=1.2), UP +20px (cost=1.8), RIGHT +30px (cost=5.1), ...
 
-    Validate +8px against ALL obstacles -> still collides with ATH
-    Validate +15px against ALL obstacles -> free! Apply.
+    Select UP +15px (lowest cost). Apply.
 ```
 
 Constraints respected:
-- **Movement axis**: configurable (`"y"`, `"x"`, or `"xy"`)
+- **Movement axis**: configurable (`"y"`, `"x"`, or `"xy"`) -- off-axis penalized, not blocked
 - **Axes limits**: label never leaves the visible chart area
+- **Edge proximity**: labels near axes borders receive increasing penalty
 - **Global validation**: each candidate is tested against every obstacle
 
 The outer loop repeats until no label moves or `max_iterations` is reached.
@@ -287,6 +294,8 @@ movement = "y"                  # Displacement axis: "y", "x", or "xy"
 obstacle_padding_px = 8.0       # Padding between label and obstacle (px)
 label_padding_px = 2.0          # Padding between labels (px)
 max_iterations = 50             # Push-apart iteration limit
+candidate_distances = [1.0, 1.5, 2.0]  # Distance multipliers for proactive candidates
+edge_margin_factor = 1.0               # Edge margin as fraction of label height
 connector_threshold_px = 30.0   # Minimum distance to draw connector (px)
 connector_alpha = 0.6           # Connector line transparency
 connector_style = "-"           # Connector line style ("-", "--", ":", "-.")
@@ -312,6 +321,8 @@ configure(collision={
 | `obstacle_padding_px` | `8.0` | Minimum space between label and obstacle in pixels |
 | `label_padding_px` | `2.0` | Minimum space between two labels in pixels |
 | `max_iterations` | `50` | Maximum number of push-apart iterations between labels |
+| `candidate_distances` | `(1.0, 1.5, 2.0)` | Distance multipliers (in label heights) for proactive candidate generation in 8 cardinal directions |
+| `edge_margin_factor` | `1.0` | Edge margin as fraction of label height. Labels closer than this to the axes border receive an increasing cost penalty |
 | `connector_threshold_px` | `30.0` | Minimum displacement distance (px) to draw guide line |
 | `connector_alpha` | `0.6` | Guide line transparency (0.0 = invisible, 1.0 = opaque) |
 | `connector_style` | `"-"` | Matplotlib style for guide line |

@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 357 tests covering all modules with business logic.
+Test suite for chartkit with 448 tests covering all modules with business logic.
 
 ---
 
@@ -27,8 +27,8 @@ tests/
 │   ├── test_bar_width.py          # detect_bar_width, categorical helpers, y_origin
 │   ├── test_renderer.py          # ChartRenderer generic rendering + unsupported kinds
 │   └── test_stacked_bar_enhancer.py # Stacked bar chart enhancer
-├── collision/                     # Collision engine (9 tests)
-│   └── test_collision_engine.py   # Obstacle collection, path detection, resolution
+├── collision/                     # Collision engine (19 tests)
+│   └── test_collision_engine.py   # Obstacle collection, path detection, resolution, proactive candidates, cost function
 ├── composing/                     # Composition system (29 tests)
 │   ├── test_compose_pipeline.py   # compose() orchestration, legend, extract_data, formatters
 │   └── test_layer_validation.py   # Layer creation and validation

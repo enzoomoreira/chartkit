@@ -199,10 +199,10 @@ src/chartkit/
     ├── tick_formatting.py # apply_tick_formatting(x_data) - data-aware date locator/formatter for X-axis
     └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
-tests/                    # Test suite (357 tests)
+tests/                    # Test suite (448 tests)
 ├── conftest.py           # Shared fixtures (financial DataFrames, edge cases, Agg backend)
 ├── charts/               # Chart rendering tests (67)
-├── collision/            # Collision engine tests (9)
+├── collision/            # Collision engine tests (19)
 ├── composing/            # Composition system tests (29)
 ├── formatting/           # Formatters and highlight tests (41)
 ├── integration/          # End-to-end tests (18)

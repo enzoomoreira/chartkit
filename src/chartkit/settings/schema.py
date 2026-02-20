@@ -284,6 +284,10 @@ class CollisionConfig(BaseModel):
         obstacle_padding_px: Padding around obstacles in pixels.
         label_padding_px: Padding around labels in pixels.
         max_iterations: Maximum solver iterations.
+        candidate_distances: Multipliers (in label heights) for proactive
+            candidate generation in 8 cardinal directions.
+        edge_margin_factor: Edge margin as fraction of label height.
+            Labels closer than this to the axes border receive a penalty.
         connector_threshold_px: Distance threshold to draw a connector line.
     """
 
@@ -291,6 +295,8 @@ class CollisionConfig(BaseModel):
     obstacle_padding_px: float = 8.0
     label_padding_px: float = 2.0
     max_iterations: int = 50
+    candidate_distances: tuple[float, ...] = (1.0, 1.5, 2.0)
+    edge_margin_factor: float = 1.0
     connector_threshold_px: float = 30.0
     connector_alpha: float = 0.6
     connector_style: str = "-"
