@@ -8,6 +8,7 @@ from .engine import ChartingPlotter
 from .transforms.accessor import TransformAccessor
 
 if TYPE_CHECKING:
+    from ._internal.plot_validation import AxisLimits
     from .composing.layer import AxisSide, Layer
     from .engine import ChartKind, HighlightInput, UnitFormat
     from .result import PlotResult
@@ -85,8 +86,8 @@ class ChartingAccessor:
         legend: bool | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
-        xlim: tuple | None = None,
-        ylim: tuple | None = None,
+        xlim: AxisLimits | None = None,
+        ylim: AxisLimits | None = None,
         grid: bool | None = None,
         tick_rotation: int | Literal["auto"] | None = None,
         tick_format: str | None = None,

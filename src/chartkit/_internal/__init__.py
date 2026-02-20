@@ -13,23 +13,22 @@ from .collision import (
     resolve_composed_collisions,
 )
 from .extraction import (
-    add_right_margin,
     extract_plot_data,
     resolve_series,
     should_show_legend,
 )
 from .formatting import FORMATTERS
 from .highlight import normalize_highlight
-from .plot_validation import validate_plot_params
+from .plot_validation import coerce_axis_limits, validate_plot_params
 from .saving import save_figure
 from .tick_formatting import apply_tick_formatting
 from .tick_rotation import apply_tick_rotation
 
 __all__ = [
     "FORMATTERS",
-    "add_right_margin",
     "apply_tick_formatting",
     "apply_tick_rotation",
+    "coerce_axis_limits",
     "extract_plot_data",
     "normalize_highlight",
     "register_artist_obstacle",

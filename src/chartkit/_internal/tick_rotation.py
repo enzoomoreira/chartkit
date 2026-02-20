@@ -85,7 +85,18 @@ def apply_tick_rotation(
     if angle == 0:
         return
 
-    ha = "right" if angle > 0 else "left"
-    plt.setp(ax.get_xticklabels(), rotation=angle, ha=ha)
+    if abs(angle) == 90:
+        ha, rotation_mode = "center", "default"
+    elif angle > 0:
+        ha, rotation_mode = "right", "anchor"
+    else:
+        ha, rotation_mode = "left", "anchor"
+
+    plt.setp(
+        ax.get_xticklabels(),
+        rotation=angle,
+        ha=ha,
+        rotation_mode=rotation_mode,
+    )
 
     _adjust_bottom_margin(fig, ax)

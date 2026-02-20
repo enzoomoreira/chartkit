@@ -1,5 +1,22 @@
 # Project Changelog
 
+## [2026-02-19 21:21]
+### Added
+- **Smart tick alignment**: Ticks posicionados nos pontos reais dos dados em vez de boundaries fixas do calendario -- dados trimestrais end-of-quarter (Mar/Jun/Sep/Dec) agora recebem ticks nos meses corretos, sem desalinhamento para Jan/Apr/Jul/Oct
+- **Auto-inferencia de tick frequency**: Quando `tick_freq` nao e especificado, `pd.infer_freq()` detecta o padrao temporal dos dados e alinha ticks automaticamente para frequencias esparsas (quarterly, semestral, anual)
+- **Phantom tick clipping**: Remove ticks fora do range real dos dados, causados por padding de xlim (comum em bar charts)
+- **`coerce_axis_limits()`**: `xlim`/`ylim` agora aceitam strings (`"2024-01-01"`, `"100"`) com conversao automatica para datetime ou float
+- **`AxisLimits` type alias**: Tipo semantico para tuplas de limites de eixo com suporte a str/int/float/datetime/Timestamp/None
+
+### Changed
+- Tick frequency `"quarter"` agora usa meses end-of-quarter (3,6,9,12) em vez de start-of-quarter (1,4,7,10)
+- Tick frequency `"semester"` agora usa meses end-of-semester (6,12) em vez de start (1,7)
+- Horizontal alignment de tick labels rotacionados mudou de angle-dependent (right/left) para sempre `center`
+- `apply_tick_formatting()` recebe novo parametro `x_data` para posicionamento data-aware de ticks
+
+### Removed
+- **`add_right_margin()`**: Funcao removida junto com suas chamadas em engine e compose -- margem direita para highlight labels nao e mais necessaria
+
 ## [2026-02-18 22:36]
 ### Changed
 - **Collision engine modularizado**: Modulo monolitico `_internal/collision.py` (877 linhas) dividido em pacote `_internal/collision/` com 4 sub-modulos especializados: `_registry.py` (estado global e registro de artists), `_obstacles.py` (PathObstacle e coleta de obstaculos), `_engine.py` (resolucao de colisoes), `_debug.py` (overlay de debug)

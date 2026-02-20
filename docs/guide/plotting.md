@@ -68,12 +68,12 @@ If `y` is not specified, all numeric columns will be plotted.
 | `legend` | `bool \| None` | `None` | `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
 | `xlabel` | `str \| None` | `None` | X-axis label |
 | `ylabel` | `str \| None` | `None` | Y-axis label |
-| `xlim` | `tuple \| None` | `None` | X-axis limits as `(min, max)` |
-| `ylim` | `tuple \| None` | `None` | Y-axis limits as `(min, max)` |
+| `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
+| `ylim` | `AxisLimits \| None` | `None` | Y-axis limits as `(min, max)`. Accepts strings (`"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
-| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
+| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config. See [Smart Tick Alignment](#smart-tick-alignment) |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Show collision debug overlay (see [Collision Guide](collision.md)) |
 | `**kwargs` | - | - | Chart-specific args (e.g., `sort`, `color`, `y_origin` for bars) |
@@ -464,6 +464,36 @@ configure(branding={
     'company_name': 'My Company',
     'footer_format': 'Fonte: {source} | By: {company_name}'
 })
+```
+
+---
+
+## Smart Tick Alignment
+
+When using `tick_freq` or `tick_format`, chartkit aligns ticks to real data points instead of fixed calendar boundaries. This prevents the common misalignment where, e.g., quarterly data at end-of-quarter dates (Mar, Jun, Sep, Dec) gets ticks placed on day 1 of start-of-quarter months (Jan, Apr, Jul, Oct).
+
+### How It Works
+
+1. **Data-aligned ticks**: For frequencies `"month"`, `"quarter"`, `"semester"`, and `"year"`, ticks are placed on the last real data point in each period rather than on arbitrary calendar boundaries.
+
+2. **Auto-inference**: When no explicit `tick_freq` is set, chartkit uses `pd.infer_freq()` to detect the data's temporal pattern. For sparse frequencies (quarterly, semi-annual, annual), ticks are positioned directly on the actual index dates.
+
+3. **Phantom tick clipping**: After setting the locator, ticks that fall outside the real data range are removed. This prevents empty periods caused by `xlim` padding (common in bar charts).
+
+### Frequency Alignment
+
+| Frequency | Tick Months |
+|-----------|-------------|
+| `"quarter"` | 3, 6, 9, 12 (end-of-quarter) |
+| `"semester"` | 6, 12 (end-of-semester) |
+| `"month"` | All months |
+| `"year"` | Last data point per year |
+
+```python
+# Quarterly data: ticks land on Mar, Jun, Sep, Dec (where the data is)
+df = pd.DataFrame({'gdp': [100, 102, 104, 106]},
+                  index=pd.date_range('2024-03', periods=4, freq='QE'))
+df.chartkit.plot(title="Quarterly GDP", tick_freq='quarter', tick_format='%b/%Y')
 ```
 
 ---

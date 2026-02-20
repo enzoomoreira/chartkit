@@ -11,7 +11,6 @@ from matplotlib.axes import Axes
 
 from ._internal import (
     FORMATTERS,
-    add_right_margin,
     apply_tick_formatting,
     apply_tick_rotation,
     extract_plot_data,
@@ -22,7 +21,7 @@ from ._internal import (
     should_show_legend,
     validate_plot_params,
 )
-from ._internal.plot_validation import UnitFormat
+from ._internal.plot_validation import AxisLimits, UnitFormat, coerce_axis_limits
 from .charts import ChartRenderer
 from .decorations import add_footer, add_title
 from .exceptions import StateError
@@ -58,8 +57,8 @@ class ChartingPlotter:
         legend: bool | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
-        xlim: tuple | None = None,
-        ylim: tuple | None = None,
+        xlim: AxisLimits | None = None,
+        ylim: AxisLimits | None = None,
         grid: bool | None = None,
         tick_rotation: int | Literal["auto"] | None = None,
         tick_format: str | None = None,
@@ -87,8 +86,10 @@ class ChartingPlotter:
                 2+ labeled artists), ``True`` = force, ``False`` = suppress.
             xlabel: X-axis label.
             ylabel: Y-axis label.
-            xlim: X-axis limits as ``(min, max)``.
-            ylim: Y-axis limits as ``(min, max)``.
+            xlim: X-axis limits as ``(min, max)``. Accepts strings
+                (``"2024-01-01"``), datetime, pd.Timestamp, or numeric.
+            ylim: Y-axis limits as ``(min, max)``. Accepts strings
+                (``"100"``), numeric, datetime, or pd.Timestamp.
             grid: Grid override. ``None`` uses config, ``True``/``False``
                 enables/disables grid for this chart.
             tick_rotation: X-axis tick label rotation. ``"auto"`` detects
@@ -150,14 +151,12 @@ class ChartingPlotter:
             logger.debug("Applying metric(s)")
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
-        # 5b. Right margin for highlight labels
-        if highlight_modes:
-            add_right_margin(ax, ax_right=None)
+        # 5b. Tick formatting
+        apply_tick_formatting(
+            ax, tick_format=tick_format, tick_freq=tick_freq, x_data=x_data
+        )
 
-        # 5c. Tick formatting
-        apply_tick_formatting(ax, tick_format=tick_format, tick_freq=tick_freq)
-
-        # 5d. Tick rotation
+        # 5c. Tick rotation
         apply_tick_rotation(fig, ax, tick_rotation=tick_rotation)
 
         # 6. Legend
@@ -172,9 +171,9 @@ class ChartingPlotter:
 
         # 8. Axis limits (user override, after collision)
         if xlim is not None:
-            ax.set_xlim(xlim)
+            ax.set_xlim(coerce_axis_limits(xlim))
         if ylim is not None:
-            ax.set_ylim(ylim)
+            ax.set_ylim(coerce_axis_limits(ylim))
 
         # 9. Axis labels
         if xlabel is not None:

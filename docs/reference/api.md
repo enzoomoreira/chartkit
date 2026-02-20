@@ -22,8 +22,8 @@ def plot(
     legend: bool | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
-    xlim: tuple | None = None,
-    ylim: tuple | None = None,
+    xlim: AxisLimits | None = None,
+    ylim: AxisLimits | None = None,
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,
@@ -49,8 +49,8 @@ def plot(
 | `legend` | `bool \| None` | `None` | Legend control. `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
 | `xlabel` | `str \| None` | `None` | X-axis label |
 | `ylabel` | `str \| None` | `None` | Y-axis label |
-| `xlim` | `tuple \| None` | `None` | X-axis limits as `(min, max)` |
-| `ylim` | `tuple \| None` | `None` | Y-axis limits as `(min, max)` |
+| `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
+| `ylim` | `AxisLimits \| None` | `None` | Y-axis limits as `(min, max)`. Accepts strings (`"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
@@ -82,7 +82,11 @@ ChartKind = str  # any valid matplotlib Axes method or registered enhancer
 UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x"]
 HighlightMode = Literal["last", "max", "min", "all"]
 HighlightInput = bool | HighlightMode | list[HighlightMode]
+AxisValue = str | int | float | datetime | date | pd.Timestamp | None
+AxisLimits = tuple[AxisValue, AxisValue]
 ```
+
+`AxisLimits` accepts mixed types per element. String values are auto-coerced via `coerce_axis_limits()`: numeric strings (e.g., `"100"`) become `float`, date strings (e.g., `"2024-01-01"`) become `pd.Timestamp`.
 
 ---
 
@@ -160,8 +164,8 @@ def compose(
     figsize: tuple[float, float] | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
-    xlim: tuple | None = None,
-    ylim: tuple | None = None,
+    xlim: AxisLimits | None = None,
+    ylim: AxisLimits | None = None,
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,
@@ -182,8 +186,8 @@ Compose multiple layers into a single chart with optional dual axes.
 | `figsize` | `tuple[float, float] \| None` | `None` | Override figure size |
 | `xlabel` | `str \| None` | `None` | X-axis label |
 | `ylabel` | `str \| None` | `None` | Y-axis label (applied to left axis) |
-| `xlim` | `tuple \| None` | `None` | X-axis limits as `(min, max)` |
-| `ylim` | `tuple \| None` | `None` | Y-axis limits as `(min, max)` (applied to left axis) |
+| `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
+| `ylim` | `AxisLimits \| None` | `None` | Y-axis limits as `(min, max)` (applied to left axis). Accepts strings (`"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
@@ -349,8 +353,8 @@ def plot(
     legend: bool | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
-    xlim: tuple | None = None,
-    ylim: tuple | None = None,
+    xlim: AxisLimits | None = None,
+    ylim: AxisLimits | None = None,
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,

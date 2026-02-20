@@ -10,9 +10,9 @@ from loguru import logger
 
 from .._internal import (
     FORMATTERS,
-    add_right_margin,
     apply_tick_formatting,
     apply_tick_rotation,
+    coerce_axis_limits,
     extract_plot_data,
     normalize_highlight,
     register_artist_obstacle,
@@ -21,6 +21,7 @@ from .._internal import (
     should_show_legend,
     validate_plot_params,
 )
+from .._internal.plot_validation import AxisLimits
 from ..charts import ChartRenderer
 from ..decorations import add_footer, add_title
 from ..exceptions import ValidationError
@@ -130,8 +131,8 @@ def compose(
     figsize: tuple[float, float] | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
-    xlim: tuple | None = None,
-    ylim: tuple | None = None,
+    xlim: AxisLimits | None = None,
+    ylim: AxisLimits | None = None,
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,
@@ -149,8 +150,10 @@ def compose(
         figsize: Override figure size ``(width, height)`` in inches.
         xlabel: X-axis label.
         ylabel: Y-axis label (applied to the left axis).
-        xlim: X-axis limits as ``(min, max)``.
+        xlim: X-axis limits as ``(min, max)``. Accepts strings
+            (``"2024-01-01"``), datetime, pd.Timestamp, or numeric.
         ylim: Y-axis limits as ``(min, max)`` (applied to the left axis).
+            Accepts strings (``"100"``), numeric, datetime, or pd.Timestamp.
         grid: Grid override. ``None`` uses config, ``True``/``False``
             enables/disables grid for this chart.
         tick_rotation: X-axis tick label rotation. ``"auto"`` detects
@@ -190,11 +193,14 @@ def compose(
     if ax_right is not None:
         axes_map["right"] = ax_right
 
+    first_x_data: pd.Index | pd.Series | None = None
     for layer in layers:
         ax = axes_map[layer.axis]
         _apply_axis_formatter(ax, layer.axis, layer.units, applied_units)
 
         x_data, y_data = extract_plot_data(layer.df, layer.x, layer.y)
+        if first_x_data is None:
+            first_x_data = x_data
         logger.debug(
             "Rendering layer: kind={}, axis={}, shape={}",
             layer.kind,
@@ -204,20 +210,17 @@ def compose(
         _render_layer(ax, layer, x_data, y_data)
 
     # 4. Tick formatting
-    apply_tick_formatting(ax_left, tick_format=tick_format, tick_freq=tick_freq)
+    apply_tick_formatting(
+        ax_left, tick_format=tick_format, tick_freq=tick_freq, x_data=first_x_data
+    )
 
     # 4b. Tick rotation
     apply_tick_rotation(fig, ax_left, tick_rotation=tick_rotation)
 
-    # 5. Right margin for highlight labels
-    has_highlights = any(layer.highlight for layer in layers)
-    if has_highlights:
-        add_right_margin(ax_left, ax_right)
-
-    # 6. Legend (consolidated from both axes)
+    # 5. Legend (consolidated from both axes)
     _apply_composed_legend(ax_left, ax_right, legend)
 
-    # 7. Collision resolution (unified cross-axis)
+    # 6. Collision resolution (unified cross-axis)
     if collision:
         legend_artist = ax_left.get_legend()
         if legend_artist is not None:
@@ -230,9 +233,9 @@ def compose(
 
     # 8. Axis limits (user override, after collision)
     if xlim is not None:
-        ax_left.set_xlim(xlim)
+        ax_left.set_xlim(coerce_axis_limits(xlim))
     if ylim is not None:
-        ax_left.set_ylim(ylim)
+        ax_left.set_ylim(coerce_axis_limits(ylim))
 
     # 9. Axis labels
     if xlabel is not None:

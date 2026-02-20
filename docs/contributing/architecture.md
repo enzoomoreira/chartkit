@@ -68,7 +68,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Applies axis formatters via `FORMATTERS` dispatch table
    - Dispatches via `ChartRenderer.render(ax, kind, ...)` (enhancer or generic `ax.{kind}()`)
    - Applies metrics via `MetricRegistry.apply()`
-   - Expands right margin via `add_right_margin()` when highlights are present
+   - Applies tick formatting via `apply_tick_formatting()` (data-aligned ticks, auto-inference, phantom tick clipping)
    - Applies tick rotation via `apply_tick_rotation()` (auto-detect overlap or fixed angle)
    - Applies legend
    - Resolves label collisions via `resolve_collisions(ax)` (when `collision=True`)
@@ -101,15 +101,14 @@ flowchart TD
     D3 --> D4["4. FORMATTERS[units]()"]
     D4 --> D5["5. ChartRenderer.render(kind)"]
     D5 --> D6["6. MetricRegistry.apply()"]
-    D6 --> D6a["7. add_right_margin() (if highlights)"]
-    D6a --> D6c["8. apply_tick_formatting()"]
-    D6c --> D6d["9. apply_tick_rotation()"]
-    D6d --> D6b["10. _apply_legend()"]
-    D6b --> D7["11. resolve_collisions() (if collision=True)"]
-    D7 --> D7a["12. set xlim/ylim (if provided)"]
-    D7a --> D7b["13. set xlabel/ylabel (if provided)"]
-    D7b --> D8["14. add_title()"]
-    D8 --> D9["15. add_footer()"]
+    D6 --> D6c["7. apply_tick_formatting(x_data)"]
+    D6c --> D6d["8. apply_tick_rotation()"]
+    D6d --> D6b["9. _apply_legend()"]
+    D6b --> D7["10. resolve_collisions() (if collision=True)"]
+    D7 --> D7a["11. set xlim/ylim (coerce_axis_limits)"]
+    D7a --> D7b["12. set xlabel/ylabel (if provided)"]
+    D7b --> D8["13. add_title()"]
+    D8 --> D9["14. add_footer()"]
     D9 --> E["PlotResult"]
 ```
 
@@ -194,12 +193,12 @@ src/chartkit/
     │   ├── _obstacles.py # _PathObstacle and obstacle collection
     │   ├── _engine.py    # Collision resolution algorithm
     │   └── _debug.py     # Debug overlay rendering
-    ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series(), add_right_margin()
+    ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series()
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
     ├── highlight.py      # normalize_highlight()
     ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat
     ├── saving.py         # save_figure() with path resolution
-    ├── tick_formatting.py # apply_tick_formatting() - date locator/formatter for X-axis
+    ├── tick_formatting.py # apply_tick_formatting(x_data) - data-aware date locator/formatter for X-axis
     └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
 tests/                    # Test suite (357 tests)
