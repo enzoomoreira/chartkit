@@ -116,7 +116,7 @@ atl = "ATL"
 avg = "AVG"
 moving_average_format = "MM{window}"    # Supports {freq} placeholder for detected frequency
 target_format = "Meta: {value}"
-std_band_format = "BB({window}, {num_std})"  # Supports {freq} placeholder for detected frequency
+std_band_format = "BB({window}, {deviations})"  # Supports {freq} placeholder for detected frequency
 
 [bands]
 alpha = 0.15

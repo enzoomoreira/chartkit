@@ -50,14 +50,14 @@ def register_builtin_metrics() -> None:
         add_target_line(ax, value=value, **kwargs)
 
     @MetricRegistry.register(
-        "std_band", param_names=["window", "num_std"], uses_freq=True
+        "std_band", param_names=["window", "deviations"], uses_freq=True
     )
     def metric_std_band(
         ax,
         x_data,
         y_data,
-        window: int,
-        num_std: float = 2.0,
+        window: int = 0,
+        deviations: float = 2.0,
         detected_freq: str | None = None,
         **kwargs,
     ) -> None:
@@ -66,7 +66,7 @@ def register_builtin_metrics() -> None:
             x_data,
             y_data,
             window=window,
-            num_std=num_std,
+            deviations=deviations,
             detected_freq=detected_freq,
             **kwargs,
         )

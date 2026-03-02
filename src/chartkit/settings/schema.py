@@ -356,7 +356,8 @@ class LabelsConfig(BaseModel):
     avg: str = "AVG"
     moving_average_format: str = "MM{window}"
     target_format: str = "Meta: {value}"
-    std_band_format: str = "BB({window}, {num_std})"
+    std_band_format: str = "BB({window}, {deviations})"
+    std_band_full_format: str = "DP({deviations})"
 
 
 class PathsConfig(BaseModel):

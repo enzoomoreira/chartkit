@@ -113,7 +113,9 @@ class TestParseBuiltins:
         [
             ("hline:100", {"value": 100}),
             ("target:50", {"value": 50}),
-            ("std_band:20:2", {"window": 20, "num_std": 2}),
+            ("std_band:20:2", {"window": 20, "deviations": 2}),
+            ("std_band:0:2", {"window": 0, "deviations": 2}),
+            ("std_band:0", {"window": 0}),
         ],
     )
     def test_parametrized_builtins_parse(
@@ -121,6 +123,10 @@ class TestParseBuiltins:
     ) -> None:
         spec = MetricRegistry.parse(spec_str)
         assert spec.params == expected_params
+
+    def test_std_band_no_params_uses_defaults(self) -> None:
+        spec = MetricRegistry.parse("std_band")
+        assert spec.params == {}
 
     def test_vband_parses(self) -> None:
         spec = MetricRegistry.parse("vband:2023-01-01:2023-06-30")

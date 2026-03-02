@@ -322,11 +322,11 @@ df.chartkit.plot(metrics=['std_band:20:2'])
 | Band color | Grid (lightgray) | `colors.grid` |
 | Central line style | Dashed (--) | `lines.reference_style` |
 | Width | 1.5 | `lines.overlay_width` |
-| Label | "BB({window}, {num_std})" | `labels.std_band_format` |
+| Label | "BB({window}, {deviations})" | `labels.std_band_format` |
 
 The `std_band` metric is **frequency-aware**: the label format supports a `{freq}`
 placeholder that is replaced with the detected data frequency. To enable it, set
-`std_band_format = "BB({window}{freq}, {num_std})"` in your TOML config.
+`std_band_format = "BB({window}{freq}, {deviations})"` in your TOML config.
 
 ### Example
 
