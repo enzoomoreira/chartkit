@@ -122,9 +122,21 @@ class ChartingAccessor:
         """
         return TransformAccessor(self._obj).despike(window, threshold, method)
 
-    def to_month_end(self) -> TransformAccessor:
-        """Align index to month-end keeping the last observation per month."""
-        return TransformAccessor(self._obj).to_month_end()
+    def resample(
+        self,
+        freq: str = "month",
+        method: str = "last",
+    ) -> TransformAccessor:
+        """Resample to a target frequency.
+
+        Args:
+            freq: Target frequency (``'day'``, ``'week'``, ``'month'``,
+                ``'quarter'``, ``'year'``) or short codes (``'D'``, ``'W'``,
+                ``'M'``, ``'Q'``, ``'Y'``).
+            method: Aggregation -- ``'last'``, ``'first'``, ``'mean'``,
+                or ``'sum'``.
+        """
+        return TransformAccessor(self._obj).resample(freq, method)
 
     def plot(
         self,

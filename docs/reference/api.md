@@ -69,7 +69,9 @@ def plot(
 | `"hline:V"` | Horizontal line at value V | `metrics=["hline:3.0"]` |
 | `"band:L:U"` | Shaded band between L and U | `metrics=["band:1.5:4.5"]` |
 | `"target:V"` | Target line at value V | `metrics=["target:1000"]` |
-| `"std_band:W:N"` | Band of N standard deviations with window W | `metrics=["std_band:20:2"]` |
+| `"std_band:W:N"` | Rolling band of N std deviations with window W | `metrics=["std_band:20:2"]` |
+| `"std_band:0:N"` | Full-series band of N std deviations (flat) | `metrics=["std_band:0:2"]` |
+| `"std_band"` | Full-series band with default deviations (2) | `metrics=["std_band"]` |
 | `"avg"` | Horizontal line at data mean | `metrics=["avg"]` |
 | `"vband:D1:D2"` | Vertical band between dates D1 and D2 | `metrics=["vband:2020-03-01:2020-06-30"]` |
 
@@ -145,7 +147,8 @@ Chainable accessor for transformations. Each method returns a new `TransformAcce
 | `drawdown()` | `drawdown() -> TransformAccessor` | Percentage distance from historical peak |
 | `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Statistical standardization (global or rolling, window >= 2) |
 | `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Annualize periodic rate via compound interest (frequency auto-detection) |
-| `to_month_end()` | `to_month_end() -> TransformAccessor` | Normalize index to month-end (consolidates duplicates) |
+| `despike()` | `despike(window: int = 21, threshold: float = 5.0, method: str = "median") -> TransformAccessor` | Remove aggressive data spikes via Hampel filter (window must be odd >= 3) |
+| `resample()` | `resample(freq: str = "month", method: str = "last") -> TransformAccessor` | Downsample to target frequency (`'day'`/`'week'`/`'month'`/`'quarter'`/`'year'`; agg: `'last'`/`'first'`/`'mean'`/`'sum'`) |
 | `layer()` | `layer(kind, x, y, *, units, highlight, metrics, axis, **kwargs) -> Layer` | Create a Layer for `compose()` |
 | `plot()` | `plot(x, y, *, kind, title, units, source, highlight, metrics, legend, xlabel, ylabel, xlim, ylim, grid, tick_rotation, tick_format, tick_freq, collision, debug, **kwargs) -> PlotResult` | Finalize chain and plot (same parameters as `df.chartkit.plot()`) |
 | `df` | `@property -> pd.DataFrame` | Access to transformed DataFrame |
@@ -666,6 +669,7 @@ class ChartingConfig(BaseSettings):
 | `moving_average_format` | `str` | `"MM{window}"` |
 | `target_format` | `str` | `"Meta: {value}"` |
 | `std_band_format` | `str` | `"BB({window}, {deviations})"` |
+| `std_band_full_format` | `str` | `"DP({deviations})"` |
 
 Frequency-aware metrics (`ma`, `std_band`) support a `{freq}` placeholder in their format strings. The placeholder is replaced with a short display label for the detected data frequency (e.g., `"M"` for monthly, `"T"` for quarterly, `"A"` for annual). When the frequency cannot be detected, `{freq}` resolves to an empty string. This is opt-in: add `{freq}` to the format string in your TOML config (e.g., `moving_average_format = "MM{window}{freq}"`).
 
@@ -773,7 +777,8 @@ from chartkit import (
     drawdown,
     zscore,
     annualize,
-    to_month_end,
+    despike,
+    resample,
 )
 ```
 

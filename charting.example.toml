@@ -212,7 +212,8 @@ axis = "both"         # "x", "y", ou "both"
 # avg = "AVG"
 # moving_average_format = "MM{window}"
 # target_format = "Meta: {value}"                # Template para label de meta
-# std_band_format = "BB({window}, {deviations})"    # Template para Bollinger Bands
+# std_band_format = "BB({window}, {deviations})"    # Template para rolling (Bollinger Bands)
+# std_band_full_format = "DP({deviations})"          # Template para full-series (bandas flat)
 
 # --- Paths -------------------------------------------------------------------
 

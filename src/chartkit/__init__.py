@@ -39,7 +39,7 @@ from .transforms import (
     diff,
     drawdown,
     normalize,
-    to_month_end,
+    resample,
     variation,
     zscore,
 )
@@ -104,5 +104,5 @@ __all__ = [
     "drawdown",
     "zscore",
     "despike",
-    "to_month_end",
+    "resample",
 ]

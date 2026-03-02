@@ -11,7 +11,7 @@ from .temporal import (
     diff,
     drawdown,
     normalize,
-    to_month_end,
+    resample,
     variation,
     zscore,
 )
@@ -131,9 +131,21 @@ class TransformAccessor:
         """
         return TransformAccessor(despike(self._df, window, threshold, method))
 
-    def to_month_end(self) -> TransformAccessor:
-        """Align index to month-end keeping the last observation per month."""
-        return TransformAccessor(to_month_end(self._df))
+    def resample(
+        self,
+        freq: str = "month",
+        method: str = "last",
+    ) -> TransformAccessor:
+        """Resample to a target frequency.
+
+        Args:
+            freq: Target frequency (``'day'``, ``'week'``, ``'month'``,
+                ``'quarter'``, ``'year'``) or short codes (``'D'``, ``'W'``,
+                ``'M'``, ``'Q'``, ``'Y'``).
+            method: Aggregation -- ``'last'``, ``'first'``, ``'mean'``,
+                or ``'sum'``.
+        """
+        return TransformAccessor(resample(self._df, freq, method))
 
     def plot(
         self,

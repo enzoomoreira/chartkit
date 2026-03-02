@@ -18,7 +18,8 @@ Declarative metrics system for adding visual elements on top of the main data.
 | Horizontal Line | `'hline:V'` | Horizontal line at value V |
 | Band | `'band:L:U'` | Shaded area between L and U |
 | Target | `'target:V'` | Target horizontal line at value V |
-| Standard Deviation Band | `'std_band:W:N'` | Band of N standard deviations with window W |
+| Standard Deviation Band | `'std_band:W:N'` | Rolling band of N std deviations with window W |
+| Standard Deviation Band | `'std_band:0:N'` | Full-series band of N std deviations (flat) |
 | Vertical Band | `'vband:D1:D2'` | Shaded area between two dates |
 
 ---
@@ -300,20 +301,41 @@ distinguishing it from standard reference lines (ATH, ATL, hline) that use dashe
 
 ---
 
-## Standard Deviation Band (std_band:W:N)
+## Standard Deviation Band (std_band)
 
-Use the syntax `'std_band:W:N'` to add a standard deviation band (Bollinger Band)
-with a central moving average. W is the moving average window and N is the number of standard deviations.
+Adds a standard deviation band with a central line (mean or moving average).
+Supports two modes: **rolling** (Bollinger Bands) and **full-series** (flat horizontal bands).
+
+### Rolling mode (std_band:W:N)
+
+When W > 0, computes rolling mean and rolling std over a window of W periods.
+The bands curve following local volatility.
 
 ```python
 # Bollinger Band: window 20, 2 standard deviations
 df.chartkit.plot(metrics=['std_band:20:2'])
 ```
 
+### Full-series mode (std_band:0:N)
+
+When W is 0 (or omitted), computes mean and std of the entire series.
+The bands are flat horizontal lines across the whole chart.
+
+```python
+# Full-series band: 2 standard deviations (default)
+df.chartkit.plot(metrics=['std_band'])
+
+# Full-series band: 1 standard deviation
+df.chartkit.plot(metrics=['std_band:0:1'])
+```
+
 ### Syntax
 
-- `'std_band:20:2'` - 20-period window, 2 standard deviations
-- `'std_band:12:1.5'` - 12-period window, 1.5 standard deviations
+- `'std_band:20:2'` - rolling, 20-period window, 2 standard deviations
+- `'std_band:12:1.5'` - rolling, 12-period window, 1.5 standard deviations
+- `'std_band:0:2'` - full-series, 2 standard deviations
+- `'std_band:0'` - full-series, default 2 standard deviations
+- `'std_band'` - full-series, all defaults (deviations=2)
 
 ### Visual Properties
 
@@ -322,11 +344,12 @@ df.chartkit.plot(metrics=['std_band:20:2'])
 | Band color | Grid (lightgray) | `colors.grid` |
 | Central line style | Dashed (--) | `lines.reference_style` |
 | Width | 1.5 | `lines.overlay_width` |
-| Label | "BB({window}, {deviations})" | `labels.std_band_format` |
+| Label (rolling) | "BB({window}, {deviations})" | `labels.std_band_format` |
+| Label (full-series) | "DP({deviations})" | `labels.std_band_full_format` |
 
-The `std_band` metric is **frequency-aware**: the label format supports a `{freq}`
-placeholder that is replaced with the detected data frequency. To enable it, set
-`std_band_format = "BB({window}{freq}, {deviations})"` in your TOML config.
+The `std_band` metric is **frequency-aware** in rolling mode: the label format supports
+a `{freq}` placeholder that is replaced with the detected data frequency. To enable it,
+set `std_band_format = "BB({window}{freq}, {deviations})"` in your TOML config.
 
 ### Example
 
@@ -338,10 +361,16 @@ df = pd.DataFrame({
     'price': [100, 102, 98, 105, 103, 107, 101, 108, 106, 110]
 }, index=pd.date_range('2024-01', periods=10, freq='ME'))
 
-# Bollinger Band with 5-period moving average and 2 standard deviations
+# Rolling: Bollinger Band with 5-period window and 2 standard deviations
 df.chartkit.plot(
     title="Price with Bollinger Band",
     metrics=['std_band:5:2']
+)
+
+# Full-series: flat band at mean +/- 2 std
+df.chartkit.plot(
+    title="Price with Full-Series Std Band",
+    metrics=['std_band']
 )
 ```
 

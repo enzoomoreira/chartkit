@@ -161,7 +161,7 @@ src/chartkit/
 │   ├── moving_average.py # Moving average
 │   ├── reference_lines.py# ATH, ATL, AVG, hlines, target
 │   ├── bands.py          # Shaded bands
-│   ├── std_band.py       # Standard deviation band (Bollinger Band)
+│   ├── std_band.py       # Standard deviation band (rolling Bollinger or full-series flat)
 │   ├── vband.py          # Vertical band between dates
 │   └── markers.py        # HighlightStyle + unified add_highlight (last/max/min/all)
 │

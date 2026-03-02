@@ -116,7 +116,8 @@ atl = "ATL"
 avg = "AVG"
 moving_average_format = "MM{window}"    # Supports {freq} placeholder for detected frequency
 target_format = "Meta: {value}"
-std_band_format = "BB({window}, {deviations})"  # Supports {freq} placeholder for detected frequency
+std_band_format = "BB({window}, {deviations})"  # Rolling mode label. Supports {freq} placeholder
+std_band_full_format = "DP({deviations})"         # Full-series mode label
 
 [bands]
 alpha = 0.15

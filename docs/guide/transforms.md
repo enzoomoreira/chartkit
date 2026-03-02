@@ -13,7 +13,8 @@ Transformation functions for financial time series.
 | `drawdown()` | Percentage distance from peak | Asset decline |
 | `zscore()` | Statistical standardization | Compare series |
 | `annualize()` | Annualize periodic rate | Annual CDI |
-| `to_month_end()` | Normalize to month-end | Align series |
+| `despike()` | Remove aggressive data spikes | Bloomberg data cleanup |
+| `resample()` | Downsample to target frequency | Daily to monthly/weekly/quarterly |
 
 ## Import
 
@@ -21,7 +22,7 @@ Transformation functions for financial time series.
 from chartkit import (
     variation, accum, diff, normalize,
     drawdown, zscore,
-    annualize, to_month_end,
+    annualize, despike, resample,
 )
 ```
 
@@ -362,37 +363,95 @@ daily_cdi.chartkit.annualize().plot(
 
 ---
 
-### to_month_end() - Normalize to Month-End
+## Data Cleaning
 
-Normalizes temporal index to the last day of the month, consolidating monthly observations. Each timestamp is mapped to the last day of its respective month. If multiple rows fall in the same month (e.g., daily data), keeps only the last chronological observation of that month -- the resulting index has no duplicates.
+### despike() - Remove Aggressive Data Spikes
 
-Raises `TransformError` if the index is not a `DatetimeIndex`.
+Detects and normalizes aggressive single-point spikes using a Hampel filter (rolling median + MAD). Designed for Bloomberg-style data where isolated data points spike to anomalous values while preserving normal market volatility.
+
+The modified z-score for each point is: `|x - rolling_median| / (1.4826 * MAD)`
+
+Points exceeding the threshold are replaced according to `method`.
 
 ```python
-def to_month_end(df) -> DataFrame | Series
+def despike(df, window: int = 21, threshold: float = 5.0, method: str = "median") -> DataFrame | Series
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `df` | DataFrame \| Series | - | Input data |
+| `window` | int | 21 | Rolling window size (must be odd, >= 3). Centered on each point |
+| `threshold` | float | 5.0 | Number of MADs to consider a spike. Higher = only extreme anomalies. Default ~5 sigma equivalent |
+| `method` | str | `"median"` | Replacement strategy: `'median'` (rolling median) or `'interpolate'` (linear interpolation) |
+
+**Example:**
+
+```python
+from chartkit import despike
+
+# Default: conservative spike removal (threshold=5)
+df_clean = despike(df)
+
+# More aggressive detection
+df_clean = despike(df, threshold=3.0)
+
+# Replace spikes with linear interpolation instead of median
+df_clean = despike(df, method="interpolate")
+
+# Smaller window for higher-frequency data
+df_clean = despike(df, window=11)
+
+# Via accessor (chainable)
+df.chartkit.despike().plot(title="Cleaned Data")
+
+# Chain with other transforms
+df.chartkit.despike().variation(horizon='year').plot(
+    title="Annual Variation (spike-free)"
+)
+```
+
+---
+
+### resample() - Downsample to Target Frequency
+
+Downsamples data by grouping observations into time periods and applying an aggregation method. Useful for reducing data density before plotting (e.g., daily -> monthly) or aligning series at a common frequency.
+
+Raises `TransformError` if the index is not a `DatetimeIndex` or parameters are invalid.
+
+```python
+def resample(df, freq: str = "month", method: str = "last") -> DataFrame | Series
 ```
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `df` | DataFrame \| Series | - | Data with DatetimeIndex |
+| `freq` | str | `"month"` | Target frequency: `'day'`/`'D'`, `'week'`/`'W'`, `'month'`/`'M'`, `'quarter'`/`'Q'`, `'year'`/`'Y'`, `'annual'` |
+| `method` | str | `"last"` | Aggregation: `'last'`, `'first'`, `'mean'`, `'sum'` |
 
 **Example:**
 
 ```python
-from chartkit import to_month_end
+from chartkit import resample
 
-# Daily data -> one row per month (last observation)
-monthly = to_month_end(daily_prices)
+# Daily data -> monthly (last value per month)
+monthly = resample(daily_prices)
 
-# Align series before operations
-selic = to_month_end(selic)
-cpi = to_month_end(cpi)
+# Daily data -> weekly (last value per week)
+weekly = resample(daily_prices, freq="week")
 
-# Now they can be operated together
-spread = selic - cpi
+# Daily data -> quarterly (mean value per quarter)
+quarterly = resample(daily_prices, freq="quarter", method="mean")
+
+# Intraday -> daily (sum of volumes)
+daily_vol = resample(intraday_df, freq="day", method="sum")
 
 # Via accessor
-selic.chartkit.to_month_end().plot()
+daily_prices.chartkit.resample(freq="week").plot(title="Weekly Prices")
+
+# Chain with other transforms
+daily_prices.chartkit.resample(freq="month").variation(horizon="year").plot(
+    title="YoY on Monthly Data"
+)
 ```
 
 ---
@@ -449,11 +508,11 @@ cdi.chartkit.annualize().plot(
 Calculate spread between nominal rate and inflation:
 
 ```python
-from chartkit import to_month_end, accum
+from chartkit import resample, accum
 
 # Align frequencies
-selic = to_month_end(monthly_selic)
-cpi = to_month_end(monthly_cpi)
+selic = resample(monthly_selic)
+cpi = resample(monthly_cpi)
 
 # Calculate trailing 12-month accumulated
 selic_12m = accum(selic)
@@ -494,7 +553,7 @@ daily_cdi.chartkit \
 # Access transformed data without plotting
 df_final = daily_cdi.chartkit \
     .annualize() \
-    .to_month_end() \
+    .resample(freq="month") \
     .df
 
 # Use transformed DataFrame in other operations

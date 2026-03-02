@@ -114,7 +114,7 @@ cpi_12m.plot(
 ```python
 import pandas as pd
 import chartkit
-from chartkit import to_month_end
+from chartkit import resample
 
 # Selic (target % p.a.) and 12-month CPI (% p.a.) data
 data = pd.DataFrame({
@@ -125,7 +125,7 @@ data = pd.DataFrame({
 }, index=pd.date_range('2024-01', periods=12, freq='ME'))
 
 # Normalize indices to month-end (ensures alignment)
-data = to_month_end(data)
+data = resample(data)
 
 # Plot both series on the same chart
 data.chartkit.plot(
@@ -399,13 +399,13 @@ monthly_cpi = pd.DataFrame({
 
 ### Series Alignment
 
-Always normalize dates to month-end before combining series from different sources:
+Always normalize dates to a common frequency before combining series from different sources:
 
 ```python
-from chartkit import to_month_end
+from chartkit import resample
 
-selic = to_month_end(selic_raw)
-cpi = to_month_end(cpi_raw)
+selic = resample(selic_raw)          # default: freq="month", method="last"
+cpi = resample(cpi_raw)
 combined = pd.concat([selic, cpi], axis=1)
 ```
 

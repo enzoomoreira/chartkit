@@ -55,7 +55,7 @@ tests/
     ├── test_freq_resolution.py    # Frequency resolution and period detection
     ├── test_input_pipeline.py     # Input coercion, sanitization, numeric validation
     ├── test_normalize.py          # Base-100 normalization
-    ├── test_to_month_end.py       # Date alignment
+    ├── test_resample.py           # Frequency resampling
     ├── test_variation.py          # Month/year variation
     └── test_zscore.py             # Z-score (global and rolling)
 ```

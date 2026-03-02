@@ -24,6 +24,7 @@ from ._validation import (
     _DiffParams,
     _FreqResolvedParams,
     _NormalizeParams,
+    _ResampleParams,
     _RollingParams,
     _ZScoreParams,
     coerce_input,
@@ -42,7 +43,7 @@ __all__ = [
     "drawdown",
     "zscore",
     "despike",
-    "to_month_end",
+    "resample",
 ]
 
 
@@ -546,28 +547,52 @@ def despike(
 
 
 # ---------------------------------------------------------------------------
-# to_month_end -- normalize index to month end
+# resample -- downsample temporal data to a target frequency
 # ---------------------------------------------------------------------------
 
+# User-friendly aliases -> pandas offset aliases
+_RESAMPLE_OFFSETS: dict[str, str] = {
+    "day": "D",
+    "D": "D",
+    "week": "W",
+    "W": "W",
+    "month": "ME",
+    "M": "ME",
+    "quarter": "QE",
+    "Q": "QE",
+    "year": "YE",
+    "Y": "YE",
+    "annual": "YE",
+}
+
 
 @overload
-def to_month_end(df: pd.DataFrame) -> pd.DataFrame: ...
+def resample(df: pd.DataFrame, freq: str = ..., method: str = ...) -> pd.DataFrame: ...
 @overload
-def to_month_end(df: pd.Series) -> pd.Series: ...
-def to_month_end(
+def resample(df: pd.Series, freq: str = ..., method: str = ...) -> pd.Series: ...
+def resample(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
+    freq: str = "month",
+    method: str = "last",
 ) -> pd.DataFrame | pd.Series:
-    """Normalize temporal index to month end, consolidating monthly observations.
+    """Resample temporal data to a target frequency.
 
-    Each timestamp is mapped to the last day of its respective month.
-    If multiple rows fall in the same month (e.g. daily data), keeps
-    only the last chronological observation of that month.
+    Downsamples data by grouping observations into time periods and
+    applying an aggregation method.  Useful for reducing data density
+    before plotting (e.g. daily -> monthly).
 
     Args:
-        df: Input data. Index must be DatetimeIndex.
+        df: Input data.  Index must be DatetimeIndex.
+        freq: Target frequency.  Accepts friendly names (``'day'``,
+            ``'week'``, ``'month'``, ``'quarter'``, ``'year'``,
+            ``'annual'``) or short codes (``'D'``, ``'W'``, ``'M'``,
+            ``'Q'``, ``'Y'``).  Defaults to ``'month'``.
+        method: Aggregation method -- ``'last'`` (default), ``'first'``,
+            ``'mean'``, or ``'sum'``.
 
     Raises:
-        TransformError: If data is empty or index is not DatetimeIndex.
+        TransformError: If data is empty, index is not DatetimeIndex,
+            or parameters are invalid.
     """
     data = coerce_input(df)
 
@@ -576,10 +601,17 @@ def to_month_end(
 
     if not isinstance(data.index, pd.DatetimeIndex):
         raise TransformError(
-            f"to_month_end requires DatetimeIndex, got {type(data.index).__name__}"
+            f"resample requires DatetimeIndex, got {type(data.index).__name__}"
         )
 
-    result = data.copy()
-    result.index = result.index.to_period("M").to_timestamp("M")  # type: ignore[attr-defined]
-    result = result.sort_index()
-    return result.groupby(level=0).last()
+    params = validate_params(_ResampleParams, freq=freq, method=method)
+    offset = _RESAMPLE_OFFSETS[params.freq]
+
+    resampler = data.resample(offset)
+    result = getattr(resampler, params.method)()
+
+    if isinstance(result, pd.Series):
+        return result.dropna()
+    return result.dropna(how="all")
+
+

@@ -14,6 +14,7 @@ __all__ = [
     "validate_numeric",
     "validate_params",
     "_DespikeParams",
+    "_ResampleParams",
 ]
 
 
@@ -152,6 +153,23 @@ class _DespikeParams(BaseModel):
         if self.threshold <= 0:
             raise ValueError("'threshold' must be positive")
         return self
+
+
+ResampleFreq = Literal[
+    "day", "D",
+    "week", "W",
+    "month", "M",
+    "quarter", "Q",
+    "year", "Y",
+    "annual",
+]
+
+
+class _ResampleParams(BaseModel):
+    """Validation for resample."""
+
+    freq: ResampleFreq = "month"
+    method: Literal["last", "first", "mean", "sum"] = "last"
 
 
 # ---------------------------------------------------------------------------
