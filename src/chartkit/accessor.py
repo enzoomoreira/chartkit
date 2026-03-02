@@ -105,6 +105,23 @@ class ChartingAccessor:
         """
         return TransformAccessor(self._obj).zscore(window)
 
+    def despike(
+        self,
+        window: int = 21,
+        threshold: float = 5.0,
+        method: str = "median",
+    ) -> TransformAccessor:
+        """Detect and normalize aggressive data spikes (Hampel filter).
+
+        Args:
+            window: Rolling window size (odd, >= 3). Centered on each point.
+            threshold: MADs above which a point is considered a spike.
+                Default ``5.0`` (~5 sigma, very conservative).
+            method: ``'median'`` replaces with rolling median;
+                ``'interpolate'`` interpolates linearly.
+        """
+        return TransformAccessor(self._obj).despike(window, threshold, method)
+
     def to_month_end(self) -> TransformAccessor:
         """Align index to month-end keeping the last observation per month."""
         return TransformAccessor(self._obj).to_month_end()

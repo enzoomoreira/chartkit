@@ -4,6 +4,7 @@ from .accessor import TransformAccessor
 from .temporal import (
     accum,
     annualize,
+    despike,
     diff,
     drawdown,
     normalize,
@@ -21,5 +22,6 @@ __all__ = [
     "annualize",
     "drawdown",
     "zscore",
+    "despike",
     "to_month_end",
 ]

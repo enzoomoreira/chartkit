@@ -35,6 +35,7 @@ from .transforms import TransformAccessor
 from .transforms import (
     accum,
     annualize,
+    despike,
     diff,
     drawdown,
     normalize,
@@ -102,5 +103,6 @@ __all__ = [
     "annualize",
     "drawdown",
     "zscore",
+    "despike",
     "to_month_end",
 ]

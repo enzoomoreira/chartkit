@@ -37,3 +37,30 @@ def known_zscore_data() -> pd.Series:
     """[10, 20, 30] mean=20 std=10 -> zscore: [-1, 0, 1]"""
     idx = pd.date_range("2023-01-31", periods=3, freq="ME")
     return pd.Series([10.0, 20.0, 30.0], index=idx, name="val")
+
+
+@pytest.fixture
+def known_despike_data() -> pd.Series:
+    """Series with obvious spike at index 5: ~100 neighborhood, 350 spike."""
+    import numpy as np
+
+    idx = pd.date_range("2023-01-02", periods=21, freq="B")
+    values = [100.0, 102.0, 98.0, 101.0, 99.0,
+              350.0,  # spike
+              100.0, 103.0, 97.0, 101.0, 100.0,
+              99.0, 102.0, 98.0, 101.0, 100.0,
+              103.0, 97.0, 99.0, 102.0, 100.0]
+    return pd.Series(values, index=idx, name="price")
+
+
+@pytest.fixture
+def multi_spike_data() -> pd.DataFrame:
+    """DataFrame with spikes in multiple columns at different positions."""
+    import numpy as np
+
+    idx = pd.date_range("2023-01-02", periods=21, freq="B")
+    col_a = [100.0] * 21
+    col_a[3] = 500.0  # spike in column a
+    col_b = [50.0] * 21
+    col_b[15] = 200.0  # spike in column b
+    return pd.DataFrame({"a": col_a, "b": col_b}, index=idx)

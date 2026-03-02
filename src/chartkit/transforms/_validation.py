@@ -13,6 +13,7 @@ __all__ = [
     "sanitize_result",
     "validate_numeric",
     "validate_params",
+    "_DespikeParams",
 ]
 
 
@@ -132,6 +133,24 @@ class _ZScoreParams(BaseModel):
     def _min_window(self) -> _ZScoreParams:
         if self.window is not None and self.window < 2:
             raise ValueError("'window' must be >= 2 (std of 1 value is undefined)")
+        return self
+
+
+class _DespikeParams(BaseModel):
+    """Validation for despike."""
+
+    window: PositiveInt = 21
+    threshold: float = 5.0
+    method: Literal["median", "interpolate"] = "median"
+
+    @model_validator(mode="after")
+    def _validate(self) -> _DespikeParams:
+        if self.window < 3:
+            raise ValueError("'window' must be >= 3 (need neighbors on both sides)")
+        if self.window % 2 == 0:
+            raise ValueError("'window' must be odd (centered rolling requires symmetric sides)")
+        if self.threshold <= 0:
+            raise ValueError("'threshold' must be positive")
         return self
 
 

@@ -7,6 +7,7 @@ import pandas as pd
 from .temporal import (
     accum,
     annualize,
+    despike,
     diff,
     drawdown,
     normalize,
@@ -112,6 +113,23 @@ class TransformAccessor:
                 entire series (global mean and std).
         """
         return TransformAccessor(zscore(self._df, window))
+
+    def despike(
+        self,
+        window: int = 21,
+        threshold: float = 5.0,
+        method: str = "median",
+    ) -> TransformAccessor:
+        """Detect and normalize aggressive data spikes (Hampel filter).
+
+        Args:
+            window: Rolling window size (odd, >= 3). Centered on each point.
+            threshold: MADs above which a point is considered a spike.
+                Default ``5.0`` (~5 sigma, very conservative).
+            method: ``'median'`` replaces with rolling median;
+                ``'interpolate'`` interpolates linearly.
+        """
+        return TransformAccessor(despike(self._df, window, threshold, method))
 
     def to_month_end(self) -> TransformAccessor:
         """Align index to month-end keeping the last observation per month."""
