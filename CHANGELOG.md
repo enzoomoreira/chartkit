@@ -1,5 +1,239 @@
 # Project Changelog
 
+## [2026-03-22 21:11]
+### Changed
+- **Config renomeado de `charting` para `chartkit`**: TOML discovery agora busca `.chartkit/config.toml` (era `.charting.toml`/`charting.toml`), pyproject.toml usa `[tool.chartkit]` (era `[tool.charting]`), user config em `~/.config/chartkit/` e `%APPDATA%/chartkit/` (era `charting/`). Breaking change -- configs existentes precisam ser migrados manualmente
+- **Exemplo de config movido para `.chartkit/config.example.toml`**: Substituiu `charting.example.toml` na raiz do projeto. Novo local segue convencao dotfolder e fica junto ao config do usuario
+- **`.gitignore` atualizado**: `.chartkit/config.toml` ignorado para evitar commit acidental de config do usuario
+
+### Removed
+- **`charting.example.toml`**: Substituido por `.chartkit/config.example.toml`
+- **Suporte a `.charting.toml`/`charting.toml` na raiz**: Discovery simplificado para buscar apenas `.chartkit/config.toml`
+
+## [2026-02-20 11:47]
+### Changed
+- **Collision: unified artist dispatch via `_classify_artist()`**: Logica duplicada de conversao Artist->_PathObstacle em `_collect_obstacles()` e `_collect_passive_obstacles()` extraida para funcao unica com dispatch estrutural (Collection > Patch > Line > fallback extent)
+- **Debug overlay diferencia passive lines de passive shapes**: Obstaculos passivos nao-preenchidos (linhas) agora renderizam com estilo de linha (face transparente, linewidth fino) em vez de estilo shape -- facecolor simplificado para depender apenas de `_filled`
+- **Auto-rotation escala para 90 graus quando angulo configurado nao resolve overlap**: `apply_tick_rotation()` com `"auto"` agora aplica o angulo configurado primeiro e, se sobreposicao persistir, escala para 90 graus. Logica de rotacao extraida para helper `_apply_angle()`
+- **Moving average e std_band center line promovidos a obstaculos ativos**: `register_passive()` substituido por `register_artist_obstacle(filled=False)` -- linhas de media movel e centro da banda de desvio padrao agora causam repulsao real no collision engine, nao apenas aparecem no debug overlay
+
+### Added
+- **Area fills registrados como obstaculos passivos**: `fill_between` PolyCollections do area enhancer agora sao registrados via `register_passive()`, tornando preenchimentos de area visiveis no debug overlay do collision engine
+
+## [2026-02-20 10:44]
+### Changed
+- **Collision engine: cost-based candidate selection**: Substituido o sistema greedy (primeiro candidato livre vence) por funcao de custo continua com 3 componentes ponderados -- distancia do anchor (w=1.0), preferencia de eixo (w=3.0) e proximidade de borda (w=5.0). O solver agora avalia todos os candidatos validos e escolhe o de menor custo
+- **Candidatos proativos em 8 direcoes cardinais**: Novo gerador `_generate_proactive_candidates()` posiciona candidatos em N/NE/E/SE/S/SW/W/NW a multiplas distancias (configuraveis via `candidate_distances`), com normalizacao de diagonais para distancia uniforme
+- **Candidatos reativos renomeados**: `_compute_displacement_options()` renomeado para `_generate_reactive_candidates()` -- semantica snap-to-edge preservada como complemento dos candidatos proativos
+- **Anchor bboxes snapshot**: `_resolve_all()` agora captura bounding boxes originais antes de qualquer movimento, garantindo que a funcao de custo mede distancia ao ponto de ancoragem real
+
+### Added
+- **`CollisionConfig.candidate_distances`**: Tupla de multiplicadores de distancia (em alturas de label) para geracao de candidatos proativos. Default: `(1.0, 1.5, 2.0)`
+- **`CollisionConfig.edge_margin_factor`**: Margem de borda como fracao da altura do label. Labels dentro dessa margem recebem penalidade crescente. Default: `1.0`
+- **`_edge_proximity_cost()`**: Penalidade linear quando label esta proximo a qualquer borda dos axes -- retorna 0.0 quando seguro, escala ate 1.0 quando tocando a borda
+- **`_compute_placement_cost()`**: Funcao de custo unificada combinando distancia normalizada, preferencia de eixo e proximidade de borda
+- **Testes para proactive candidates e cost function**: `TestProactiveCandidates` (geracao em 8 direcoes, bounds check, normalizacao diagonal), `TestPlacementCost` (monotonicidade, preferencia de eixo, penalidade de borda), `TestBestCostSelection` (resolucao realista com dois labels sobrepostos)
+
+### Removed
+- **`_axis_priority()`**: Substituida pela funcao de custo continua `_compute_placement_cost()` -- o sort discreto por bins de prioridade nao escala para avaliacao multi-criterio
+- **Fallback diagonal em `_find_free_position()`**: Eliminado -- candidatos proativos em 8 direcoes ja cobrem diagonais nativamente
+
+## [2026-02-20 02:13]
+### Added
+- **`_internal/frequency.py`**: Novo modulo compartilhado de deteccao e display de frequencia -- centraliza `FREQ_ALIASES`, `normalize_freq_code()`, `infer_freq()` (antes em `transforms/_validation.py`) e adiciona `FREQ_DISPLAY_MAP` com labels curtos pt-BR (D, DU, S, M, T, A) e `freq_display_label()` para conversao
+- **Metricas frequency-aware**: `MetricRegistry.register()` aceita `uses_freq=True` -- metricas marcadas recebem `detected_freq` automaticamente via `MetricRegistry.apply()`, que infere a frequencia uma unica vez e propaga para todas as metricas que precisam
+- **Placeholder `{freq}` em labels de metricas**: `moving_average_format` e `std_band_format` agora suportam `{freq}` para exibir a frequencia detectada dos dados (ex: "MM12M" para media movel de 12 meses) -- opt-in via config TOML
+- **`draw_debug_overlay()` e `draw_composed_debug_overlay()`**: Funcoes standalone para overlay de debug com geometria atualizada -- chamadas apos `finalize_chart()` para refletir posicao final dos axes (tick rotation, subplots_adjust)
+
+### Changed
+- **Debug overlay desacoplado da resolucao de colisao**: `resolve_collisions()` e `resolve_composed_collisions()` nao recebem mais `debug` -- overlay agora e step separado no pipeline (step 9 no engine, step 7 no compose), garantindo que geometria reflete o layout final
+- **`infer_freq()` aceita `pd.Index` diretamente**: Alem de DataFrame e Series, simplificando uso no MetricRegistry onde x_data pode ser Index
+- **`ma` e `std_band` marcados como `uses_freq=True`**: Labels de media movel e banda de desvio padrao exibem frequencia quando disponivel
+
+### Removed
+- **`_infer_freq()` e `_normalize_freq_code()` de `transforms/_validation.py`**: Movidos para `_internal/frequency.py` como `infer_freq()` e `normalize_freq_code()` (API publica do modulo interno)
+- **`_ANCHORED_PREFIXES` e `FREQ_ALIASES` de `transforms/_validation.py`**: Movidos para `_internal/frequency.py`
+- **Parametro `debug` de `resolve_collisions()` e `resolve_composed_collisions()`**: Substituido por funcoes standalone de overlay
+
+## [2026-02-20 01:07]
+### Added
+- **Debug logging no pipeline interno**: Instrumentacao completa com `loguru.logger.debug()` nos pontos-chave do fluxo de plotagem -- `extract_plot_data` (x/y/rows), `create_figure` (figsize/grid), `apply_legend` (handles/skip), `finalize_chart` (steps aplicados), `coerce_axis_limits` (conversoes), `apply_tick_formatting` (locator type/freq/format)
+- **Validacao de `tick_freq` via Pydantic**: `validate_plot_params()` agora valida `tick_freq` com `TickFreq` Literal type, capturando valores invalidos antes de chegar ao tick engine
+- **Validacao de tipo em `tick_rotation`**: Guard defensivo rejeita valores que nao sao `int` nem `"auto"`, com `ValidationError` descritiva
+- **Docstrings completas na API publica**: Documentacao Args/Attributes em `ChartingAccessor` (plot, layer, transforms), `TransformAccessor` (plot com signature explicita, layer, transforms), `PlotResult` (save, show, axes, figure), `Layer`, `create_layer()`, `MetricSpec`, `MetricRegistry.apply()`, `ChartingTheme` properties, e todos os 17 config models em `settings/schema.py`
+- **`TickFreq` type centralizado**: Novo Literal type em `plot_validation.py` reusado por `tick_formatting.py` e `PlotParamsModel`
+
+### Changed
+- **`TransformAccessor.plot()` com signature explicita**: Substituiu `**kwargs` opaco por todos os parametros tipados (x, y, kind, title, units, source, highlight, metrics, legend, xlabel, ylabel, xlim, ylim, grid, tick_rotation, tick_format, tick_freq, collision, debug) -- habilita autocomplete e type checking no IDE
+- **`ValidationError` em vez de `ValueError`**: `tick_formatting.py` e `tick_rotation.py` agora usam `chartkit.exceptions.ValidationError` para erros de input invalido, consistente com o resto da library
+- **Logging de data extraction movido para `extraction.py`**: Debug log de x/y_columns/rows extraido de `engine.py` para `extract_plot_data()`, onde a logica de extracao realmente vive
+- **`_validate_layers()` propaga `tick_freq`**: Validacao de compose agora passa `tick_freq` para `validate_plot_params()`, garantindo mesma validacao do plot direto
+
+## [2026-02-19 23:45]
+### Added
+- **`_internal/pipeline.py`**: Novo modulo com pipeline steps compartilhados (`create_figure`, `apply_legend`, `finalize_chart`) -- elimina duplicacao entre engine e compose
+- **`RenderContext`**: Dataclass frozen em `charts/_helpers.py` que encapsula config, color cycle, user_color, zorder e y_data pre-processado para enhancers
+- **`prepare_render_context()` e `resolve_color()`**: Helpers que extraem boilerplate repetido de todos os enhancers (config loading, Series->DataFrame coercion, color resolution)
+- **Thread-safety no `ConfigLoader`**: `threading.Lock` com double-checked locking em `configure()`, `reset()` e `get_config()`
+
+### Changed
+- **Enhancers unificados via RenderContext**: Todos os 9 enhancers (area, ecdf, eventplot, hist, stacked_bar, stackplot, stairs, statistical, stem) e o `ChartRenderer` agora usam `RenderContext` em vez de repetir config/color/zorder boilerplate individualmente
+- **Engine e compose unificados via pipeline**: Steps duplicados (theme.apply, figure creation, tick formatting, tick rotation, axis limits, labels, decorations) extraidos para funcoes compartilhadas em `pipeline.py`
+- **`apply_y_origin()` generalizado**: Novo parametro `axis` permite usar a mesma funcao para barras verticais (y) e horizontais (x), eliminando logica duplicada no enhancer barh
+- **`compute_bar_offsets()` usado no bar enhancer**: Substituiu calculo inline de offsets por helper ja existente
+- **`theme.apply()` reseta font cache**: Invalida `_font` antes de recarregar config, evitando fonte stale apos reconfiguracoes
+
+### Removed
+- **`_apply_composed_legend()`** de `compose.py` -- substituida por `apply_legend()` compartilhada
+- **`ChartingPlotter._apply_legend()`** de `engine.py` -- substituida pela mesma funcao compartilhada
+- **Pipeline steps duplicados**: ~50 linhas de codigo identico removidas entre engine e compose (theme.apply, plt.subplots, grid override, tick formatting, tick rotation, axis limits, labels, title, footer)
+- **Logica duplicada de barh origin**: 12 linhas de calculo manual de xlim no enhancer barh, substituidas por `apply_y_origin(axis="x")`
+
+## [2026-02-19 21:21]
+### Added
+- **Smart tick alignment**: Ticks posicionados nos pontos reais dos dados em vez de boundaries fixas do calendario -- dados trimestrais end-of-quarter (Mar/Jun/Sep/Dec) agora recebem ticks nos meses corretos, sem desalinhamento para Jan/Apr/Jul/Oct
+- **Auto-inferencia de tick frequency**: Quando `tick_freq` nao e especificado, `pd.infer_freq()` detecta o padrao temporal dos dados e alinha ticks automaticamente para frequencias esparsas (quarterly, semestral, anual)
+- **Phantom tick clipping**: Remove ticks fora do range real dos dados, causados por padding de xlim (comum em bar charts)
+- **`coerce_axis_limits()`**: `xlim`/`ylim` agora aceitam strings (`"2024-01-01"`, `"100"`) com conversao automatica para datetime ou float
+- **`AxisLimits` type alias**: Tipo semantico para tuplas de limites de eixo com suporte a str/int/float/datetime/Timestamp/None
+
+### Changed
+- Tick frequency `"quarter"` agora usa meses end-of-quarter (3,6,9,12) em vez de start-of-quarter (1,4,7,10)
+- Tick frequency `"semester"` agora usa meses end-of-semester (6,12) em vez de start (1,7)
+- Horizontal alignment de tick labels rotacionados mudou de angle-dependent (right/left) para sempre `center`
+- `apply_tick_formatting()` recebe novo parametro `x_data` para posicionamento data-aware de ticks
+
+### Removed
+- **`add_right_margin()`**: Funcao removida junto com suas chamadas em engine e compose -- margem direita para highlight labels nao e mais necessaria
+
+## [2026-02-18 22:36]
+### Changed
+- **Collision engine modularizado**: Modulo monolitico `_internal/collision.py` (877 linhas) dividido em pacote `_internal/collision/` com 4 sub-modulos especializados: `_registry.py` (estado global e registro de artists), `_obstacles.py` (PathObstacle e coleta de obstaculos), `_engine.py` (resolucao de colisoes), `_debug.py` (overlay de debug)
+- API publica mantida identica via re-exports no `__init__.py`
+
+## [2026-02-18 21:53]
+### Added
+- **Fixtures de edge cases financeiros** (`conftest.py`): `irregular_daily_prices` (datas irregulares), `quarterly_rates` (dados trimestrais), `gapped_prices` (precos com NaN gaps) -- cenarios reais problematicos
+- **Testes de integracao** (`tests/integration/`): `test_accessor_pipeline.py` e `test_end_to_end.py` para validacao end-to-end do fluxo completo
+- **Testes de formatting** (`tests/formatting/`): `test_axis_formatters.py` e `test_highlight.py` em diretorio dedicado
+- **Testes de edge cases financeiros** em transforms: dados trimestrais com `variation`, timeseries irregulares, NaN gaps em `drawdown`, taxa -100% em `accum`, multi-column em `normalize`/`zscore`/`drawdown`/`accum`
+- **Testes de MetricRegistry.apply** (`test_registry.py`): Validacao de chamada de handlers com ax/data e passagem de parametros
+
+### Changed
+- **Suite de testes reescrita**: Reorganizacao completa por dominio de negocio em vez de detalhe de implementacao -- testes focam em comportamento e corretude, nao em type-checking de inputs
+- **Nomes de testes descritivos**: Classes e metodos renomeados para expressar intent (`TestAccumKnownValues`, `test_minus_100_rate_zeroes_product`, etc.)
+- **Docstrings em todos os testes**: Cada teste documenta o que valida (`"""[1%, 2%, 3%] window=3 -> compound product."""`)
+- **Charts tests reestruturados**: Testes individuais por enhancer (`test_area_enhancer.py`, `test_bar_enhancer.py`, `test_stacked_bar_enhancer.py`) + renderer generico (`test_renderer.py`)
+- **Collision tests consolidados**: `test_collision_engine.py` substitui `test_collect_obstacles.py` e `test_pos_to_numeric.py`
+- **Composing tests reorganizados**: `test_compose_pipeline.py` e `test_layer_validation.py` substituem 6 arquivos separados
+- **Settings tests focados**: `test_config_precedence.py` substitui `test_deep_merge.py`, `test_loader.py` e `test_schema.py`
+- **Transform tests enxutos**: `test_freq_resolution.py` e `test_input_pipeline.py` consolidam validacao transversal
+
+### Removed
+- **41 arquivos de teste antigos** deletados: testes granulares que testavam detalhes de implementacao (input type acceptance, empty raises, internal state access) substituidos por testes focados em comportamento
+- **Testes redundantes de input type**: `test_accepts_series`, `test_accepts_dataframe` removidos de todos os transform tests -- testavam coercao do framework, nao logica de negocio
+- **Testes de empty raises generico**: Removidos de `accum`, `annualize`, `diff`, `normalize`, `zscore` -- validacao de input vazia e responsabilidade da camada de coercao
+- **Diretorios `tests/decorations/`, `tests/engine/`, `tests/internal/`**: Removidos junto com seus `__init__.py`
+
+## [2026-02-18 21:11]
+### Added
+- **Controles de eixo** (`xlabel`, `ylabel`, `xlim`, `ylim`) em `plot()`, `compose()` e accessor: Controle direto de labels e limites dos eixos sem acessar o matplotlib diretamente
+- **Grid per-call** (`grid` parameter): `grid=True/False` em `plot()` e `compose()` habilita/desabilita grid para um grafico especifico, com precedencia sobre config global
+- **`GridConfig`** (`settings/schema.py`): Config estruturada substituindo o antigo `grid: bool` -- campos `enabled`, `alpha`, `color`, `linestyle`, `axis` configuraveis via TOML
+- **Sistema de tick formatting** (`_internal/tick_formatting.py`): Controle de frequencia e formato de ticks temporais no eixo X via `tick_format` (strftime) e `tick_freq` (`"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`) -- usa `matplotlib.dates` locators/formatters
+- **`TicksConfig.date_format` e `TicksConfig.date_freq`**: Campos de config para tick formatting, configuraveis via TOML e env vars
+- **Area chart fill-between semantics**: 2 colunas agora preenchem entre o par (spread/intervalo) em vez de independentemente a partir de zero; 3+ colunas manteem comportamento independente
+- **Passive obstacles no debug overlay**: Obstaculos passivos renderizados em cinza tracejado no modo `debug=True`
+- **Stackplot registra PolyCollections como passive**: Collision engine agora reconhece areas empilhadas como obstaculos passivos
+
+### Changed
+- **Theme aplica config completa de grid** (`theme.py`): rcParams agora incluem `axes.grid.axis`, `grid.alpha`, `grid.color`, `grid.linestyle` alem do `axes.grid`
+- **Debug overlay refatorado** (`collision.py`): `_draw_obstacles()` helper com suporte a passivos e `_collect_passive_obstacles()` para coleta cross-axis
+- **`label_padding_px` default reduzido** de 4.0 para 2.0 (`CollisionConfig`)
+- **Tick rotation: alinhamento para angulos negativos** corrigido de `"center"` para `"left"`
+- **Collections nao-PathCollection deixadas sem registro** no renderer post-render -- auto-detectadas por `_collect_obstacles()` em vez de registro explicito como passive
+- **`charting.example.toml` atualizado** com secao `[layout.grid]` e campos `date_format`/`date_freq` em `[ticks]`
+
+### Removed
+- **Parametro `fill_between`** de `plot()`, `compose()`, `Layer`, `create_layer()`, accessor e `TransformAccessor` -- funcionalidade absorvida pelo area enhancer (modo 2 colunas)
+- **`overlays/fill_between.py`** -- modulo inteiro deletado
+- **`add_fill_between()` da API publica de overlays**
+- **`scripts/test_tick_rotation.py`** -- substituido por `test_axis_controls.py`
+
+## [2026-02-18 15:30]
+### Added
+- **Parametro `collision`** em `plot()`, `compose()` e accessor: `collision=False` desabilita completamente a collision resolution engine -- util para graficos simples onde a resolucao de colisao e desnecessaria ou interfere no layout
+- **Ajuste automatico de margem inferior** (`_internal/tick_rotation.py`): Apos rotacao de tick labels, `_adjust_bottom_margin()` empurra o axes para cima se labels sobreporem a area do footer
+
+### Changed
+- **Collision engine condicional** (`engine.py`, `compose.py`): Registro de legend como obstaculo e resolucao de colisoes agora executam apenas quando `collision=True` (default), evitando processamento desnecessario
+- **Skip de rotacao quando angulo e zero** (`tick_rotation.py`): Early return evita setar rotation/ha desnecessariamente e pular ajuste de margem
+
+## [2026-02-18 15:07]
+### Added
+- **`units="x"` (multiplier formatter)**: Novo formato de eixo Y para dados que representam multiplicadores (P/L, EV/EBITDA, etc.) -- formata valores como `12,3x`, `0,8x` respeitando locale para separador decimal
+
+## [2026-02-18 14:48]
+### Added
+- **Sistema de tick rotation** (`_internal/tick_rotation.py`): Auto-rotacao de labels do eixo X para prevenir sobreposicao -- modo `"auto"` detecta overlap via `get_window_extent()` e aplica rotacao apenas quando necessario; modo fixo aceita angulo em graus
+- **`TicksConfig`** (`settings/schema.py`): Nova sub-config com `rotation` (`"auto"` ou angulo) e `auto_rotation_angle` (default 45) -- configuravel via TOML e env vars
+- **Parametro `tick_rotation`** em `plot()`, `compose()` e accessor: Controle per-call da rotacao de ticks, com precedencia sobre config global
+- **Secao `[ticks]` no `charting.example.toml`**: Exemplo de configuracao com `rotation` e `auto_rotation_angle`
+
+### Changed
+- **Pipeline do engine** (`engine.py`): Novo step 5d aplica tick rotation apos right margin e antes da legenda
+- **Pipeline do compose** (`compose.py`): Tick rotation inserido como step 4, reordenando steps subsequentes (5-8)
+
+## [2026-02-18 14:25]
+### Added
+- **9 novos chart enhancers** (`charts/enhancers/`): Suporte especializado para area, ecdf, eventplot, hist, pie, stackplot, stairs, statistical (boxplot/violinplot) e stem -- cada um registrado via `@ChartRenderer.register_enhancer` com color cycling, labels e kwargs corretos para a API do matplotlib
+- **Horizontal bar chart** (`charts/enhancers/bar.py`): `kind='barh'` com suporte a multi-coluna (grouped), sort, color cycling e y_origin
+- **`compute_bar_offsets()`** (`charts/_helpers.py`): Calcula largura e offsets por coluna para grouped bar charts (vertical e horizontal)
+- **`_UNSUPPORTED_KINDS`** (`charts/renderer.py`): Blocklist explicita para chart kinds incompativeis (imshow, contour, quiver, etc.) com mensagens de erro descritivas
+- **Auto-deteccao de collections na collision engine** (`collision.py`): `ax.collections` de sibling axes agora auto-detectados como obstaculos -- `PathCollection` (scatter) como filled, outros como passive
+- **Alias `area` -> `fill_between`** (`renderer.py`): `kind='area'` mapeia para `ax.fill_between()` via enhancer
+- **Testes para todos os novos chart types** (11 arquivos): test_area, test_barh, test_ecdf, test_eventplot, test_hist, test_pie, test_stackplot, test_stairs, test_statistical, test_stem, test_unsupported
+
+### Changed
+- **Collision engine unificada com `_PathObstacle`** (`collision.py`): Sistema dual (bbox obstacles + `_LinePathObstacle`) substituido por classe unica `_PathObstacle` que extrai geometria real de qualquer Artist via factory functions (`_path_from_line`, `_path_from_patch`, `_path_from_collection`, `_path_from_extent`)
+- **`register_artist_obstacle()` substitui `register_fixed()` + `register_line_obstacle()`**: API unica com parametros `filled` (shape vs line) e `colocate` (skip para labels que iniciam sobre a propria linha)
+- **`_collect_obstacles()` com dispatch por tipo**: Recebe renderer, auto-detecta collections em siblings, e despacha artists registrados por tipo (Line2D -> path, Collection -> paths, Patch -> patch transform, fallback -> extent)
+- **`_resolve_all()` usa lista unificada de `_PathObstacle`**: Padding condicional (obstacle_pad para filled, 0 para lines) em vez de separar bbox/path obstacles
+- **Post-render no `ChartRenderer`**: PathCollection (scatter) registrado como filled obstacle, outras collections como passive -- alem dos Line2D existentes
+- **Scatter markers registrados como passive** (`overlays/markers.py`): Evita que pontos de highlight se tornem obstaculos de colisao automaticamente
+- **Debug overlay atualizado** (`collision.py`): Renderiza todas as geometrias (filled com face color, unfilled com edge grosso), substituindo o sistema anterior de rects translucidos
+- **Documentacao atualizada**: architecture.md, extending.md, internals.md, collision.md e api.md refletem a nova API unificada
+
+### Removed
+- **`register_fixed()`**: Substituido por `register_artist_obstacle(ax, artist, filled=True)`
+- **`register_line_obstacle()`**: Substituido por `register_artist_obstacle(ax, artist, filled=False, colocate=True)`
+- **`_LinePathObstacle`**: Substituida pela `_PathObstacle` unificada
+- **`_obstacles` e `_line_obstacles` WeakKeyDictionaries**: Consolidados em `_artist_obstacles`
+- **Type alias `Obstacle`**: Desnecessario -- tudo e `_PathObstacle`
+
+## [2026-02-13 21:14]
+### Added
+- **`ChartRenderer` com rendering generico** (`charts/renderer.py`): Novo motor de rendering que despacha para `ax.{kind}()` para qualquer tipo de grafico matplotlib, eliminando a necessidade de registrar cada tipo manualmente
+  - Enhancers para tipos complexos via `@ChartRenderer.register_enhancer("name")` -- bar grouping e stacking continuam com logica especializada
+  - `Enhancer` Protocol define a interface de handlers especializados
+  - `_generic_render()` com color cycling automatico, kind defaults per-type, e highlight inference via snapshot diff de patches
+  - `_ALIASES` mapeia `"line"` -> `"plot"` (matplotlib usa `ax.plot()`)
+  - `_KIND_DEFAULTS` aplica defaults per-kind (ex: `linewidth` para `plot`)
+  - Post-render: snapshot diff de `ax.lines` registra novos Line2D como obstaculos de colisao
+  - `validate_kind()` publica para validacao eagerly em `create_layer()`
+- **`charts/enhancers/` package**: Enhancers de bar e stacked_bar movidos para subpackage dedicado, com auto-registro via import no `__init__.py`
+
+### Changed
+- **`ChartKind` agora e `str`** (`engine.py`): Tipo expandido de `Literal["line", "bar", "stacked_bar"]` para `str` -- qualquer metodo valido de matplotlib Axes (scatter, step, stem, hist, etc.) funciona automaticamente
+- **Engine e compose usam `ChartRenderer.render()`**: Dispatch unificado substitui `ChartRegistry.get(kind)` + chamada manual em ambos os pipelines
+- **Layer validation via `ChartRenderer.validate_kind()`** (`layer.py`): Validacao eagerly agora levanta `ValidationError` (em vez de `RegistryError`) para kinds invalidos
+- **Testes atualizados**: Import de `plot_bar` aponta para `charts/enhancers/bar.py`, teste de layer espera `ValidationError` em vez de `RegistryError`
+
+### Removed
+- **`ChartRegistry`** (`charts/registry.py`): Classe inteira deletada -- substituida por `ChartRenderer`
+- **`charts/line.py`**: Rendering de linhas agora tratado genericamente pelo `ChartRenderer._generic_render()`
+- **`charts/bar.py` e `charts/stacked_bar.py`** (top-level): Movidos para `charts/enhancers/` como enhancers registrados
+
 ## [2026-02-13 00:48]
 ### Fixed
 - **Right margin para highlight labels** (`engine.py`): Pipeline single-chart agora aplica `add_right_margin()` (expansao de 6% no xlim) quando highlights estao presentes, evitando clipping de labels no ultimo datapoint -- comportamento ja existia no `compose()` mas faltava no `engine.py`

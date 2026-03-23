@@ -63,19 +63,19 @@ def reset_project_root_cache() -> None:
 
 
 def get_user_config_dir() -> Path | None:
-    """Return user config dir (Windows: %APPDATA%/charting, Linux: ~/.config/charting)."""
+    """Return user config dir (Windows: %APPDATA%/chartkit, Linux: ~/.config/chartkit)."""
     if sys.platform == "win32":
         appdata = os.environ.get("APPDATA")
         if appdata:
-            return Path(appdata) / "charting"
+            return Path(appdata) / "chartkit"
         return None
-    return Path.home() / ".config" / "charting"
+    return Path.home() / ".config" / "chartkit"
 
 
 def find_config_files(project_root: Path | None = None) -> list[Path]:
     """Find config files in precedence order.
 
-    Searches: .charting.toml/charting.toml in project, pyproject.toml [tool.charting],
+    Searches: .chartkit/config.toml in project, pyproject.toml [tool.chartkit],
     and user config.
     """
     config_files = []
@@ -88,10 +88,9 @@ def find_config_files(project_root: Path | None = None) -> list[Path]:
         search_dirs.append(project_root)
 
     for dir_path in search_dirs:
-        for name in [".charting.toml", "charting.toml"]:
-            candidate = dir_path / name
-            if candidate.exists():
-                config_files.append(candidate)
+        candidate = dir_path / ".chartkit" / "config.toml"
+        if candidate.exists():
+            config_files.append(candidate)
 
     if project_root:
         pyproject = project_root / "pyproject.toml"

@@ -1,0 +1,223 @@
+# =============================================================================
+# Configuracao do chartkit
+# =============================================================================
+#
+# Copie este arquivo como config.toml em um dos seguintes locais:
+#   1. .chartkit/config.toml na raiz do projeto (recomendado)
+#   2. Secao [tool.chartkit] no pyproject.toml
+#   3. ~/.config/chartkit/config.toml (Linux/Mac)
+#   4. %APPDATA%/chartkit/config.toml (Windows)
+#
+# Ou carregue explicitamente:
+#   from chartkit import configure
+#   configure(config_path=Path('./meu-config.toml'))
+#
+# Apenas inclua as secoes/valores que deseja sobrescrever.
+# Valores nao especificados usarao os defaults.
+# =============================================================================
+
+
+# /////////////////////////////////////////////////////////////////////////////
+#
+#   ESSENCIAL - Configure antes de usar
+#
+#   Sem isso os graficos ficam genericos, sem identidade.
+#
+# /////////////////////////////////////////////////////////////////////////////
+
+[branding]
+company_name = "Sua Empresa"
+
+# Fonte de dados exibida no rodape (ex: "IBGE", "BCB", "Bloomberg")
+# Tambem configuravel por grafico via plot(source="IBGE")
+default_source = ""
+
+[formatters.locale]
+decimal = ","           # Separador decimal
+thousands = "."         # Separador de milhares
+babel_locale = "pt_BR"  # Locale para Babel (pt_BR, en_US, etc.)
+
+
+# /////////////////////////////////////////////////////////////////////////////
+#
+#   IDENTIDADE VISUAL - Recomendado para manter consistencia de marca
+#
+#   Os defaults funcionam bem, mas se sua empresa tem
+#   paleta de cores ou fonte propria, configure aqui.
+#
+# /////////////////////////////////////////////////////////////////////////////
+
+[colors]
+# Cores principais (usadas em ordem para multiplas series)
+primary = "#00464D"
+secondary = "#006B6B"
+tertiary = "#008B8B"
+quaternary = "#20B2AA"
+quinary = "#5F9EA0"
+senary = "#2E8B57"
+
+# Cores semanticas
+text = "#00464D"         # Cor do texto (titulos, labels)
+positive = "#00464D"     # Valores positivos (ATH)
+negative = "#8B0000"     # Valores negativos (ATL)
+
+[fonts]
+# Caminho para fonte .ttf/.otf (relativo a paths.assets_dir ou absoluto)
+# Vazio = usa fallback do sistema
+file = ""
+fallback = "sans-serif"
+
+
+# /////////////////////////////////////////////////////////////////////////////
+#
+#   AJUSTE FINO - Defaults sensiveis, mude apenas se necessario
+#
+#   A maioria dos usuarios nunca precisa tocar nessas secoes.
+#   Estao aqui como referencia caso queira personalizar algum detalhe.
+#
+# /////////////////////////////////////////////////////////////////////////////
+
+# --- Branding avancado -------------------------------------------------------
+
+# Templates do rodape (variaveis disponiveis: {source}, {company_name})
+# branding.footer_format = "Fonte: {source}, {company_name}"
+# branding.footer_format_no_source = "{company_name}"
+
+# --- Layout ------------------------------------------------------------------
+
+[layout]
+figsize = [10.0, 6.0]  # Largura x Altura em polegadas
+dpi = 300              # Resolucao para exportacao
+# base_style = "seaborn-v0_8-white"  # Estilo base matplotlib
+
+[layout.grid]
+enabled = false       # Mostrar grid no grafico
+alpha = 0.3           # Transparencia do grid
+color = "lightgray"   # Cor das linhas do grid
+linestyle = "-"       # Estilo: "-", "--", "-.", ":"
+axis = "both"         # "x", "y", ou "both"
+
+# [layout.spines]
+# top = false      # Borda superior
+# right = false    # Borda direita
+# left = true      # Borda esquerda
+# bottom = true    # Borda inferior
+
+# [layout.footer]
+# y = 0.01        # Posicao Y do rodape (0-1)
+# color = "gray"
+
+# [layout.title]
+# padding = 20     # Espacamento em pixels
+# weight = "bold"
+
+# [layout.zorder]
+# Ordem de camadas (menor = mais atras)
+# bands = 0
+# reference_lines = 1
+# moving_average = 2
+# data = 3
+# markers = 5
+
+# --- Cores secundarias -------------------------------------------------------
+
+# colors.grid = "lightgray"
+# colors.background = "white"
+# colors.moving_average = "#888888"
+
+# --- Fontes ------------------------------------------------------------------
+
+# [fonts.sizes]
+# default = 11
+# title = 18
+# footer = 9
+# axis_label = 11
+
+# --- Linhas ------------------------------------------------------------------
+
+# [lines]
+# main_width = 2.0              # Espessura da linha principal
+# overlay_width = 1.5           # Espessura de overlays (MM, ATH, etc)
+# reference_style = "--"        # Estilo de linhas de referencia
+# target_style = "-."            # Estilo de linhas de meta (target)
+# moving_avg_min_periods = 1
+
+# --- Legenda -----------------------------------------------------------------
+
+# [legend]
+# loc = "best"     # "best", "upper right", "lower left", etc.
+# alpha = 0.9
+# frameon = true
+
+# --- Ticks ------------------------------------------------------------------
+
+# [ticks]
+# rotation = "auto"          # "auto" ou angulo em graus (0, 45, 90)
+# auto_rotation_angle = 45   # Angulo quando auto-detect ativa rotacao
+# date_format = "%b/%Y"      # Formato dos ticks temporais (strftime)
+# date_freq = "month"        # Frequencia: "day", "week", "month", "quarter", "semester", "year"
+
+# --- Barras ------------------------------------------------------------------
+
+# [bars]
+# width_default = 0.8
+# width_monthly = 20
+# width_annual = 300
+# auto_margin = 0.1
+# warning_threshold = 500         # Aviso quando chart tem muitos pontos
+
+# [bars.frequency_detection]
+# monthly_threshold = 25   # Dias entre pontos para considerar mensal
+# annual_threshold = 300
+
+# --- Bandas e marcadores -----------------------------------------------------
+
+# [bands]
+# alpha = 0.15
+
+# [markers]
+# scatter_size = 30
+# font_weight = "bold"            # Peso da fonte dos labels de destaque
+
+# --- Colisao de labels -------------------------------------------------------
+
+# [collision]
+# movement = "y"
+# obstacle_padding_px = 8.0
+# label_padding_px = 2.0
+# max_iterations = 50
+# candidate_distances = [1.0, 1.5, 2.0]  # Multiplicadores de distancia para candidatos proativos
+# edge_margin_factor = 1.0               # Margem de borda como fracao da altura do label
+# connector_threshold_px = 30.0
+# connector_alpha = 0.6
+# connector_style = "-"
+# connector_width = 1.0           # Espessura dos conectores
+
+# --- Transforms --------------------------------------------------------------
+
+# [transforms]
+# normalize_base = 100
+# accum_window = 12
+
+# --- Formatadores -------------------------------------------------------------
+
+# [formatters.magnitude]
+# suffixes = ["", "k", "M", "B", "T"]
+
+# --- Labels ------------------------------------------------------------------
+
+# [labels]
+# ath = "ATH"
+# atl = "ATL"
+# avg = "AVG"
+# moving_average_format = "MM{window}"
+# target_format = "Meta: {value}"                # Template para label de meta
+# std_band_format = "BB({window}, {deviations})"    # Template para rolling (Bollinger Bands)
+# std_band_full_format = "DP({deviations})"          # Template para full-series (bandas flat)
+
+# --- Paths -------------------------------------------------------------------
+
+# [paths]
+# charts_subdir = "charts"
+# outputs_dir = ""   # Vazio = auto-discovery
+# assets_dir = ""    # Vazio = auto-discovery

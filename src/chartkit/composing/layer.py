@@ -21,6 +21,17 @@ class Layer:
 
     Captures the plotting intent (data + visual parameters) without rendering.
     Created via ``df.chartkit.layer()`` and consumed by ``compose()``.
+
+    Attributes:
+        df: Source DataFrame.
+        kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
+        x: Column for the X axis. ``None`` uses the DataFrame index.
+        y: Column(s) for the Y axis. ``None`` uses all numeric columns.
+        units: Y-axis formatting (``'BRL'``, ``'USD'``, ``'%'``, etc.).
+        highlight: Data point highlight mode(s).
+        metrics: Declarative metric(s).
+        axis: Which Y axis to use (``'left'`` or ``'right'``).
+        kwargs: Extra matplotlib parameters passed to the renderer.
     """
 
     df: pd.DataFrame
@@ -30,7 +41,6 @@ class Layer:
     units: UnitFormat | None = None
     highlight: HighlightInput = False
     metrics: str | list[str] | None = None
-    fill_between: tuple[str, str] | None = None
     axis: AxisSide = "left"
     kwargs: dict[str, Any] = field(default_factory=dict)
 
@@ -44,24 +54,30 @@ def create_layer(
     units: UnitFormat | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
-    fill_between: tuple[str, str] | None = None,
     axis: AxisSide = "left",
     **kwargs: Any,
 ) -> Layer:
     """Create a Layer for use with ``compose()``.
 
-    Same parameters as ``plot()`` but without chart-level options
-    (title, source, legend). Those are passed to ``compose()`` instead.
+    Args:
+        df: Source DataFrame.
+        kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
+        x: Column for the X axis. ``None`` uses the DataFrame index.
+        y: Column(s) for the Y axis. ``None`` uses all numeric columns.
+        units: Y-axis formatting (``'BRL'``, ``'USD'``, ``'%'``, etc.).
+        highlight: Data point highlight mode(s).
+        metrics: Declarative metric(s).
+        axis: Which Y axis to use (``'left'`` or ``'right'``).
+        **kwargs: Extra matplotlib parameters passed to the renderer.
 
     Raises:
-        ValidationError: Invalid ``units``, ``highlight``, or ``axis``.
-        RegistryError: Unknown ``kind``.
+        ValidationError: Invalid ``units``, ``highlight``, ``axis``, or ``kind``.
     """
     from .._internal import validate_plot_params
-    from ..charts import ChartRegistry
+    from ..charts import ChartRenderer
 
     validate_plot_params(units=units, legend=None)
-    ChartRegistry.get(kind)
+    ChartRenderer.validate_kind(kind)
     if axis not in ("left", "right"):
         from ..exceptions import ValidationError
 
@@ -75,7 +91,6 @@ def create_layer(
         units=units,
         highlight=highlight,
         metrics=metrics,
-        fill_between=fill_between,
         axis=axis,
         kwargs=kwargs,
     )

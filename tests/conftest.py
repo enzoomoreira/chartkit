@@ -109,3 +109,63 @@ def constant_series(monthly_index: pd.DatetimeIndex) -> pd.Series:
 def non_datetime_index_df() -> pd.DataFrame:
     """DataFrame with integer index (no DatetimeIndex)."""
     return pd.DataFrame({"val": [1.0, 2.0, 3.0, 4.0, 5.0]})
+
+
+# ---------------------------------------------------------------------------
+# Financial edge cases (dados reais problematicos)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def irregular_daily_prices() -> pd.DataFrame:
+    """Datas irregulares onde infer_freq falha."""
+    idx = pd.DatetimeIndex(
+        [
+            "2023-01-02",
+            "2023-01-05",
+            "2023-01-11",
+            "2023-01-18",
+            "2023-02-01",
+            "2023-02-15",
+        ]
+    )
+    return pd.DataFrame({"price": [100.0, 102.0, 99.0, 105.0, 103.0, 108.0]}, index=idx)
+
+
+@pytest.fixture
+def quarterly_rates() -> pd.DataFrame:
+    """Dados trimestrais para testar freq resolution."""
+    idx = pd.date_range("2023-03-31", periods=8, freq="QE")
+    return pd.DataFrame({"rate": [2.0, 2.5, 1.8, 3.0, 2.2, 2.8, 1.5, 3.2]}, index=idx)
+
+
+@pytest.fixture
+def gapped_prices(monthly_index: pd.DatetimeIndex) -> pd.DataFrame:
+    """Precos mensais com gaps de NaN (comum em dados reais)."""
+    values = [
+        100.0,
+        105.0,
+        np.nan,
+        np.nan,
+        110.0,
+        115.0,
+        np.nan,
+        120.0,
+        118.0,
+        125.0,
+        130.0,
+        np.nan,
+        128.0,
+        135.0,
+        np.nan,
+        140.0,
+        145.0,
+        150.0,
+        np.nan,
+        155.0,
+        160.0,
+        165.0,
+        170.0,
+        175.0,
+    ]
+    return pd.DataFrame({"price": values}, index=monthly_index)

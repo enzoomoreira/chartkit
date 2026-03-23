@@ -44,6 +44,7 @@ df.chartkit.plot(metrics=['my_metric:10.0'])
     name='metric_name',                  # Name used in the spec string
     param_names=['param1', 'param2'],    # Names of positional parameters
     uses_series=True,                    # Whether it receives 'series' for multi-column DataFrames
+    uses_freq=False,                     # Whether it receives 'detected_freq' from auto-detection
 )
 def function(ax, x_data, y_data, param1, param2, **kwargs):
     ...
@@ -64,6 +65,13 @@ def function(ax, x_data, y_data, param1, param2, **kwargs):
 - Default `True`: the metric receives `series=col` via kwargs when the user
   uses `@` syntax (e.g., `'ath@revenue'`)
 - Use `False` for metrics that don't depend on data (e.g., `hline`, `band`)
+
+**`uses_freq`:**
+- Default `False`: the metric does not receive frequency information
+- When `True`: `MetricRegistry.apply()` infers the data frequency once (via
+  `infer_freq()`) and passes `detected_freq=<str|None>` to the function. This
+  enables frequency-aware labels (e.g., `{freq}` placeholder in label format
+  strings). Built-in examples: `ma` and `std_band`
 
 ### Complex Metric Examples
 
@@ -223,16 +231,31 @@ df.chartkit.my_transform().variation(horizon='year').plot()
 
 ## Creating New Chart Types
 
-New chart types are registered via `@ChartRegistry.register()`. The engine
-dispatches automatically via `ChartRegistry.get(kind)` -- no need to
-modify `engine.py`.
+chartkit supports two approaches for new chart types:
 
-### 1. Create the chart file
+### Generic Types (No Code Needed)
 
-The function must follow the `ChartFunc` protocol:
+Any valid matplotlib Axes method works automatically as `kind`. The `ChartRenderer` calls `ax.{kind}()` with automatic color cycling, highlight inference, and line obstacle registration:
 
 ```python
-# In src/chartkit/charts/scatter.py
+# These work out of the box -- no registration needed
+df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
+df.chartkit.plot(kind='step', where='mid')
+df.chartkit.plot(kind='stem')
+```
+
+### Enhancers (For Complex Types)
+
+When a chart type needs custom logic beyond a simple `ax.{kind}()` call (e.g., bar grouping, stacking, categorical axis handling), register an enhancer via `@ChartRenderer.register_enhancer()`.
+
+#### 1. Create the enhancer file
+
+The function must follow the `Enhancer` protocol. Use `prepare_render_context()`
+to extract common boilerplate (config, color cycle, zorder, Series-to-DataFrame
+coercion) into a `RenderContext`:
+
+```python
+# In src/chartkit/charts/enhancers/waterfall.py
 
 from __future__ import annotations
 
@@ -241,72 +264,49 @@ from typing import TYPE_CHECKING
 import pandas as pd
 from matplotlib.axes import Axes
 
-from ..settings import get_config
-from ..styling.theme import theme
-from .registry import ChartRegistry
+from ..renderer import ChartRenderer
+from .._helpers import prepare_render_context, resolve_color
 
 if TYPE_CHECKING:
-    from ..overlays.markers import HighlightMode
+    from ...overlays.markers import HighlightMode
 
 
-@ChartRegistry.register("scatter")
-def plot_scatter(
+@ChartRenderer.register_enhancer("waterfall")
+def plot_waterfall(
     ax: Axes,
     x: pd.Index | pd.Series,
-    y_data: pd.DataFrame | pd.Series,
-    highlight: list[HighlightMode] | None = None,
-    size: int = 50,
-    alpha: float = 0.7,
+    y_data: pd.Series | pd.DataFrame,
+    highlight: list[HighlightMode],
     **kwargs,
 ) -> None:
-    config = get_config()
-
-    if isinstance(y_data, pd.Series):
-        y_data = y_data.to_frame()
-
-    colors = theme.colors.cycle()
-
-    for i, col in enumerate(y_data.columns):
-        color = colors[i % len(colors)]
-        ax.scatter(
-            x,
-            y_data[col],
-            s=size,
-            alpha=alpha,
-            color=color,
-            label=col,
-            **kwargs,
-        )
-
-    if len(y_data.columns) > 1:
-        ax.legend()
+    ctx = prepare_render_context(y_data, kwargs)
+    for i, col in enumerate(ctx.y_data.columns):
+        color = resolve_color(ctx, i)
+        # Custom rendering logic using ctx.config, ctx.zorder, etc.
+        ...
 ```
 
-### 2. Import in `charts/__init__.py`
+#### 2. Import in `charts/enhancers/__init__.py`
 
 The import triggers automatic registration via decorator:
 
 ```python
-from .registry import ChartRegistry
-from .bar import plot_bar
-from .line import plot_line
-from .scatter import plot_scatter  # Import triggers @ChartRegistry.register("scatter")
+from . import bar, stacked_bar, waterfall  # Import triggers registration
 
-__all__ = ["ChartRegistry", "plot_bar", "plot_line", "plot_scatter"]
+__all__: list[str] = []
 ```
 
 No need to modify `engine.py`. Dispatch is automatic:
 
 ```python
-# engine.py (already existing)
-chart_fn = ChartRegistry.get(kind)
-chart_fn(ax, x_data, y_data, highlight=highlight, **kwargs)
+# ChartRenderer.render() dispatches to enhancer or generic path
+ChartRenderer.render(ax, kind, x_data, y_data, highlight=highlight, **kwargs)
 ```
 
 Usage:
 
 ```python
-df.chartkit.plot(kind='scatter', size=100, alpha=0.5)
+df.chartkit.plot(kind='waterfall')
 ```
 
 ---
@@ -381,11 +381,16 @@ Overlays that create visual elements should register them with the collision eng
 so that labels are automatically repositioned. Use the appropriate category:
 
 ```python
-from .._internal.collision import register_fixed, register_moveable, register_passive
+from .._internal.collision import register_artist_obstacle, register_moveable, register_passive
 
 # Reference lines: obstacles that labels must avoid
 line = ax.axhline(y=value, ...)
-register_fixed(ax, line)
+register_artist_obstacle(ax, line, filled=False)
+
+# Data lines: obstacles with co-location skip (labels that start ON
+# the line stay without being repelled by it)
+(plot_line,) = ax.plot(x, y, color="blue")
+register_artist_obstacle(ax, plot_line, filled=False, colocate=True)
 
 # Text labels: can be repositioned
 text = ax.text(x, y, "Label", ...)
@@ -477,7 +482,7 @@ def my_function():
 **4. Configure via TOML:**
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 [my_config]
 enabled = true
 threshold = 0.75

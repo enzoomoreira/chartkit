@@ -100,6 +100,26 @@ def human_readable_formatter(decimals: int = 1) -> FuncFormatter:
     return FuncFormatter(_format)
 
 
+def multiplier_formatter(decimals: int = 1) -> FuncFormatter:
+    """Multiplier suffix formatter (e.g. ``12,3x``, ``0,8x``)."""
+    config = get_config()
+    locale = config.formatters.locale
+
+    def _format(x: float, pos: int | None) -> str:
+        if not math.isfinite(x):
+            return ""
+        if x == 0:
+            return "0x"
+
+        if x == int(x):
+            return f"{int(x)}x"
+
+        formatted = f"{x:.{decimals}f}x"
+        return formatted.replace(".", locale.decimal)
+
+    return FuncFormatter(_format)
+
+
 def points_formatter(decimals: int = 0) -> FuncFormatter:
     """Numeric formatter with thousands separator (e.g. ``1.234.567``)."""
     config = get_config()

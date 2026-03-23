@@ -6,36 +6,47 @@ Do not import directly from this module in external code.
 """
 
 from .collision import (
-    register_fixed,
-    register_line_obstacle,
+    draw_composed_debug_overlay,
+    draw_debug_overlay,
+    register_artist_obstacle,
     register_moveable,
     register_passive,
     resolve_collisions,
     resolve_composed_collisions,
 )
 from .extraction import (
-    add_right_margin,
     extract_plot_data,
     resolve_series,
     should_show_legend,
 )
 from .formatting import FORMATTERS
+from .frequency import infer_freq
 from .highlight import normalize_highlight
-from .plot_validation import validate_plot_params
+from .pipeline import apply_legend, create_figure, finalize_chart
+from .plot_validation import coerce_axis_limits, validate_plot_params
 from .saving import save_figure
+from .tick_formatting import apply_tick_formatting
+from .tick_rotation import apply_tick_rotation
 
 __all__ = [
     "FORMATTERS",
-    "add_right_margin",
+    "apply_legend",
+    "apply_tick_formatting",
+    "apply_tick_rotation",
+    "coerce_axis_limits",
+    "create_figure",
+    "draw_composed_debug_overlay",
+    "draw_debug_overlay",
     "extract_plot_data",
+    "finalize_chart",
+    "infer_freq",
     "normalize_highlight",
-    "register_fixed",
-    "register_line_obstacle",
+    "register_artist_obstacle",
     "register_moveable",
     "register_passive",
     "resolve_collisions",
-    "resolve_series",
     "resolve_composed_collisions",
+    "resolve_series",
     "save_figure",
     "should_show_legend",
     "validate_plot_params",

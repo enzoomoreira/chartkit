@@ -5,11 +5,11 @@ df.chartkit.plot(metrics=['ath', 'ma:12'], units='%')
 df.chartkit.variation(horizon='year').plot(title='YoY Variation').save('chart.png')
 """
 
-from ._internal import register_fixed, register_moveable, register_passive
+from ._internal import register_artist_obstacle, register_moveable, register_passive
 from ._logging import configure_logging, disable_logging
 from .accessor import ChartingAccessor
 from .composing import AxisSide, Layer, compose
-from .charts import ChartRegistry
+from .charts import ChartRenderer
 from .engine import ChartingPlotter, ChartKind, HighlightInput, UnitFormat
 from .overlays.markers import HighlightMode
 from .exceptions import (
@@ -35,10 +35,11 @@ from .transforms import TransformAccessor
 from .transforms import (
     accum,
     annualize,
+    despike,
     diff,
     drawdown,
     normalize,
-    to_month_end,
+    resample,
     variation,
     zscore,
 )
@@ -68,7 +69,7 @@ __all__ = [
     "OUTPUTS_PATH",  # pyright: ignore[reportUnsupportedDunderAll]
     "ASSETS_PATH",  # pyright: ignore[reportUnsupportedDunderAll]
     # Collision API
-    "register_fixed",
+    "register_artist_obstacle",
     "register_moveable",
     "register_passive",
     # Types
@@ -83,7 +84,7 @@ __all__ = [
     # Main classes
     "ChartingAccessor",
     "ChartingPlotter",
-    "ChartRegistry",
+    "ChartRenderer",
     "PlotResult",
     "TransformAccessor",
     "MetricRegistry",
@@ -102,5 +103,6 @@ __all__ = [
     "annualize",
     "drawdown",
     "zscore",
-    "to_month_end",
+    "despike",
+    "resample",
 ]

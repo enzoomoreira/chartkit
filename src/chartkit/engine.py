@@ -4,33 +4,30 @@ from __future__ import annotations
 
 from typing import Literal
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from loguru import logger
-from matplotlib.axes import Axes
 
 from ._internal import (
     FORMATTERS,
-    add_right_margin,
+    apply_legend,
+    create_figure,
+    draw_debug_overlay,
     extract_plot_data,
+    finalize_chart,
     normalize_highlight,
-    register_fixed,
+    register_artist_obstacle,
     resolve_collisions,
     save_figure,
-    should_show_legend,
     validate_plot_params,
 )
-from ._internal.plot_validation import UnitFormat
-from .charts import ChartRegistry
-from .decorations import add_footer, add_title
+from ._internal.plot_validation import AxisLimits, UnitFormat
+from .charts import ChartRenderer
 from .exceptions import StateError
 from .metrics import MetricRegistry
-from .overlays import HighlightMode, add_fill_between
+from .overlays import HighlightMode
 from .result import PlotResult
-from .settings import get_config
-from .styling import theme
 
-ChartKind = Literal["line", "bar", "stacked_bar"]
+ChartKind = str
 HighlightInput = bool | HighlightMode | list[HighlightMode]
 
 
@@ -53,8 +50,16 @@ class ChartingPlotter:
         source: str | None = None,
         highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
-        fill_between: tuple[str, str] | None = None,
         legend: bool | None = None,
+        xlabel: str | None = None,
+        ylabel: str | None = None,
+        xlim: AxisLimits | None = None,
+        ylim: AxisLimits | None = None,
+        grid: bool | None = None,
+        tick_rotation: int | Literal["auto"] | None = None,
+        tick_format: str | None = None,
+        tick_freq: str | None = None,
+        collision: bool = True,
         debug: bool = False,
         **kwargs,
     ) -> PlotResult:
@@ -73,16 +78,29 @@ class ChartingPlotter:
                 maximum/minimum. Accepts a list to combine modes.
             metrics: Declarative metric(s). Use ``|`` for custom legend label
                 (e.g.: ``'ath|Maximum'``, ``'ma:12@col|12M Average'``).
-            fill_between: Tuple ``(col1, col2)`` to shade the area between
-                two DataFrame columns.
             legend: Legend control. ``None`` = auto (shows when there are
                 2+ labeled artists), ``True`` = force, ``False`` = suppress.
+            xlabel: X-axis label.
+            ylabel: Y-axis label.
+            xlim: X-axis limits as ``(min, max)``. Accepts strings
+                (``"2024-01-01"``), datetime, pd.Timestamp, or numeric.
+            ylim: Y-axis limits as ``(min, max)``. Accepts strings
+                (``"100"``), numeric, datetime, or pd.Timestamp.
+            grid: Grid override. ``None`` uses config, ``True``/``False``
+                enables/disables grid for this chart.
+            tick_rotation: X-axis tick label rotation. ``"auto"`` detects
+                overlap; ``int`` forces a fixed angle. ``None`` uses config.
+            tick_format: Date format string for X-axis ticks (e.g. ``"%b/%Y"``).
+            tick_freq: Tick frequency (``"day"``, ``"week"``, ``"month"``,
+                ``"quarter"``, ``"semester"``, ``"year"``).
+            collision: Enable collision resolution engine. ``False`` skips
+                all label collision processing.
+            debug: Show collision debug overlay.
             **kwargs: Chart-specific parameters (e.g.: ``y_origin='auto'`` for bars)
                 and matplotlib parameters passed directly to the renderer.
         """
         highlight_modes = normalize_highlight(highlight)
-        validate_plot_params(units=units, legend=legend)
-        config = get_config()
+        validate_plot_params(units=units, legend=legend, tick_freq=tick_freq)
 
         logger.debug(
             "plot: kind={}, shape={}, units={}, metrics={}",
@@ -92,76 +110,59 @@ class ChartingPlotter:
             metrics,
         )
 
-        # 1. Style
-        theme.apply()
-        fig, ax = plt.subplots(figsize=config.layout.figsize)
+        # 1. Style + figure
+        fig, ax = create_figure(grid=grid)
         self._fig = fig
         self._ax = ax
 
         # 2. Data
         x_data, y_data = extract_plot_data(self.df, x, y)
 
-        y_cols = (
-            list(y_data.columns) if isinstance(y_data, pd.DataFrame) else [y_data.name]
-        )
-        logger.debug(
-            "Data: x={}, y_columns={}, y_shape={}",
-            "index" if x is None else x,
-            y_cols,
-            y_data.shape,
-        )
-
         # 3. Y formatter
         if units:
             ax.yaxis.set_major_formatter(FORMATTERS[units]())
 
         # 4. Plot
-        chart_fn = ChartRegistry.get(kind)
-        logger.debug("Dispatch: kind='{}'", kind)
-        chart_fn(ax, x_data, y_data, highlight=highlight_modes, **kwargs)
+        ChartRenderer.render(
+            ax, kind, x_data, y_data, highlight=highlight_modes, **kwargs
+        )
 
         # 5. Metrics
         if metrics:
             logger.debug("Applying metric(s)")
             MetricRegistry.apply(ax, x_data, y_data, metrics)
 
-        # 5b. Fill between
-        if fill_between is not None:
-            col1, col2 = fill_between
-            add_fill_between(ax, x_data, self.df[col1], self.df[col2])
-
-        # 5c. Right margin for highlight labels
-        if highlight_modes:
-            add_right_margin(ax, ax_right=None)
-
         # 6. Legend
-        self._apply_legend(ax, legend)
-
-        legend_artist = ax.get_legend()
-        if legend_artist is not None:
-            register_fixed(ax, legend_artist)
+        apply_legend(ax, legend=legend)
 
         # 7. Collision resolution
-        resolve_collisions(ax, debug=debug)
+        if collision:
+            legend_artist = ax.get_legend()
+            if legend_artist is not None:
+                register_artist_obstacle(ax, legend_artist, filled=True)
+            resolve_collisions(ax)
 
-        # 8. Decorations
-        add_title(ax, title)
-        add_footer(fig, source)
+        # 8. Finalize (ticks, axis limits, labels, decorations)
+        finalize_chart(
+            fig,
+            ax,
+            tick_format=tick_format,
+            tick_freq=tick_freq,
+            tick_rotation=tick_rotation,
+            x_data=x_data,
+            xlim=xlim,
+            ylim=ylim,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            title=title,
+            source=source,
+        )
+
+        # 9. Debug overlay (after finalize so geometry is final)
+        if debug:
+            draw_debug_overlay(ax)
 
         return PlotResult(fig=self._fig, ax=ax, plotter=self)
-
-    def _apply_legend(self, ax: Axes, legend: bool | None) -> None:
-        _, labels = ax.get_legend_handles_labels()
-
-        if not should_show_legend(labels, legend) or not labels:
-            return
-
-        config = get_config()
-        ax.legend(
-            loc=config.legend.loc,
-            frameon=config.legend.frameon,
-            framealpha=config.legend.alpha,
-        )
 
     def save(self, path: str, dpi: int | None = None) -> None:
         """Save chart to file.

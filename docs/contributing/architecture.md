@@ -63,21 +63,23 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - **Composed** (`layer()` + `compose()`): `Layer` captures intent without rendering; `compose()` orchestrates multi-layer rendering with optional dual axes via `twinx()`
 
 5. **ChartingPlotter**: Main engine for direct plotting:
-   - Applies theme via `theme.apply()`
+   - Creates figure via `create_figure()` (theme + plt.subplots + grid override)
    - Extracts data via `extract_plot_data()`
    - Applies axis formatters via `FORMATTERS` dispatch table
-   - Dispatches via `ChartRegistry.get(kind)` to the registered chart type
+   - Dispatches via `ChartRenderer.render(ax, kind, ...)` (enhancer or generic `ax.{kind}()`)
    - Applies metrics via `MetricRegistry.apply()`
-   - Expands right margin via `add_right_margin()` when highlights are present
-   - Applies legend and registers it as fixed obstacle
-   - Resolves label collisions via `resolve_collisions(ax)`
-   - Adds decorations via `add_title(ax)` and `add_footer(fig)`
+   - Applies legend via `apply_legend()`
+   - Resolves label collisions via `resolve_collisions(ax)` (when `collision=True`)
+   - Finalizes via `finalize_chart()` (tick formatting, tick rotation, axis limits, labels, decorations)
+   - Draws debug overlay via `draw_debug_overlay(ax)` (when `debug=True`, after finalize)
 
 6. **compose()**: Orchestrator for multi-layer charts:
-   - Creates figure with optional twinx for right axis
+   - Creates figure via `create_figure()` with optional twinx for right axis
    - Renders each layer on its target axes
-   - Consolidates legend from both axes
+   - Applies legend via `apply_legend()` (consolidates handles from both axes)
    - Resolves cross-axis collisions via `resolve_composed_collisions(axes)`
+   - Finalizes via `finalize_chart()` (shared pipeline)
+   - Draws debug overlay via `draw_composed_debug_overlay(axes)` (when `debug=True`, after finalize)
    - Returns `PlotResult` with `_ComposePlotter` (satisfies `Saveable` Protocol)
 
 7. **PlotResult**: Encapsulated result with:
@@ -94,17 +96,15 @@ flowchart TD
     B --> C["ChartingAccessor.plot()"]
     C --> D["ChartingPlotter.plot()"]
 
-    D --> D1["1. get_config()"]
-    D1 --> D2["2. theme.apply()"]
-    D2 --> D3["3. extract_plot_data()"]
-    D3 --> D4["4. FORMATTERS[units]()"]
-    D4 --> D5["5. ChartRegistry.get(kind)()"]
-    D5 --> D6["6. MetricRegistry.apply()"]
-    D6 --> D6a["7. add_right_margin() (if highlights)"]
-    D6a --> D6b["8. _apply_legend() + register_fixed(legend)"]
-    D6b --> D7["9. resolve_collisions()"]
-    D7 --> D8["10. add_title()"]
-    D8 --> D9["11. add_footer()"]
+    D --> D1["1. create_figure() (theme + fig/ax + grid)"]
+    D1 --> D3["2. extract_plot_data()"]
+    D3 --> D4["3. FORMATTERS[units]()"]
+    D4 --> D5["4. ChartRenderer.render(kind)"]
+    D5 --> D6["5. MetricRegistry.apply()"]
+    D6 --> D6b["6. apply_legend()"]
+    D6b --> D7["7. resolve_collisions() (if collision=True)"]
+    D7 --> D8["8. finalize_chart() (ticks, rotation, limits, labels, decorations)"]
+    D8 --> D9["9. draw_debug_overlay() (if debug=True)"]
     D9 --> E["PlotResult"]
 ```
 
@@ -133,13 +133,23 @@ src/chartkit/
 │   ├── formatters.py     # Y-axis formatters (Babel i18n)
 │   └── fonts.py          # Custom font loading
 │
-├── charts/               # Pluggable chart types
-│   ├── __init__.py       # Imports trigger automatic registration
-│   ├── registry.py       # ChartRegistry + ChartFunc Protocol
-│   ├── _helpers.py       # Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin)
-│   ├── line.py           # Line chart (@ChartRegistry.register("line"))
-│   ├── bar.py            # Bar chart (grouped bars, sort, color='cycle')
-│   └── stacked_bar.py    # Stacked bars (categorical support)
+├── charts/               # Generic rendering + enhancers
+│   ├── __init__.py       # Enhancer imports trigger automatic registration
+│   ├── renderer.py       # ChartRenderer - generic rendering (ax.{kind}()) + enhancer dispatch
+│   ├── _helpers.py       # RenderContext, prepare_render_context(), resolve_color() + bar/category utilities
+│   └── enhancers/        # Specialized handlers for complex chart types
+│       ├── __init__.py   # Auto-imports all enhancers (triggers registration)
+│       ├── area.py       # Area chart enhancer (fill_between semantics)
+│       ├── bar.py        # Bar + barh enhancer (grouped bars, sort, color='cycle')
+│       ├── ecdf.py       # Empirical CDF enhancer
+│       ├── eventplot.py  # Event position enhancer
+│       ├── hist.py       # Histogram enhancer
+│       ├── pie.py        # Pie chart enhancer
+│       ├── stackplot.py  # Stacked area enhancer
+│       ├── stacked_bar.py # Stacked bar enhancer (categorical support)
+│       ├── stairs.py     # Step function enhancer
+│       ├── statistical.py # Boxplot + violinplot enhancer
+│       └── stem.py       # Stem plot enhancer
 │
 ├── composing/            # Multi-layer chart composition
 │   ├── __init__.py       # Facade: compose, Layer, AxisSide, create_layer
@@ -151,8 +161,7 @@ src/chartkit/
 │   ├── moving_average.py # Moving average
 │   ├── reference_lines.py# ATH, ATL, AVG, hlines, target
 │   ├── bands.py          # Shaded bands
-│   ├── fill_between.py   # Area between two series
-│   ├── std_band.py       # Standard deviation band (Bollinger Band)
+│   ├── std_band.py       # Standard deviation band (rolling Bollinger or full-series flat)
 │   ├── vband.py          # Vertical band between dates
 │   └── markers.py        # HighlightStyle + unified add_highlight (last/max/min/all)
 │
@@ -173,27 +182,33 @@ src/chartkit/
 │   └── accessor.py       # TransformAccessor for chaining
 │
 └── _internal/            # Private utilities (shared between engine and compose)
-    ├── __init__.py       # Facade: collision, extraction, formatting, highlight, saving, validation
-    ├── collision.py      # Collision engine (single-axis + composed cross-axis)
-    ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series(), add_right_margin()
+    ├── __init__.py       # Facade: collision, extraction, formatting, frequency, highlight, pipeline, saving, validation
+    ├── collision/        # Collision engine (modularized package)
+    │   ├── __init__.py   # Re-exports public API (register_*, resolve_*, draw_*_debug_overlay)
+    │   ├── _registry.py  # Global state and artist registration (WeakKeyDictionary)
+    │   ├── _obstacles.py # _PathObstacle, _classify_artist(), and obstacle collection
+    │   ├── _engine.py    # Collision resolution algorithm + standalone debug overlay entry points
+    │   └── _debug.py     # Debug overlay rendering
+    ├── extraction.py     # extract_plot_data(), should_show_legend(), resolve_series()
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
+    ├── frequency.py      # Frequency detection and display (FREQ_ALIASES, infer_freq, normalize_freq_code, freq_display_label, FREQ_DISPLAY_MAP)
     ├── highlight.py      # normalize_highlight()
-    ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat
-    └── saving.py         # save_figure() with path resolution
+    ├── pipeline.py       # Shared pipeline steps: create_figure(), apply_legend(), finalize_chart()
+    ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat, TickFreq, AxisLimits
+    ├── saving.py         # save_figure() with path resolution
+    ├── tick_formatting.py # apply_tick_formatting(x_data) - data-aware date locator/formatter for X-axis
+    └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
-tests/                    # Test suite
+tests/                    # Test suite (448 tests)
 ├── conftest.py           # Shared fixtures (financial DataFrames, edge cases, Agg backend)
-├── test_formatters.py    # Formatter tests
-├── test_accessor_layer.py # Accessor .layer() tests
-├── charts/               # Chart rendering tests
-├── collision/            # Collision engine tests
-├── composing/            # Composition system tests
-├── decorations/          # Title and footer tests
-├── engine/               # Engine internals tests
-├── internal/             # _internal module tests
-├── metrics/              # MetricRegistry tests
-├── settings/             # Configuration system tests
-└── transforms/           # Transform function tests
+├── charts/               # Chart rendering tests (67)
+├── collision/            # Collision engine tests (19)
+├── composing/            # Composition system tests (29)
+├── formatting/           # Formatters and highlight tests (41)
+├── integration/          # End-to-end tests (18)
+├── metrics/              # MetricRegistry tests (28)
+├── settings/             # Configuration system tests (23)
+└── transforms/           # Transform function tests (142)
 ```
 
 ---
@@ -206,7 +221,7 @@ tests/                    # Test suite
 |--------|---------------|
 | `_logging.py` | loguru setup (`logger.disable`) + `configure_logging()` |
 | `accessor.py` | Registers `.chartkit` on DataFrames and Series; delegates to TransformAccessor, ChartingPlotter, or create_layer |
-| `engine.py` | Orchestrates single-chart creation; delegates to `_internal` and `decorations` |
+| `engine.py` | Orchestrates single-chart creation; delegates to `_internal` (pipeline, rendering, collision) |
 | `result.py` | Encapsulates result (`Saveable` Protocol); enables chaining with `.save()` and `.show()` |
 
 ### Settings
@@ -229,14 +244,13 @@ tests/                    # Test suite
 
 | Module | Responsibility |
 |--------|---------------|
-| `charts/registry.py` | ChartRegistry: decorator + dict + get/available |
-| `charts/_helpers.py` | Shared utilities (detect_bar_width, is_categorical_index, prepare_categorical_axis, apply_y_origin, validate_y_origin) |
-| `charts/line.py` | Renders line chart + registers line obstacles for collision |
-| `charts/bar.py` | Renders bar chart (grouped bars, sort, color='cycle', categorical) |
-| `charts/stacked_bar.py` | Renders stacked bars (categorical support) |
+| `charts/renderer.py` | ChartRenderer: generic rendering via `ax.{kind}()` + enhancer dispatch + line obstacle registration |
+| `charts/_helpers.py` | RenderContext dataclass + prepare_render_context/resolve_color for enhancers + bar/category utilities (detect_bar_width, apply_y_origin, etc.) |
+| `charts/enhancers/*.py` | 13 enhancers: bar, barh, stacked_bar, area, hist, pie, stackplot, stem, stairs, boxplot, violinplot, ecdf, eventplot |
 | `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |
+| `_internal/pipeline.py` | Shared pipeline steps: create_figure(), apply_legend(), finalize_chart() |
 | `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions, _ComposePlotter |
-| `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, fill_between, std_band, vband) |
+| `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, std_band, vband) |
 | `decorations/footer.py` | Adds footer with branding and source |
 | `decorations/title.py` | Adds styled title on axes |
 
@@ -244,15 +258,22 @@ tests/                    # Test suite
 
 | Module | Responsibility |
 |--------|---------------|
-| `registry.py` | MetricRegistry for registering and applying metrics |
-| `builtin.py` | Registers standard metrics as overlay wrappers (ath, atl, avg, ma, hline, band, target, std_band, vband) |
+| `registry.py` | MetricRegistry for registering and applying metrics; supports `uses_freq` for frequency-aware metrics |
+| `builtin.py` | Registers standard metrics as overlay wrappers (ath, atl, avg, ma, hline, band, target, std_band, vband); `ma` and `std_band` are frequency-aware |
 
 ### Transforms
 
 | Module | Responsibility |
 |--------|---------------|
 | `temporal.py` | Pure transformation functions (variation, accum, drawdown, zscore, etc.) |
+| `_validation.py` | Validation, coercion, and frequency-to-periods resolution (imports `infer_freq`/`normalize_freq_code` from `_internal/frequency.py`) |
 | `accessor.py` | TransformAccessor for transform chaining |
+
+### Internal Utilities
+
+| Module | Responsibility |
+|--------|---------------|
+| `_internal/frequency.py` | Shared frequency detection and display: `FREQ_ALIASES`, `normalize_freq_code()`, `infer_freq()` (accepts DataFrame, Series, or Index), `FREQ_DISPLAY_MAP`, `freq_display_label()` |
 
 ---
 
@@ -262,7 +283,7 @@ Configuration is loaded from multiple sources with merge:
 
 1. `configure()` init_settings - Programmatic overrides (highest priority)
 2. Env vars (`CHARTKIT_*`, nested `__`)
-3. TOML files (`.charting.toml` > `pyproject.toml [tool.charting]` > user config)
+3. TOML files (`.chartkit/config.toml` > `pyproject.toml [tool.chartkit]` > user config)
 4. Field defaults from pydantic models (lowest priority)
 
 ---

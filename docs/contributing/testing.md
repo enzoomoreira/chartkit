@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 371 tests covering all modules with business logic.
+Test suite for chartkit with 448 tests covering all modules with business logic.
 
 ---
 
@@ -21,53 +21,41 @@ uv run pytest -m slow                     # Only slow-marked tests
 ```
 tests/
 ├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases, Agg backend)
-├── test_formatters.py             # Currency, percent, human, points formatters (15 tests)
-├── test_accessor_layer.py         # Accessor .layer() integration (9 tests)
-├── charts/                        # Chart rendering (31 tests)
-│   ├── test_bar.py                # Bar chart (grouped, sort, color='cycle', categorical)
-│   └── test_helpers.py            # detect_bar_width, categorical helpers, y_origin
-├── collision/                     # Collision engine (5 tests)
-│   ├── test_collect_obstacles.py  # Obstacle collection and path-based detection
-│   └── test_pos_to_numeric.py     # Position type coercion
-├── composing/                     # Composition system (47 tests)
-│   ├── test_compose.py            # compose() orchestration
-│   ├── test_composed_legend.py    # Consolidated legend from dual axes
-│   ├── test_extract_data.py       # extract_plot_data() for composed layers
-│   ├── test_layer.py              # Layer creation and validation
-│   ├── test_validate.py           # Compose-level validation
-│   └── test_axis_formatter.py     # Axis formatter application
-├── decorations/                   # Decorations (4 tests)
-│   └── test_title.py              # add_title() decoration
-├── engine/                        # Chart engine (13 tests)
-│   ├── test_normalize_highlight.py  # Highlight modes (bool, string, list)
-│   └── test_validate_params.py      # PlotParamsModel pydantic validation
-├── internal/                      # _internal module (8 tests)
-│   ├── test_formatting.py         # FORMATTERS dispatch table
-│   └── test_saving.py             # save_figure() path resolution
-├── metrics/                       # Metric registry (30 tests)
+├── charts/                        # Chart rendering (67 tests)
+│   ├── test_area_enhancer.py      # Area chart enhancer (fill_between semantics)
+│   ├── test_bar_enhancer.py       # Bar chart enhancer (grouped, sort, color='cycle', barh)
+│   ├── test_bar_width.py          # detect_bar_width, categorical helpers, y_origin
+│   ├── test_renderer.py          # ChartRenderer generic rendering + unsupported kinds
+│   └── test_stacked_bar_enhancer.py # Stacked bar chart enhancer
+├── collision/                     # Collision engine (19 tests)
+│   └── test_collision_engine.py   # Obstacle collection, path detection, resolution, proactive candidates, cost function
+├── composing/                     # Composition system (29 tests)
+│   ├── test_compose_pipeline.py   # compose() orchestration, legend, extract_data, formatters
+│   └── test_layer_validation.py   # Layer creation and validation
+├── formatting/                    # Formatters and highlight (41 tests)
+│   ├── test_axis_formatters.py    # Currency, percent, human, points, multiplier formatters
+│   └── test_highlight.py         # Highlight mode normalization
+├── integration/                   # End-to-end tests (18 tests)
+│   ├── test_accessor_pipeline.py  # Accessor .plot() and .layer() integration
+│   └── test_end_to_end.py        # Full pipeline validation
+├── metrics/                       # Metric registry (28 tests)
 │   ├── conftest.py                # Registry snapshot/restore
-│   ├── test_parse.py              # MetricRegistry.parse() spec parsing
-│   └── test_registry.py           # Registration, lifecycle, available()
-├── settings/                      # Configuration system (39 tests)
+│   ├── test_spec_parsing.py       # MetricRegistry.parse() spec parsing
+│   └── test_registry.py          # Registration, lifecycle, available(), apply()
+├── settings/                      # Configuration system (23 tests)
 │   ├── conftest.py                # Config isolation (autouse reset)
-│   ├── test_deep_merge.py         # _deep_merge dict utility
-│   ├── test_discovery.py          # find_project_root, find_config_files
-│   ├── test_loader.py             # ConfigLoader (cache, reset, TOML, paths)
-│   └── test_schema.py             # ChartingConfig defaults, env vars
-└── transforms/                    # Time series transforms (170 tests)
+│   ├── test_config_precedence.py  # Config loading, deep merge, schema, env vars
+│   └── test_discovery.py         # find_project_root, find_config_files
+└── transforms/                    # Time series transforms (142 tests)
     ├── conftest.py                # Known-value fixtures (pre-calculated results)
-    ├── test_accessor.py           # TransformAccessor delegation
     ├── test_accum.py              # Accumulated returns
     ├── test_annualize.py          # Annualization
-    ├── test_coerce_input.py       # Input coercion (dict, list, ndarray)
     ├── test_diff.py               # First difference
     ├── test_drawdown.py           # Drawdown from peak
+    ├── test_freq_resolution.py    # Frequency resolution and period detection
+    ├── test_input_pipeline.py     # Input coercion, sanitization, numeric validation
     ├── test_normalize.py          # Base-100 normalization
-    ├── test_resolve_periods.py    # Frequency resolution
-    ├── test_sanitize_result.py    # inf/NaN sanitization
-    ├── test_to_month_end.py       # Date alignment
-    ├── test_validate_numeric.py   # Numeric column validation
-    ├── test_validate_params.py    # Pydantic parameter models
+    ├── test_resample.py           # Frequency resampling
     ├── test_variation.py          # Month/year variation
     └── test_zscore.py             # Z-score (global and rolling)
 ```
@@ -104,6 +92,14 @@ The root `conftest.py` provides reproducible financial data using a fixed seed (
 | `constant_series` | All values = 5.0 (std = 0) |
 | `non_datetime_index_df` | DataFrame with integer index |
 
+### Financial Edge Cases
+
+| Fixture | Description |
+|---------|-------------|
+| `irregular_daily_prices` | Irregular dates where `infer_freq` fails |
+| `quarterly_rates` | Quarterly data (QE freq, 8 periods) |
+| `gapped_prices` | Monthly prices with NaN gaps (real-world scenario) |
+
 ---
 
 ## Module-Specific Fixtures
@@ -132,9 +128,7 @@ Other known-value fixtures: `known_normalize_data`, `known_drawdown_data`, `know
 @pytest.fixture(autouse=True)
 def _isolate_config():
     """Resets config state before AND after each test."""
-    reset_config()
-    yield
-    reset_config()
+    ...
 ```
 
 Also provides `tmp_project` -- a temporary directory with a `pyproject.toml` marker for discovery tests.
@@ -145,10 +139,7 @@ Also provides `tmp_project` -- a temporary directory with a `pyproject.toml` mar
 @pytest.fixture(autouse=True)
 def _preserve_registry():
     """Snapshots and restores MetricRegistry._metrics around each test."""
-    snapshot = dict(MetricRegistry._metrics)
-    yield
-    MetricRegistry._metrics.clear()
-    MetricRegistry._metrics.update(snapshot)
+    ...
 ```
 
 ---
@@ -157,23 +148,23 @@ def _preserve_registry():
 
 ### Class-Based Organization
 
-Tests are grouped by semantic category within each file:
+Tests are grouped by business domain within each file, focusing on behavior and correctness:
 
 ```python
-class TestVariationCorrectness:
+class TestVariationKnownValues:
     """Known-value tests with pre-calculated expected results."""
     def test_month_over_month_known(self, known_variation_data): ...
-    def test_year_over_year_known(self, monthly_rates): ...
+    def test_year_over_year_monthly_data(self, monthly_rates): ...
 
-class TestVariationInputTypes:
-    """Verify all accepted input types produce valid output."""
-    def test_accepts_series(self, single_series): ...
-    def test_accepts_dataframe(self, monthly_rates): ...
+class TestVariationMultiColumn:
+    """Multi-column and mixed dtype handling."""
+    def test_multi_column_preserves_shape(self, monthly_rates): ...
+    def test_mixed_dtypes_drops_non_numeric(self, multi_series_monthly): ...
 
 class TestVariationEdgeCases:
-    """Boundary conditions, empty data, NaN handling."""
-    def test_empty_returns_empty(self, empty_df): ...
-    def test_all_nan_returns_nan(self, all_nan_series): ...
+    """Boundary conditions, financial edge cases, NaN handling."""
+    def test_quarterly_data_month_horizon(self, quarterly_rates): ...
+    def test_irregular_timeseries(self, irregular_daily_prices): ...
 
 class TestVariationErrors:
     """Invalid inputs raise appropriate exceptions."""
@@ -269,12 +260,21 @@ Transforms and collision tests don't need isolation -- they operate on fixture d
 
 | Testing... | Location |
 |-----------|----------|
+| A new chart enhancer | `tests/charts/test_<kind>_enhancer.py` |
+| ChartRenderer generic behavior | `tests/charts/test_renderer.py` |
+| Bar width / detection helpers | `tests/charts/test_bar_width.py` |
 | A new transform function | `tests/transforms/test_<name>.py` |
-| MetricRegistry behavior | `tests/metrics/test_registry.py` or `test_parse.py` |
-| A new formatter | `tests/test_formatters.py` |
-| Config loading / schema | `tests/settings/test_loader.py` or `test_schema.py` |
-| Collision engine | `tests/collision/test_<function>.py` |
-| Engine internals | `tests/engine/test_<function>.py` |
+| Input coercion / sanitization | `tests/transforms/test_input_pipeline.py` |
+| Frequency resolution | `tests/transforms/test_freq_resolution.py` |
+| MetricRegistry behavior | `tests/metrics/test_registry.py` or `test_spec_parsing.py` |
+| A new formatter | `tests/formatting/test_axis_formatters.py` |
+| Highlight normalization | `tests/formatting/test_highlight.py` |
+| Config loading / schema / merge | `tests/settings/test_config_precedence.py` |
+| Project root / config discovery | `tests/settings/test_discovery.py` |
+| Collision engine | `tests/collision/test_collision_engine.py` |
+| Composition pipeline | `tests/composing/test_compose_pipeline.py` |
+| Layer creation / validation | `tests/composing/test_layer_validation.py` |
+| Accessor / end-to-end flow | `tests/integration/` |
 
 ### Checklist for New Test Files
 

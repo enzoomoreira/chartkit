@@ -11,20 +11,20 @@ chartkit loads configuration from multiple sources, merging them in order of pre
 | 1 | `configure()` (init_settings) | Programmatic runtime configuration |
 | 2 | Environment variables (`CHARTKIT_*`) | Env vars with prefix and nested delimiter `__` |
 | 3 | `configure(config_path=...)` | Explicit TOML file |
-| 4 | `.charting.toml` / `charting.toml` | File at project root |
-| 5 | `pyproject.toml [tool.charting]` | Section in pyproject.toml |
-| 6 | `~/.config/charting/config.toml` | User global config (Linux/Mac) |
-| 7 | `%APPDATA%/charting/config.toml` | User global config (Windows) |
+| 4 | `.chartkit/config.toml` | File at project root |
+| 5 | `pyproject.toml [tool.chartkit]` | Section in pyproject.toml |
+| 6 | `~/.config/chartkit/config.toml` | User global config (Linux/Mac) |
+| 7 | `%APPDATA%/chartkit/config.toml` | User global config (Windows) |
 | 8 | Built-in defaults | Default values from pydantic models |
 
 Higher-priority configurations override lower-priority ones. The merge is deep, allowing you to override only specific fields without losing the rest.
 
 ## TOML File
 
-Create a `.charting.toml` or `charting.toml` file at your project root:
+Create a `.chartkit/config.toml` file at your project root:
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 
 [branding]
 company_name = "My Company"
@@ -60,7 +60,13 @@ axis_label = 11
 figsize = [10.0, 6.0]
 dpi = 300
 base_style = "seaborn-v0_8-white"  # Base matplotlib style
-grid = false                        # Show grid on chart
+
+[layout.grid]
+enabled = false       # Show grid on chart
+alpha = 0.3           # Grid transparency
+color = "lightgray"   # Grid line color
+linestyle = "-"       # Line style: "-", "--", "-.", ":"
+axis = "both"         # "x", "y", or "both"
 
 [layout.spines]
 top = false      # Top border
@@ -108,9 +114,10 @@ babel_locale = "pt_BR"
 ath = "ATH"
 atl = "ATL"
 avg = "AVG"
-moving_average_format = "MM{window}"
+moving_average_format = "MM{window}"    # Supports {freq} placeholder for detected frequency
 target_format = "Meta: {value}"
-std_band_format = "BB({window}, {num_std})"
+std_band_format = "BB({window}, {deviations})"  # Rolling mode label. Supports {freq} placeholder
+std_band_full_format = "DP({deviations})"         # Full-series mode label
 
 [bands]
 alpha = 0.15
@@ -118,8 +125,10 @@ alpha = 0.15
 [collision]
 movement = "y"
 obstacle_padding_px = 8.0
-label_padding_px = 4.0
+label_padding_px = 2.0
 max_iterations = 50
+candidate_distances = [1.0, 1.5, 2.0]  # Distance multipliers for proactive candidates
+edge_margin_factor = 1.0               # Edge margin as fraction of label height
 connector_threshold_px = 30.0
 connector_alpha = 0.6
 connector_style = "-"
@@ -134,40 +143,46 @@ loc = "best"
 alpha = 0.9
 frameon = true
 
+[ticks]
+rotation = "auto"          # "auto" or angle in degrees (0, 45, 90)
+auto_rotation_angle = 45   # Angle when auto-detect triggers rotation
+# date_format = "%b/%Y"   # Date format for temporal ticks (strftime)
+# date_freq = "month"     # Frequency: "day", "week", "month", "quarter", "semester", "year"
+
 [paths]
 charts_subdir = "charts"
 outputs_dir = ""    # Empty = auto-discovery
 assets_dir = ""     # Empty = auto-discovery
 ```
 
-chartkit automatically detects the `.charting.toml` or `charting.toml` file at the project root when importing the library.
+chartkit automatically detects the `.chartkit/config.toml` file at the project root when importing the library.
 
 ## Via pyproject.toml
 
-You can integrate the configuration directly into your project's `pyproject.toml` using the `[tool.charting]` section:
+You can integrate the configuration directly into your project's `pyproject.toml` using the `[tool.chartkit]` section:
 
 ```toml
 # pyproject.toml
 
-[tool.charting]
+[tool.chartkit]
 
-[tool.charting.branding]
+[tool.chartkit.branding]
 company_name = "My Company"
 footer_format = "Prepared by {company_name} | Data: {source}"
 
-[tool.charting.colors]
+[tool.chartkit.colors]
 primary = "#003366"
 secondary = "#0066CC"
 
-[tool.charting.layout]
+[tool.chartkit.layout]
 figsize = [14.0, 8.0]
 dpi = 150
 
-[tool.charting.fonts.sizes]
+[tool.chartkit.fonts.sizes]
 title = 24
 default = 14
 
-[tool.charting.paths]
+[tool.chartkit.paths]
 outputs_dir = "data/outputs"
 assets_dir = "assets"
 ```
@@ -410,7 +425,7 @@ The log will show:
 ### Corporate Setup
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 [branding]
 company_name = "Bank XYZ"
 footer_format = "Prepared by {company_name} | Fonte: {source}"
@@ -461,5 +476,5 @@ babel_locale = "en_US"
 [labels]
 ath = "All-Time High"
 atl = "All-Time Low"
-moving_average_format = "MA{window}"
+moving_average_format = "MA{window}{freq}"  # e.g. "MA12M" for 12-period monthly MA
 ```

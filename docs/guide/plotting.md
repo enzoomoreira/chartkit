@@ -59,14 +59,22 @@ If `y` is not specified, all numeric columns will be plotted.
 |-----------|------|---------|-------------|
 | `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the DataFrame index |
 | `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses all numeric columns |
-| `kind` | `ChartKind` | `"line"` | Chart type: `"line"`, `"bar"`, or `"stacked_bar"` |
+| `kind` | `ChartKind` | `"line"` | Chart type: `"line"`, `"bar"`, `"barh"`, `"stacked_bar"`, `"area"`, `"hist"`, `"pie"`, `"scatter"`, `"step"`, `"stem"`, `"stairs"`, `"boxplot"`, `"violinplot"`, `"ecdf"`, `"eventplot"`, `"stackplot"`, or any valid matplotlib Axes method |
 | `title` | `str \| None` | `None` | Chart title |
 | `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see [Formatters](#formatters-table)) |
 | `source` | `str \| None` | `None` | Data source for footer |
 | `highlight` | `HighlightInput` | `False` | Highlight mode(s): `True`, `'last'`, `'max'`, `'min'`, `'all'`, or a list |
 | `metrics` | `str \| list[str] \| None` | `None` | Declarative metrics (see [Metrics Guide](metrics.md)) |
-| `fill_between` | `tuple[str, str] \| None` | `None` | Two column names to shade the area between |
 | `legend` | `bool \| None` | `None` | `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `xlabel` | `str \| None` | `None` | X-axis label |
+| `ylabel` | `str \| None` | `None` | Y-axis label |
+| `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
+| `ylim` | `AxisLimits \| None` | `None` | Y-axis limits as `(min, max)`. Accepts strings (`"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
+| `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
+| `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
+| `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
+| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config. See [Smart Tick Alignment](#smart-tick-alignment) |
+| `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Show collision debug overlay (see [Collision Guide](collision.md)) |
 | `**kwargs` | - | - | Chart-specific args (e.g., `sort`, `color`, `y_origin` for bars) |
 
@@ -226,25 +234,124 @@ df.chartkit.plot(kind='stacked_bar', title="Sales Channel by Region")
 
 ---
 
-## Area Between Series (fill_between)
+## Horizontal Bar Chart
 
-The `fill_between` parameter shades the area between two DataFrame columns. Useful for visualizing spreads, confidence intervals, or differences between series.
+Use `kind='barh'` to create horizontal bar charts. The Y axis holds categories or positions, the X axis holds values.
+
+### Basic Horizontal Bars
 
 ```python
 df = pd.DataFrame({
-    'selic': [13.75, 13.25, 12.75, 12.25, 11.75, 11.25],
-    'cpi': [5.5, 5.2, 4.8, 4.5, 4.2, 3.9],
-}, index=pd.date_range('2024-01', periods=6, freq='ME'))
+    'sales': [150, 200, 180, 220, 250]
+}, index=['Team A', 'Team B', 'Team C', 'Team D', 'Team E'])
 
-# Shade area between Selic and CPI
-df.chartkit.plot(
-    title="Selic - CPI Spread",
-    units='%',
-    fill_between=('selic', 'cpi')
-)
+df.chartkit.plot(kind='barh', title="Sales by Team")
 ```
 
-The parameter receives a tuple with two column names: `(col1, col2)`.
+### Multiple Columns (Grouped)
+
+```python
+df = pd.DataFrame({
+    '2023': [15, 22, 18, 12],
+    '2024': [17, 20, 19, 14],
+}, index=['North', 'South', 'East', 'West'])
+
+df.chartkit.plot(kind='barh', title="Sales by Region")
+```
+
+### Sorting
+
+Single-column horizontal bars support `sort='ascending'` or `sort='descending'`:
+
+```python
+df.chartkit.plot(kind='barh', title="Ranked", sort='descending')
+```
+
+### Color Cycling
+
+```python
+df.chartkit.plot(kind='barh', title="Categories", color='cycle')
+```
+
+Horizontal bars also support `y_origin` (`'zero'` or `'auto'`) which controls the X-axis origin.
+
+---
+
+## Area Chart
+
+Use `kind='area'` (alias for `fill_between`) to create filled area charts. Behavior depends on the number of columns:
+
+- **1 column**: fills from zero to y (classic area chart).
+- **2 columns**: fills between the two series (spread / interval), with contour lines on each.
+- **3+ columns**: each column fills from zero independently.
+
+```python
+df = pd.DataFrame({
+    'revenue': [100, 120, 130, 140, 160],
+    'costs': [80, 90, 85, 95, 100],
+}, index=pd.date_range('2024-01', periods=5, freq='ME'))
+
+# Single series area (fill from zero)
+df[['revenue']].chartkit.plot(kind='area', title="Revenue", units='BRL_compact')
+
+# Two series: fills between the pair (spread/interval)
+df.chartkit.plot(kind='area', title="Revenue vs Costs Spread", units='BRL_compact')
+```
+
+For stacked areas use `kind='stackplot'` instead.
+
+---
+
+## Other Chart Types
+
+chartkit supports many additional chart types through registered enhancers and generic rendering. Any valid matplotlib Axes method can be used as `kind`.
+
+### Enhancers (Specialized Handling)
+
+These types have dedicated enhancers with color cycling, proper label handling, and correct argument mapping:
+
+| Kind | Description | Notes |
+|------|-------------|-------|
+| `'hist'` | Histogram | Data is passed for binning, not as (x, y) pairs. Multi-column aligns bins |
+| `'pie'` | Pie chart | Single-column only. Index used as slice labels |
+| `'stackplot'` | Stacked area | All columns stacked. Use `kind='area'` for overlapped areas |
+| `'stem'` | Stem plot | Vertical lines from baseline to data points |
+| `'stairs'` | Step function | Values as heights with auto-generated edges |
+| `'boxplot'` | Box-and-whisker | Each column becomes a box. `patch_artist=True` forced |
+| `'violinplot'` | Violin plot | Kernel density + quartile markers per column |
+| `'ecdf'` | Empirical CDF | Data values on X, cumulative probability on Y |
+| `'eventplot'` | Event positions | Each column becomes a row of vertical event markers |
+
+```python
+# Histogram
+df.chartkit.plot(kind='hist', title="Distribution", bins=20)
+
+# Pie chart
+df[['share']].chartkit.plot(kind='pie', title="Market Share")
+
+# Stacked area
+df.chartkit.plot(kind='stackplot', title="Composition")
+
+# Box plot
+df.chartkit.plot(kind='boxplot', title="Distribution by Column")
+```
+
+### Generic Rendering
+
+Any matplotlib Axes method not listed above works automatically:
+
+```python
+df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
+df.chartkit.plot(kind='step', where='mid')
+```
+
+Extra `**kwargs` are passed directly to the matplotlib method.
+
+### Unsupported Kinds
+
+Chart kinds that require 2D grid data or vector fields are explicitly blocked with descriptive error messages:
+
+`imshow`, `contour`, `contourf`, `pcolormesh`, `quiver`, `streamplot`, `barbs`, `spy`
 
 ---
 
@@ -312,6 +419,7 @@ The `human` format is similar to `BRL_compact`, but without the currency symbol.
 | `'%'` | Percentage | 10,5% |
 | `'points'` | Locale-aware integers | 1.234.567 |
 | `'human'` | Compact notation | 1,2M |
+| `'x'` | Multiplier | 12,3x |
 
 Currency formatters use the [Babel](https://babel.pocoo.org/) library and support any ISO 4217 currency code.
 
@@ -356,6 +464,36 @@ configure(branding={
     'company_name': 'My Company',
     'footer_format': 'Fonte: {source} | By: {company_name}'
 })
+```
+
+---
+
+## Smart Tick Alignment
+
+When using `tick_freq` or `tick_format`, chartkit aligns ticks to real data points instead of fixed calendar boundaries. This prevents the common misalignment where, e.g., quarterly data at end-of-quarter dates (Mar, Jun, Sep, Dec) gets ticks placed on day 1 of start-of-quarter months (Jan, Apr, Jul, Oct).
+
+### How It Works
+
+1. **Data-aligned ticks**: For frequencies `"month"`, `"quarter"`, `"semester"`, and `"year"`, ticks are placed on the last real data point in each period rather than on arbitrary calendar boundaries.
+
+2. **Auto-inference**: When no explicit `tick_freq` is set, chartkit uses `pd.infer_freq()` to detect the data's temporal pattern. For sparse frequencies (quarterly, semi-annual, annual), ticks are positioned directly on the actual index dates.
+
+3. **Phantom tick clipping**: After setting the locator, ticks that fall outside the real data range are removed. This prevents empty periods caused by `xlim` padding (common in bar charts).
+
+### Frequency Alignment
+
+| Frequency | Tick Months |
+|-----------|-------------|
+| `"quarter"` | 3, 6, 9, 12 (end-of-quarter) |
+| `"semester"` | 6, 12 (end-of-semester) |
+| `"month"` | All months |
+| `"year"` | Last data point per year |
+
+```python
+# Quarterly data: ticks land on Mar, Jun, Sep, Dec (where the data is)
+df = pd.DataFrame({'gdp': [100, 102, 104, 106]},
+                  index=pd.date_range('2024-03', periods=4, freq='QE'))
+df.chartkit.plot(title="Quarterly GDP", tick_freq='quarter', tick_format='%b/%Y')
 ```
 
 ---

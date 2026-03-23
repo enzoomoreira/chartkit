@@ -19,6 +19,7 @@ __all__ = [
     "TitleConfig",
     "SpinesConfig",
     "ZOrderConfig",
+    "GridConfig",
     "LayoutConfig",
     "LegendConfig",
     "LinesConfig",
@@ -27,6 +28,7 @@ __all__ = [
     "BandsConfig",
     "MarkersConfig",
     "CollisionConfig",
+    "TicksConfig",
     "TransformsConfig",
     "LocaleConfig",
     "MagnitudeConfig",
@@ -38,6 +40,15 @@ __all__ = [
 
 
 class BrandingConfig(BaseModel):
+    """Company branding for chart footers.
+
+    Attributes:
+        company_name: Displayed in the footer.
+        default_source: Default data source when ``source`` is not provided.
+        footer_format: Template with ``{source}`` and ``{company_name}`` placeholders.
+        footer_format_no_source: Template used when ``source`` is empty.
+    """
+
     company_name: str = ""
     default_source: str = ""
     footer_format: str = "Fonte: {source}, {company_name}"
@@ -45,6 +56,14 @@ class BrandingConfig(BaseModel):
 
 
 class ColorsConfig(BaseModel):
+    """Color palette. First 6 colors form the series cycle.
+
+    Attributes:
+        positive: Color for positive values in diverging charts.
+        negative: Color for negative values in diverging charts.
+        moving_average: Color for moving average overlay lines.
+    """
+
     primary: str = "#00464D"
     secondary: str = "#006B6B"
     tertiary: str = "#008B8B"
@@ -73,6 +92,8 @@ class ColorsConfig(BaseModel):
 
 
 class FontSizesConfig(BaseModel):
+    """Font sizes in points for chart elements."""
+
     default: int = 11
     title: int = 18
     footer: int = 9
@@ -80,17 +101,32 @@ class FontSizesConfig(BaseModel):
 
 
 class FontsConfig(BaseModel):
+    """Font configuration.
+
+    Attributes:
+        file: Path to a ``.ttf``/``.otf`` font file. Empty uses matplotlib default.
+        fallback: Fallback font family when ``file`` is not found.
+    """
+
     file: str = ""
     fallback: str = "sans-serif"
     sizes: FontSizesConfig = Field(default_factory=FontSizesConfig)
 
 
 class FooterConfig(BaseModel):
+    """Footer positioning and style.
+
+    Attributes:
+        y: Vertical position in figure coordinates (0=bottom, 1=top).
+    """
+
     y: float = 0.01
     color: str = "gray"
 
 
 class TitleConfig(BaseModel):
+    """Title positioning and style."""
+
     padding: int = 20
     weight: str = "bold"
 
@@ -114,11 +150,33 @@ class ZOrderConfig(BaseModel):
     markers: int = 5
 
 
+class GridConfig(BaseModel):
+    """Grid line configuration.
+
+    Attributes:
+        axis: Which axes show grid lines (``"x"``, ``"y"``, or ``"both"``).
+    """
+
+    enabled: bool = False
+    alpha: float = 0.3
+    color: str = "lightgray"
+    linestyle: str = "-"
+    axis: Literal["x", "y", "both"] = "both"
+
+
 class LayoutConfig(BaseModel):
+    """Figure layout and sub-configurations.
+
+    Attributes:
+        figsize: Default figure size ``(width, height)`` in inches.
+        dpi: Resolution for saved figures.
+        base_style: Matplotlib style applied before custom rcParams.
+    """
+
     figsize: tuple[float, float] = (10.0, 6.0)
     dpi: int = 300
     base_style: str = "seaborn-v0_8-white"
-    grid: bool = False
+    grid: GridConfig = Field(default_factory=GridConfig)
     spines: SpinesConfig = Field(default_factory=SpinesConfig)
     footer: FooterConfig = Field(default_factory=FooterConfig)
     title: TitleConfig = Field(default_factory=TitleConfig)
@@ -126,12 +184,45 @@ class LayoutConfig(BaseModel):
 
 
 class LegendConfig(BaseModel):
+    """Legend appearance.
+
+    Attributes:
+        loc: Matplotlib legend location string (e.g. ``"best"``, ``"upper right"``).
+    """
+
     loc: str = "best"
     alpha: float = 0.9
     frameon: bool = True
 
 
+class TicksConfig(BaseModel):
+    """X-axis tick configuration.
+
+    Attributes:
+        rotation: Default tick rotation. ``"auto"`` detects overlap.
+        auto_rotation_angle: Angle used when ``"auto"`` detects overlap.
+        date_format: Default date format (e.g. ``"%b/%Y"``). ``None`` auto-selects.
+        date_freq: Default tick frequency. ``None`` auto-infers from data.
+    """
+
+    rotation: int | Literal["auto"] = "auto"
+    auto_rotation_angle: int = Field(default=45, gt=0, le=90)
+    date_format: str | None = None
+    date_freq: Literal["day", "week", "month", "quarter", "semester", "year"] | None = (
+        None
+    )
+
+
 class LinesConfig(BaseModel):
+    """Line styling for data and overlays.
+
+    Attributes:
+        main_width: Width for primary data lines.
+        overlay_width: Width for overlay lines (moving average, reference).
+        reference_style: Linestyle for reference lines (ATH, ATL).
+        target_style: Linestyle for target lines.
+    """
+
     main_width: float = 2.0
     overlay_width: float = 1.5
     reference_style: str = "--"
@@ -140,11 +231,23 @@ class LinesConfig(BaseModel):
 
 
 class FrequencyDetectionConfig(BaseModel):
+    """Thresholds (in days) for bar width frequency detection."""
+
     monthly_threshold: int = 25
     annual_threshold: int = 300
 
 
 class BarsConfig(BaseModel):
+    """Bar chart configuration.
+
+    Attributes:
+        width_default: Default bar width for categorical data.
+        width_monthly: Bar width in days for monthly time series.
+        width_annual: Bar width in days for annual time series.
+        auto_margin: X-axis margin fraction added around bars.
+        warning_threshold: Log warning if bar count exceeds this.
+    """
+
     width_default: float = 0.8
     width_monthly: int = 20
     width_annual: int = 300
@@ -156,20 +259,44 @@ class BarsConfig(BaseModel):
 
 
 class BandsConfig(BaseModel):
+    """Shaded band overlay configuration."""
+
     alpha: float = 0.15
 
 
 class MarkersConfig(BaseModel):
+    """Data point highlight marker configuration.
+
+    Attributes:
+        label_offset_fraction: Vertical offset as fraction of Y range.
+    """
+
     scatter_size: int = 30
     font_weight: str = "bold"
     label_offset_fraction: float = 0.015
 
 
 class CollisionConfig(BaseModel):
+    """Label collision resolution engine configuration.
+
+    Attributes:
+        movement: Allowed movement axes (``"x"``, ``"y"``, or ``"xy"``).
+        obstacle_padding_px: Padding around obstacles in pixels.
+        label_padding_px: Padding around labels in pixels.
+        max_iterations: Maximum solver iterations.
+        candidate_distances: Multipliers (in label heights) for proactive
+            candidate generation in 8 cardinal directions.
+        edge_margin_factor: Edge margin as fraction of label height.
+            Labels closer than this to the axes border receive a penalty.
+        connector_threshold_px: Distance threshold to draw a connector line.
+    """
+
     movement: Literal["x", "y", "xy"] = "y"
     obstacle_padding_px: float = 8.0
-    label_padding_px: float = 4.0
+    label_padding_px: float = 2.0
     max_iterations: int = 50
+    candidate_distances: tuple[float, ...] = (1.0, 1.5, 2.0)
+    edge_margin_factor: float = 1.0
     connector_threshold_px: float = 30.0
     connector_alpha: float = 0.6
     connector_style: str = "-"
@@ -177,35 +304,71 @@ class CollisionConfig(BaseModel):
 
 
 class TransformsConfig(BaseModel):
+    """Default parameters for transform functions.
+
+    Attributes:
+        normalize_base: Default base value for ``normalize()``.
+        accum_window: Default rolling window for ``accum()`` when auto-detect fails.
+    """
+
     normalize_base: PositiveInt = 100
     accum_window: PositiveInt = 12
 
 
 class LocaleConfig(BaseModel):
+    """Number formatting locale.
+
+    Attributes:
+        babel_locale: Babel locale for currency formatting (ISO 639 + ISO 3166).
+    """
+
     decimal: str = ","
     thousands: str = "."
     babel_locale: str = "pt_BR"
 
 
 class MagnitudeConfig(BaseModel):
+    """Suffixes for human-readable number formatting (1k, 1M, 1B, 1T)."""
+
     suffixes: list[str] = Field(default_factory=lambda: ["", "k", "M", "B", "T"])
 
 
 class FormattersConfig(BaseModel):
+    """Y-axis formatter sub-configurations."""
+
     locale: LocaleConfig = Field(default_factory=LocaleConfig)
     magnitude: MagnitudeConfig = Field(default_factory=MagnitudeConfig)
 
 
 class LabelsConfig(BaseModel):
+    """Default label text for metrics and overlays.
+
+    Format strings use ``{param}`` placeholders filled at render time.
+    Available placeholders for frequency-aware metrics:
+    ``{freq}`` -- short display label for the detected data frequency
+    (e.g. ``"M"`` for monthly, ``"T"`` for quarterly). Empty string when
+    frequency is unknown. Opt-in: add ``{freq}`` to the format string
+    in your TOML config (e.g. ``moving_average_format = "MM{window}{freq}"``).
+    """
+
     ath: str = "ATH"
     atl: str = "ATL"
     avg: str = "AVG"
     moving_average_format: str = "MM{window}"
     target_format: str = "Meta: {value}"
-    std_band_format: str = "BB({window}, {num_std})"
+    std_band_format: str = "BB({window}, {deviations})"
+    std_band_full_format: str = "DP({deviations})"
 
 
 class PathsConfig(BaseModel):
+    """Directory paths for file I/O.
+
+    Attributes:
+        charts_subdir: Subdirectory under ``outputs_dir`` for saved charts.
+        outputs_dir: Explicit outputs directory. Empty uses auto-discovery.
+        assets_dir: Explicit assets directory. Empty uses auto-discovery.
+    """
+
     charts_subdir: str = "charts"
     outputs_dir: str = ""
     assets_dir: str = ""
@@ -256,6 +419,7 @@ class ChartingConfig(BaseSettings):
     formatters: FormattersConfig = Field(default_factory=FormattersConfig)
     labels: LabelsConfig = Field(default_factory=LabelsConfig)
     legend: LegendConfig = Field(default_factory=LegendConfig)
+    ticks: TicksConfig = Field(default_factory=TicksConfig)
     paths: PathsConfig = Field(default_factory=PathsConfig)
 
     @classmethod

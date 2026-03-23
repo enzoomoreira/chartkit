@@ -118,9 +118,11 @@ compose(s1, s2, s3, title="Three Series, One Axis")
 ```python
 from chartkit import compose
 
+# 2-column area chart fills between the pair automatically
 spread_layer = spread_df.chartkit.layer(
+    kind="area",
+    y=["upper", "lower"],
     units="%",
-    fill_between=("upper", "lower"),
     highlight="last",
 )
 target_layer = target_df.chartkit.layer(units="%", metrics=["hline:3.0"], axis="left")
@@ -160,6 +162,23 @@ Avoid `%` and `BRL` on the same side unless intentionally normalized first.
 ### Expecting `layer()` to render
 
 `layer()` only prepares configuration. Rendering happens in `compose()`.
+
+### Passing chart-level options to `layer()`
+
+`layer()` only accepts data and rendering options: `kind`, `x`, `y`, `units`, `highlight`, `metrics`, `axis`, and chart-specific `**kwargs`.
+
+Chart-level options go to `compose()` instead:
+
+```python
+# INCORRECT -- these parameters are not accepted by layer()
+layer = df.chartkit.layer(title="Title", xlabel="X", grid=True)
+
+# CORRECT -- pass to compose()
+layer = df.chartkit.layer(units="%", highlight=True)
+compose(layer, title="Title", xlabel="X", grid=True)
+```
+
+Parameters only available in `compose()`: `title`, `source`, `legend`, `figsize`, `xlabel`, `ylabel`, `xlim`, `ylim`, `grid`, `tick_rotation`, `tick_format`, `tick_freq`, `collision`, `debug`.
 
 ---
 

@@ -17,11 +17,35 @@ use locks to prevent race conditions.
 
 | Module | Lock | Protects |
 |--------|------|----------|
+| `loader.py` | `Lock` | `ConfigLoader._config` (double-checked locking in `configure()`, `reset()`, `get_config()`) |
 | `discovery.py` | `RLock` | `_project_root_cache` (LRUCache) |
+
+### ConfigLoader Thread-Safety
+
+`ConfigLoader` uses `threading.Lock` with double-checked locking:
+
+```python
+class ConfigLoader:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._config: ChartingConfig | None = None
+
+    def get_config(self) -> ChartingConfig:
+        if self._config is not None:       # Fast path (no lock)
+            return self._config
+        with self._lock:                   # Slow path (lock)
+            if self._config is not None:   # Re-check after acquiring lock
+                return self._config
+            self._config = ChartingConfig(...)
+        return self._config
+```
+
+`configure()` and `reset()` also acquire the lock before modifying state, ensuring
+that concurrent calls to `get_config()` never observe partially-updated state.
 
 ### Usage Pattern
 
-We use `RLock` (reentrant lock) instead of a simple `Lock` because:
+We use `RLock` (reentrant lock) for `discovery.py` instead of a simple `Lock` because:
 - Allows the same thread to acquire the lock multiple times
 - Prevents deadlocks in recursive calls (e.g., `get_config()` -> `find_project_root()`)
 
@@ -118,6 +142,12 @@ root = find_project_root()
 # Subsequent calls: ~0.01ms (cache hit)
 root = find_project_root()
 ```
+
+### Font Cache
+
+`ChartingTheme` caches the loaded font in `_font`. `theme.apply()` invalidates
+this cache (`self._font = None`) before reloading config, ensuring that font
+changes via `configure()` take effect on the next plot.
 
 ### Config Cache
 
@@ -234,7 +264,12 @@ logger.debug(f"find_project_root: found {current}")
 | Module | DEBUG | WARNING |
 |--------|-------|---------|
 | `engine.py` | Plot params, chart dispatch, highlight modes | - |
-| `collision.py` | Collision iteration counts, label movements | - |
+| `extraction.py` | x/y columns selected, row count | - |
+| `pipeline.py` | Figure creation (figsize, grid), legend application/skip, finalize steps applied | - |
+| `plot_validation.py` | Axis limit coercion (string -> float/datetime) | - |
+| `tick_formatting.py` | Locator type and freq, data-aligned tick count, date format applied | - |
+| `collision/` | Collision iteration counts, label movements | - |
+| `frequency.py` | Inferred frequency (raw and normalized) | - |
 | `temporal.py` | Transform resolution (freq, periods) | - |
 | `_validation.py` | Auto-detected frequency, non-numeric columns filtered | - |
 | `discovery.py` | Cache hits/misses, paths found | - |
@@ -312,7 +347,7 @@ currency and numeric formatters.
 Locale is configured via settings:
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 [formatters.locale]
 babel_locale = "pt_BR"
 decimal = ","
@@ -470,7 +505,7 @@ leaks config state to another.
 2. **LRUCache**: `find_project_root()` cached with 32 entries
 3. **Simple flag**: `_config = None` avoids unnecessary pydantic object reconstruction
 4. **Lazy project_root**: Property in ConfigLoader with `_project_root_resolved` flag
-5. **Path-based collision**: `_LinePathObstacle` creates 1 object per Line2D (instead of N per data point), with cached display-coordinate paths and Cython-based `Path.intersects_bbox()` for O(segments) intersection checks
+5. **Path-based collision**: `_PathObstacle` creates 1 object per Artist with display-space paths extracted from lines, patches, and collections, using Cython-based `Path.intersects_bbox()` for O(segments) intersection checks
 
 ### Tips for Contributors
 

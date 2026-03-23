@@ -4,10 +4,11 @@ from .accessor import TransformAccessor
 from .temporal import (
     accum,
     annualize,
+    despike,
     diff,
     drawdown,
     normalize,
-    to_month_end,
+    resample,
     variation,
     zscore,
 )
@@ -21,5 +22,6 @@ __all__ = [
     "annualize",
     "drawdown",
     "zscore",
-    "to_month_end",
+    "despike",
+    "resample",
 ]

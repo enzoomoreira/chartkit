@@ -16,16 +16,17 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 
+from .._internal.frequency import infer_freq, normalize_freq_code
 from ..exceptions import TransformError
 from ..settings import get_config
 from ._validation import (
+    _DespikeParams,
     _DiffParams,
     _FreqResolvedParams,
     _NormalizeParams,
+    _ResampleParams,
     _RollingParams,
     _ZScoreParams,
-    _infer_freq,
-    _normalize_freq_code,
     coerce_input,
     resolve_periods,
     sanitize_result,
@@ -41,7 +42,8 @@ __all__ = [
     "annualize",
     "drawdown",
     "zscore",
-    "to_month_end",
+    "despike",
+    "resample",
 ]
 
 
@@ -102,9 +104,9 @@ def variation(
     # Warn when horizon='month' does not mean "calendar month"
     if horizon == "month" and resolved == 1 and params.periods is None:
         detected = (
-            _infer_freq(data)
+            infer_freq(data)
             if params.freq is None
-            else _normalize_freq_code(params.freq)
+            else normalize_freq_code(params.freq)
         )
         if detected in ("QE", "QS", "YE", "YS"):
             logger.warning(
@@ -443,28 +445,154 @@ def zscore(
 
 
 # ---------------------------------------------------------------------------
-# to_month_end -- normalize index to month end
+# despike -- detect and normalize aggressive data spikes (Hampel filter)
 # ---------------------------------------------------------------------------
 
+_HAMPEL_SCALE = 1.4826  # makes MAD consistent with std for normal distributions
+
 
 @overload
-def to_month_end(df: pd.DataFrame) -> pd.DataFrame: ...
+def despike(
+    df: pd.DataFrame,
+    window: int = 21,
+    threshold: float = 5.0,
+    method: str = "median",
+) -> pd.DataFrame: ...
 @overload
-def to_month_end(df: pd.Series) -> pd.Series: ...
-def to_month_end(
+def despike(
+    df: pd.Series,
+    window: int = 21,
+    threshold: float = 5.0,
+    method: str = "median",
+) -> pd.Series: ...
+def despike(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
+    window: int = 21,
+    threshold: float = 5.0,
+    method: str = "median",
 ) -> pd.DataFrame | pd.Series:
-    """Normalize temporal index to month end, consolidating monthly observations.
+    """Detect and normalize aggressive data spikes using a Hampel filter.
 
-    Each timestamp is mapped to the last day of its respective month.
-    If multiple rows fall in the same month (e.g. daily data), keeps
-    only the last chronological observation of that month.
+    Uses rolling median and MAD (Median Absolute Deviation) to identify
+    points that deviate dramatically from their local neighborhood.
+    Designed for Bloomberg-style data where single data points spike
+    to anomalous values.
+
+    The modified z-score for each point is:
+    ``|x - rolling_median| / (1.4826 * MAD)``
+
+    Points exceeding the threshold are replaced according to ``method``.
 
     Args:
-        df: Input data. Index must be DatetimeIndex.
+        df: Input data.
+        window: Rolling window size (must be odd, >= 3). Centered window
+            so neighbors on both sides are considered.
+        threshold: Number of MADs to consider a spike. Higher values
+            catch only more extreme anomalies. Default ``5.0`` is
+            conservative (~5 sigma equivalent).
+        method: Replacement strategy for detected spikes:
+            ``'median'`` replaces with rolling median (default).
+            ``'interpolate'`` sets spikes to NaN and interpolates linearly.
+    """
+    params = validate_params(
+        _DespikeParams, window=window, threshold=threshold, method=method
+    )
+    data = validate_numeric(coerce_input(df))
+    logger.debug(
+        "despike: window={}, threshold={}, method='{}'",
+        params.window,
+        params.threshold,
+        params.method,
+    )
+
+    rolling_median = data.rolling(
+        params.window, center=True, min_periods=3
+    ).median()
+
+    deviation = (data - rolling_median).abs()
+    mad = deviation.rolling(params.window, center=True, min_periods=3).median()
+
+    # Scaled MAD (consistent estimator of std for normal distribution)
+    scaled_mad = _HAMPEL_SCALE * mad
+
+    # When MAD=0 (locally constant data) and deviation>0, z-score is infinite
+    # (any deviation from a constant neighborhood is infinitely many MADs away).
+    # When MAD=0 and deviation=0, z-score is 0 (matches the constant value).
+    modified_z = deviation / scaled_mad.replace(0, np.nan)
+    has_deviation = deviation > 0
+    modified_z = modified_z.where(
+        scaled_mad.notna() & (scaled_mad != 0),
+        other=np.where(has_deviation, np.inf, 0.0),
+    )
+
+    is_spike = modified_z > params.threshold
+
+    # Count spikes for logging
+    if isinstance(is_spike, pd.DataFrame):
+        spike_count = int(is_spike.sum().sum())
+    else:
+        spike_count = int(is_spike.sum())
+
+    if spike_count > 0:
+        logger.info("despike: detected {} spike(s)", spike_count)
+
+    result = data.copy()
+    if params.method == "median":
+        result = result.where(~is_spike, rolling_median)
+    else:
+        result = result.where(~is_spike, np.nan)
+        result = result.interpolate(method="linear")
+
+    return sanitize_result(result)
+
+
+# ---------------------------------------------------------------------------
+# resample -- downsample temporal data to a target frequency
+# ---------------------------------------------------------------------------
+
+# User-friendly aliases -> pandas offset aliases
+_RESAMPLE_OFFSETS: dict[str, str] = {
+    "day": "D",
+    "D": "D",
+    "week": "W",
+    "W": "W",
+    "month": "ME",
+    "M": "ME",
+    "quarter": "QE",
+    "Q": "QE",
+    "year": "YE",
+    "Y": "YE",
+    "annual": "YE",
+}
+
+
+@overload
+def resample(df: pd.DataFrame, freq: str = ..., method: str = ...) -> pd.DataFrame: ...
+@overload
+def resample(df: pd.Series, freq: str = ..., method: str = ...) -> pd.Series: ...
+def resample(
+    df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
+    freq: str = "month",
+    method: str = "last",
+) -> pd.DataFrame | pd.Series:
+    """Resample temporal data to a target frequency.
+
+    Downsamples data by grouping observations into time periods and
+    applying an aggregation method.  Useful for reducing data density
+    before plotting (e.g. daily -> monthly).
+
+    Args:
+        df: Input data.  Index must be DatetimeIndex.
+        freq: Target frequency.  Accepts friendly names (``'day'``,
+            ``'week'``, ``'month'``, ``'quarter'``, ``'year'``,
+            ``'annual'``) or short codes (``'D'``, ``'W'``, ``'M'``,
+            ``'Q'``, ``'Y'``).  Defaults to ``'month'``.
+        method: Aggregation method -- ``'last'`` (default), ``'first'``,
+            ``'mean'``, or ``'sum'``.
 
     Raises:
-        TransformError: If data is empty or index is not DatetimeIndex.
+        TransformError: If data is empty, index is not DatetimeIndex,
+            or parameters are invalid.
     """
     data = coerce_input(df)
 
@@ -473,10 +601,17 @@ def to_month_end(
 
     if not isinstance(data.index, pd.DatetimeIndex):
         raise TransformError(
-            f"to_month_end requires DatetimeIndex, got {type(data.index).__name__}"
+            f"resample requires DatetimeIndex, got {type(data.index).__name__}"
         )
 
-    result = data.copy()
-    result.index = result.index.to_period("M").to_timestamp("M")  # type: ignore[attr-defined]
-    result = result.sort_index()
-    return result.groupby(level=0).last()
+    params = validate_params(_ResampleParams, freq=freq, method=method)
+    offset = _RESAMPLE_OFFSETS[params.freq]
+
+    resampler = data.resample(offset)
+    result = getattr(resampler, params.method)()
+
+    if isinstance(result, pd.Series):
+        return result.dropna()
+    return result.dropna(how="all")
+
+
