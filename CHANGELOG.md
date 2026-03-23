@@ -1,5 +1,15 @@
 # Project Changelog
 
+## [2026-03-22 21:11]
+### Changed
+- **Config renomeado de `charting` para `chartkit`**: TOML discovery agora busca `.chartkit/config.toml` (era `.charting.toml`/`charting.toml`), pyproject.toml usa `[tool.chartkit]` (era `[tool.charting]`), user config em `~/.config/chartkit/` e `%APPDATA%/chartkit/` (era `charting/`). Breaking change -- configs existentes precisam ser migrados manualmente
+- **Exemplo de config movido para `.chartkit/config.example.toml`**: Substituiu `charting.example.toml` na raiz do projeto. Novo local segue convencao dotfolder e fica junto ao config do usuario
+- **`.gitignore` atualizado**: `.chartkit/config.toml` ignorado para evitar commit acidental de config do usuario
+
+### Removed
+- **`charting.example.toml`**: Substituido por `.chartkit/config.example.toml`
+- **Suporte a `.charting.toml`/`charting.toml` na raiz**: Discovery simplificado para buscar apenas `.chartkit/config.toml`
+
 ## [2026-02-20 11:47]
 ### Changed
 - **Collision: unified artist dispatch via `_classify_artist()`**: Logica duplicada de conversao Artist->_PathObstacle em `_collect_obstacles()` e `_collect_passive_obstacles()` extraida para funcao unica com dispatch estrutural (Collection > Patch > Line > fallback extent)

@@ -47,15 +47,15 @@ filterwarnings = ["error", "ignore::UserWarning:matplotlib"]
 # Exemplo de configuracao do chartkit via pyproject.toml
 # Descomente e customize conforme necessario:
 #
-# [tool.charting]
-# [tool.charting.branding]
+# [tool.chartkit]
+# [tool.chartkit.branding]
 # company_name = "Minha Empresa"
 # footer_format = "Fonte: {source}, {company_name}"
 #
-# [tool.charting.colors]
+# [tool.chartkit.colors]
 # primary = "#003366"
 # secondary = "#0066CC"
 #
-# [tool.charting.layout]
+# [tool.chartkit.layout]
 # figsize = [12.0, 8.0]
 # dpi = 150

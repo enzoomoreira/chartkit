@@ -48,13 +48,14 @@ class TestFindProjectRoot:
 
 
 class TestFindConfigFiles:
-    def test_finds_charting_toml(
+    def test_finds_dotfolder_config(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(tmp_path)
-        (tmp_path / ".charting.toml").write_text("[branding]\n")
+        (tmp_path / ".chartkit").mkdir()
+        (tmp_path / ".chartkit" / "config.toml").write_text("[branding]\n")
         files = find_config_files(project_root=tmp_path)
-        assert any(f.name == ".charting.toml" for f in files)
+        assert any(f.name == "config.toml" and ".chartkit" in str(f) for f in files)
 
     def test_empty_when_no_configs(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

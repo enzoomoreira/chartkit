@@ -37,7 +37,7 @@ def _load_toml(path: Path) -> dict[str, Any]:
 
 
 def _load_pyproject_section(path: Path) -> dict[str, Any]:
-    return _load_toml(path).get("tool", {}).get("charting", {})
+    return _load_toml(path).get("tool", {}).get("chartkit", {})
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:

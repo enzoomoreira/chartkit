@@ -283,7 +283,7 @@ Configuration is loaded from multiple sources with merge:
 
 1. `configure()` init_settings - Programmatic overrides (highest priority)
 2. Env vars (`CHARTKIT_*`, nested `__`)
-3. TOML files (`.charting.toml` > `pyproject.toml [tool.charting]` > user config)
+3. TOML files (`.chartkit/config.toml` > `pyproject.toml [tool.chartkit]` > user config)
 4. Field defaults from pydantic models (lowest priority)
 
 ---

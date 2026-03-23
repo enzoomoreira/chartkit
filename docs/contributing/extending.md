@@ -482,7 +482,7 @@ def my_function():
 **4. Configure via TOML:**
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 [my_config]
 enabled = true
 threshold = 0.75

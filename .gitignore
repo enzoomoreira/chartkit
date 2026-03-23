@@ -13,5 +13,8 @@ wheels/
 .claude
 CLAUDE.md
 
+# User config (keep example tracked)
+.chartkit/config.toml
+
 # Temp files
 temp

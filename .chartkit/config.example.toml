@@ -1,12 +1,12 @@
 # =============================================================================
-# Configuracao da biblioteca de charting
+# Configuracao do chartkit
 # =============================================================================
 #
-# Copie este arquivo para um dos seguintes locais:
-#   1. .charting.toml ou charting.toml na raiz do projeto
-#   2. Secao [tool.charting] no pyproject.toml
-#   3. ~/.config/charting/config.toml (Linux/Mac)
-#   4. %APPDATA%/charting/config.toml (Windows)
+# Copie este arquivo como config.toml em um dos seguintes locais:
+#   1. .chartkit/config.toml na raiz do projeto (recomendado)
+#   2. Secao [tool.chartkit] no pyproject.toml
+#   3. ~/.config/chartkit/config.toml (Linux/Mac)
+#   4. %APPDATA%/chartkit/config.toml (Windows)
 #
 # Ou carregue explicitamente:
 #   from chartkit import configure

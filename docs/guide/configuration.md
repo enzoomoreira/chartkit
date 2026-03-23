@@ -11,20 +11,20 @@ chartkit loads configuration from multiple sources, merging them in order of pre
 | 1 | `configure()` (init_settings) | Programmatic runtime configuration |
 | 2 | Environment variables (`CHARTKIT_*`) | Env vars with prefix and nested delimiter `__` |
 | 3 | `configure(config_path=...)` | Explicit TOML file |
-| 4 | `.charting.toml` / `charting.toml` | File at project root |
-| 5 | `pyproject.toml [tool.charting]` | Section in pyproject.toml |
-| 6 | `~/.config/charting/config.toml` | User global config (Linux/Mac) |
-| 7 | `%APPDATA%/charting/config.toml` | User global config (Windows) |
+| 4 | `.chartkit/config.toml` | File at project root |
+| 5 | `pyproject.toml [tool.chartkit]` | Section in pyproject.toml |
+| 6 | `~/.config/chartkit/config.toml` | User global config (Linux/Mac) |
+| 7 | `%APPDATA%/chartkit/config.toml` | User global config (Windows) |
 | 8 | Built-in defaults | Default values from pydantic models |
 
 Higher-priority configurations override lower-priority ones. The merge is deep, allowing you to override only specific fields without losing the rest.
 
 ## TOML File
 
-Create a `.charting.toml` or `charting.toml` file at your project root:
+Create a `.chartkit/config.toml` file at your project root:
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 
 [branding]
 company_name = "My Company"
@@ -155,34 +155,34 @@ outputs_dir = ""    # Empty = auto-discovery
 assets_dir = ""     # Empty = auto-discovery
 ```
 
-chartkit automatically detects the `.charting.toml` or `charting.toml` file at the project root when importing the library.
+chartkit automatically detects the `.chartkit/config.toml` file at the project root when importing the library.
 
 ## Via pyproject.toml
 
-You can integrate the configuration directly into your project's `pyproject.toml` using the `[tool.charting]` section:
+You can integrate the configuration directly into your project's `pyproject.toml` using the `[tool.chartkit]` section:
 
 ```toml
 # pyproject.toml
 
-[tool.charting]
+[tool.chartkit]
 
-[tool.charting.branding]
+[tool.chartkit.branding]
 company_name = "My Company"
 footer_format = "Prepared by {company_name} | Data: {source}"
 
-[tool.charting.colors]
+[tool.chartkit.colors]
 primary = "#003366"
 secondary = "#0066CC"
 
-[tool.charting.layout]
+[tool.chartkit.layout]
 figsize = [14.0, 8.0]
 dpi = 150
 
-[tool.charting.fonts.sizes]
+[tool.chartkit.fonts.sizes]
 title = 24
 default = 14
 
-[tool.charting.paths]
+[tool.chartkit.paths]
 outputs_dir = "data/outputs"
 assets_dir = "assets"
 ```
@@ -425,7 +425,7 @@ The log will show:
 ### Corporate Setup
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 [branding]
 company_name = "Bank XYZ"
 footer_format = "Prepared by {company_name} | Fonte: {source}"

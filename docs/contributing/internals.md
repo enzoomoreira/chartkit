@@ -347,7 +347,7 @@ currency and numeric formatters.
 Locale is configured via settings:
 
 ```toml
-# .charting.toml
+# .chartkit/config.toml
 [formatters.locale]
 babel_locale = "pt_BR"
 decimal = ","

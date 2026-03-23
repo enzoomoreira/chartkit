@@ -82,11 +82,12 @@ class TestEnvVars:
 class TestTomlLoading:
     """TOML file loading and pyproject.toml section extraction."""
 
-    def test_charting_toml_loaded(
+    def test_dotfolder_config_loaded(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(tmp_path)
-        (tmp_path / ".charting.toml").write_text(
+        (tmp_path / ".chartkit").mkdir()
+        (tmp_path / ".chartkit" / "config.toml").write_text(
             '[branding]\ncompany_name = "FromToml"\n'
         )
         (tmp_path / ".git").mkdir()
@@ -101,25 +102,26 @@ class TestTomlLoading:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "pyproject.toml").write_text(
             '[project]\nname = "test"\n\n'
-            '[tool.charting.branding]\ncompany_name = "FromPyproject"\n'
+            '[tool.chartkit.branding]\ncompany_name = "FromPyproject"\n'
         )
         loader = ConfigLoader()
         config = loader.get_config()
         assert config.branding.company_name == "FromPyproject"
 
-    def test_charting_toml_wins_over_pyproject(
+    def test_dotfolder_config_wins_over_pyproject(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "pyproject.toml").write_text(
             '[project]\nname = "test"\n\n'
-            '[tool.charting.branding]\ncompany_name = "FromPyproject"\n'
+            '[tool.chartkit.branding]\ncompany_name = "FromPyproject"\n'
         )
-        (tmp_path / ".charting.toml").write_text(
-            '[branding]\ncompany_name = "FromCharting"\n'
+        (tmp_path / ".chartkit").mkdir()
+        (tmp_path / ".chartkit" / "config.toml").write_text(
+            '[branding]\ncompany_name = "FromDotfolder"\n'
         )
         loader = ConfigLoader()
-        assert loader.get_config().branding.company_name == "FromCharting"
+        assert loader.get_config().branding.company_name == "FromDotfolder"
 
 
 class TestPathResolution:
