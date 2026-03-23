@@ -1,5 +1,15 @@
 # Project Changelog
 
+## [2026-03-22 22:17]
+### Added
+- **Sistema de classificacao de chart kinds (`_classification.py`)**: Tabela declarativa `KindCaps` define capacidades de cada chart kind (highlight, metrics temporais, composability, axis group). Validacao early-fail em `engine.py`, `create_layer()` e `compose()` bloqueia combinacoes incompativeis antes do rendering
+- **Validacao de highlight por kind**: Kinds sem suporte a highlight (stackplot, boxplot, violinplot, hist, ecdf, pie, eventplot) agora rejeitam `highlight=True` com erro claro
+- **Validacao de metrics por kind**: Kinds sem suporte a metrics (distribution, aggregation, isolated, event) rejeitam qualquer metrica. Kinds sem suporte temporal rejeitam `ma`, `std_band` e `vband`
+- **Validacao de composability**: `compose()` rejeita kinds incompativeis com multi-layer (boxplot, violinplot, hist, ecdf, pie, eventplot) com mensagem descritiva
+
+### Changed
+- **`ChartRenderer._ALIASES` referencia `KIND_ALIASES` centralizado**: Source of truth unica para aliases de chart kind, eliminando duplicacao entre renderer e classification
+
 ## [2026-03-22 21:11]
 ### Changed
 - **Config renomeado de `charting` para `chartkit`**: TOML discovery agora busca `.chartkit/config.toml` (era `.charting.toml`/`charting.toml`), pyproject.toml usa `[tool.chartkit]` (era `[tool.charting]`), user config em `~/.config/chartkit/` e `%APPDATA%/chartkit/` (era `charting/`). Breaking change -- configs existentes precisam ser migrados manualmente

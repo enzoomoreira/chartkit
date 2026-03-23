@@ -199,7 +199,7 @@ Compose multiple layers into a single chart with optional dual axes.
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Draw collision debug overlay |
 
-Raises `ValidationError` if no layers are provided or all layers are on the right axis.
+Raises `ValidationError` if no layers are provided, all layers are on the right axis, or any layer uses a non-composable kind (boxplot, violinplot, hist, ecdf, pie, eventplot).
 
 ### Layer
 
@@ -282,6 +282,8 @@ Generic chart renderer with enhancer-based extensibility. Simple chart types (sc
 
 ### Aliases
 
+Aliases are defined centrally in `charts/_classification.py` as `KIND_ALIASES` and referenced by `ChartRenderer._ALIASES`.
+
 | Alias | Resolves To |
 |-------|-------------|
 | `"line"` | `"plot"` |
@@ -327,6 +329,60 @@ def plot_my_chart(ax, x, y_data, highlight, **kwargs):
 | `render(ax, kind, x, y_data, highlight, **kwargs)` | `None` | Renders chart (enhancer or generic) |
 | `validate_kind(kind)` | `None` | Validates kind (rejects unsupported, private, and non-existent methods) |
 | `available()` | `list[str]` | Lists registered enhancer names |
+
+---
+
+## Kind Classification
+
+The `charts/_classification.py` module defines per-kind feature capabilities and provides validation functions used by `plot()`, `layer()`, and `compose()`.
+
+### AxisGroup
+
+```python
+AxisGroup = Literal["series", "distribution", "aggregation", "isolated", "event"]
+```
+
+### KindCaps
+
+```python
+@dataclass(frozen=True)
+class KindCaps:
+    group: AxisGroup
+    highlight: bool
+    temporal_metrics: bool
+    all_metrics: bool
+    composable: bool
+```
+
+Capability matrix for classified kinds:
+
+| Kind | Group | Highlight | Metrics | Temporal Metrics | Composable |
+|------|-------|-----------|---------|------------------|------------|
+| `plot`, `scatter`, `step`, `bar`, `barh`, `stacked_bar`, `fill_between`, `stairs`, `stem` | series | yes | yes | yes | yes |
+| `stackplot` | series | no | yes | yes | yes |
+| `boxplot`, `violinplot` | distribution | no | no | no | no |
+| `hist`, `ecdf` | aggregation | no | no | no | no |
+| `pie` | isolated | no | no | no | no |
+| `eventplot` | event | no | no | no | no |
+
+Unclassified generic kinds (any valid matplotlib Axes method not in the table) are allowed through all validations.
+
+### Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `resolve_kind_alias(kind)` | `(str) -> str` | Resolves user-facing kind to canonical name (e.g., `"line"` -> `"plot"`) |
+| `get_kind_caps(kind)` | `(str) -> KindCaps \| None` | Returns capabilities for a classified kind, or `None` for unclassified generic kinds |
+| `validate_highlight_for_kind(kind, resolved=None)` | `(str, str \| None) -> None` | Raises `ValidationError` if kind does not support highlight |
+| `validate_metrics_for_kind(kind, specs, resolved=None)` | `(str, str \| Sequence, str \| None) -> None` | Raises `ValidationError` if any metric is incompatible with kind |
+
+### KIND_ALIASES
+
+```python
+KIND_ALIASES: dict[str, str] = {"line": "plot", "area": "fill_between"}
+```
+
+Single source of truth for chart kind aliases. `ChartRenderer._ALIASES` references this dict.
 
 ---
 
@@ -711,6 +767,10 @@ The new exceptions inherit from corresponding built-in types, maintaining compat
 - `tick_rotation` receives a value that is not `int` or `"auto"`
 - `diff(periods=0)` (returns all-zeros, almost certainly a user error)
 - `zscore(window=1)` (std of 1 value is undefined)
+- `highlight=True` with a kind that does not support highlight (e.g., `pie`, `hist`, `boxplot`)
+- Metrics passed to a kind that does not support metrics (e.g., `metrics=['ath']` with `kind='pie'`)
+- Temporal metrics (`ma`, `std_band`, `vband`) passed to a kind that only supports non-temporal metrics
+- `compose()` receives a layer with a non-composable kind (e.g., `boxplot`, `pie`, `eventplot`)
 
 `RegistryError` is raised when:
 - `add_highlight()` receives a `style` not registered in `HIGHLIGHT_STYLES`

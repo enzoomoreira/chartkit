@@ -135,6 +135,7 @@ src/chartkit/
 │
 ├── charts/               # Generic rendering + enhancers
 │   ├── __init__.py       # Enhancer imports trigger automatic registration
+│   ├── _classification.py # KindCaps, KIND_ALIASES, validate_highlight/metrics_for_kind, AxisGroup
 │   ├── renderer.py       # ChartRenderer - generic rendering (ax.{kind}()) + enhancer dispatch
 │   ├── _helpers.py       # RenderContext, prepare_render_context(), resolve_color() + bar/category utilities
 │   └── enhancers/        # Specialized handlers for complex chart types
@@ -199,7 +200,7 @@ src/chartkit/
     ├── tick_formatting.py # apply_tick_formatting(x_data) - data-aware date locator/formatter for X-axis
     └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
-tests/                    # Test suite (448 tests)
+tests/                    # Test suite (603 tests)
 ├── conftest.py           # Shared fixtures (financial DataFrames, edge cases, Agg backend)
 ├── charts/               # Chart rendering tests (67)
 ├── collision/            # Collision engine tests (19)
@@ -244,7 +245,8 @@ tests/                    # Test suite (448 tests)
 
 | Module | Responsibility |
 |--------|---------------|
-| `charts/renderer.py` | ChartRenderer: generic rendering via `ax.{kind}()` + enhancer dispatch + line obstacle registration |
+| `charts/_classification.py` | KindCaps dataclass, AxisGroup type, KIND_ALIASES (single source of truth), validation functions for highlight/metrics/composability per chart kind |
+| `charts/renderer.py` | ChartRenderer: generic rendering via `ax.{kind}()` + enhancer dispatch + line obstacle registration (aliases reference KIND_ALIASES from _classification) |
 | `charts/_helpers.py` | RenderContext dataclass + prepare_render_context/resolve_color for enhancers + bar/category utilities (detect_bar_width, apply_y_origin, etc.) |
 | `charts/enhancers/*.py` | 13 enhancers: bar, barh, stacked_bar, area, hist, pie, stackplot, stem, stairs, boxplot, violinplot, ecdf, eventplot |
 | `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |

@@ -23,6 +23,7 @@ from .._internal import (
 )
 from .._internal.plot_validation import AxisLimits
 from ..charts import ChartRenderer
+from ..charts._classification import get_kind_caps, resolve_kind_alias
 from ..exceptions import ValidationError
 from ..metrics import MetricRegistry
 from ..result import PlotResult
@@ -58,6 +59,16 @@ def _validate_layers(
         raise ValidationError(
             "All layers are on axis='right'. At least one layer must use axis='left'."
         )
+
+    # Validate composability of each layer kind
+    for layer in layers:
+        resolved = resolve_kind_alias(layer.kind)
+        caps = get_kind_caps(resolved)
+        if caps is not None and not caps.composable:
+            raise ValidationError(
+                f"Chart kind '{layer.kind}' cannot be used in compose(). "
+                f"It has incompatible axis semantics for multi-layer charts."
+            )
 
 
 def _apply_axis_formatter(

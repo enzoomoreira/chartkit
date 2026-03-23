@@ -22,6 +22,11 @@ from ._internal import (
 )
 from ._internal.plot_validation import AxisLimits, UnitFormat
 from .charts import ChartRenderer
+from .charts._classification import (
+    resolve_kind_alias,
+    validate_highlight_for_kind,
+    validate_metrics_for_kind,
+)
 from .exceptions import StateError
 from .metrics import MetricRegistry
 from .overlays import HighlightMode
@@ -101,6 +106,12 @@ class ChartingPlotter:
         """
         highlight_modes = normalize_highlight(highlight)
         validate_plot_params(units=units, legend=legend, tick_freq=tick_freq)
+
+        resolved_kind = resolve_kind_alias(kind)
+        if highlight_modes:
+            validate_highlight_for_kind(kind, resolved=resolved_kind)
+        if metrics:
+            validate_metrics_for_kind(kind, metrics, resolved=resolved_kind)
 
         logger.debug(
             "plot: kind={}, shape={}, units={}, metrics={}",

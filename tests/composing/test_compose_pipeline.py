@@ -62,6 +62,34 @@ class TestValidation:
             compose(_make_layer(), legend=1)  # type: ignore[arg-type]
 
 
+class TestComposabilityValidation:
+    """Compose rejects non-composable chart kinds."""
+
+    @pytest.mark.parametrize(
+        "kind", ["boxplot", "violinplot", "hist", "ecdf", "pie", "eventplot"]
+    )
+    def test_non_composable_kind_raises(self, kind: str) -> None:
+        with pytest.raises(ValidationError, match="cannot be used in compose"):
+            _validate_layers((_make_layer(kind=kind),), None)
+
+    def test_non_composable_mixed_with_composable_raises(self) -> None:
+        with pytest.raises(ValidationError, match="cannot be used in compose"):
+            _validate_layers((_make_layer(kind="line"), _make_layer(kind="pie")), None)
+
+    @pytest.mark.parametrize("kind", ["line", "bar", "scatter", "step", "area"])
+    def test_composable_kinds_pass(self, kind: str) -> None:
+        _validate_layers((_make_layer(kind=kind),), None)
+
+    def test_unclassified_generic_kind_passes(self) -> None:
+        """Unknown kinds are not blocked (backwards compat)."""
+        _validate_layers((_make_layer(kind="hexbin"),), None)
+
+    def test_error_message_uses_original_kind_name(self) -> None:
+        """Error should show user-facing kind, not canonical."""
+        with pytest.raises(ValidationError, match="pie"):
+            _validate_layers((_make_layer(kind="pie"),), None)
+
+
 # ---------------------------------------------------------------------------
 # Compose rendering
 # ---------------------------------------------------------------------------

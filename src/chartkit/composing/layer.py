@@ -75,6 +75,11 @@ def create_layer(
     """
     from .._internal import validate_plot_params
     from ..charts import ChartRenderer
+    from ..charts._classification import (
+        resolve_kind_alias,
+        validate_highlight_for_kind,
+        validate_metrics_for_kind,
+    )
 
     validate_plot_params(units=units, legend=None)
     ChartRenderer.validate_kind(kind)
@@ -82,6 +87,12 @@ def create_layer(
         from ..exceptions import ValidationError
 
         raise ValidationError(f"Invalid axis '{axis}'. Expected 'left' or 'right'.")
+
+    resolved = resolve_kind_alias(kind)
+    if highlight:
+        validate_highlight_for_kind(kind, resolved=resolved)
+    if metrics:
+        validate_metrics_for_kind(kind, metrics, resolved=resolved)
 
     return Layer(
         df=df,

@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 448 tests covering all modules with business logic.
+Test suite for chartkit with 603 tests covering all modules with business logic.
 
 ---
 
@@ -21,10 +21,11 @@ uv run pytest -m slow                     # Only slow-marked tests
 ```
 tests/
 ├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases, Agg backend)
-├── charts/                        # Chart rendering (67 tests)
+├── charts/                        # Chart rendering (67 tests) + classification
 │   ├── test_area_enhancer.py      # Area chart enhancer (fill_between semantics)
 │   ├── test_bar_enhancer.py       # Bar chart enhancer (grouped, sort, color='cycle', barh)
 │   ├── test_bar_width.py          # detect_bar_width, categorical helpers, y_origin
+│   ├── test_classification.py     # KindCaps, highlight/metrics/composability validation
 │   ├── test_renderer.py          # ChartRenderer generic rendering + unsupported kinds
 │   └── test_stacked_bar_enhancer.py # Stacked bar chart enhancer
 ├── collision/                     # Collision engine (19 tests)
@@ -261,6 +262,7 @@ Transforms and collision tests don't need isolation -- they operate on fixture d
 | Testing... | Location |
 |-----------|----------|
 | A new chart enhancer | `tests/charts/test_<kind>_enhancer.py` |
+| Kind classification / capabilities | `tests/charts/test_classification.py` |
 | ChartRenderer generic behavior | `tests/charts/test_renderer.py` |
 | Bar width / detection helpers | `tests/charts/test_bar_width.py` |
 | A new transform function | `tests/transforms/test_<name>.py` |

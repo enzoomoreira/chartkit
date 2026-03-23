@@ -511,6 +511,10 @@ The `highlight` parameter adds markers and labels at specific points of each ser
 | `['max', 'min']` | Combines multiple modes |
 | `False` | No highlight (default) |
 
+Not all chart kinds support highlight. Passing `highlight=True` to an unsupported kind raises `ValidationError`. The following kinds do **not** support highlight:
+
+`stackplot`, `boxplot`, `violinplot`, `hist`, `ecdf`, `pie`, `eventplot`
+
 ```python
 # Highlight last value (equivalent)
 df.chartkit.plot(title="Interest Rate", highlight=True)
@@ -639,6 +643,7 @@ compose(layer_price, layer_volume, title="Price and Volume", source="Bloomberg")
 - At least one layer must use `axis='left'`
 - Conflicting units on the same axis trigger a warning
 - `layer()` captures intent; rendering happens only in `compose()`
+- Non-composable kinds (`boxplot`, `violinplot`, `hist`, `ecdf`, `pie`, `eventplot`) are rejected by `compose()` with `ValidationError`. Only series-group kinds (line, bar, scatter, area, etc.) can participate in multi-layer charts
 
 ### How It Works
 

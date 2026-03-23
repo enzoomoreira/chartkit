@@ -12,6 +12,7 @@ from matplotlib.collections import PathCollection
 from .._internal.collision import register_artist_obstacle
 from ..exceptions import ValidationError
 from ..overlays import add_highlight
+from ._classification import KIND_ALIASES
 from ._helpers import prepare_render_context, resolve_color
 
 if TYPE_CHECKING:
@@ -44,7 +45,7 @@ class ChartRenderer:
 
     _enhancers: dict[str, Enhancer] = {}
 
-    _ALIASES: dict[str, str] = {"line": "plot", "area": "fill_between"}
+    _ALIASES: dict[str, str] = KIND_ALIASES
 
     _UNSUPPORTED_KINDS: dict[str, str] = {
         "imshow": "imshow requires 2D array data, not tabular x/y",

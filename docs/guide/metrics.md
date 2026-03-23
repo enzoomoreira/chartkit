@@ -42,6 +42,15 @@ df.chartkit.plot(metrics=['ath', 'ma:12', 'hline:3.0', 'band:1.5:4.5'])
 The metrics system uses a centralized registry that parses specification strings
 and applies the corresponding functions to the chart.
 
+### Kind Compatibility
+
+Not all chart kinds support metrics. Passing metrics to an unsupported kind raises `ValidationError`:
+
+- **No metrics at all**: `boxplot`, `violinplot`, `hist`, `ecdf`, `pie`, `eventplot`. These are distribution, aggregation, isolated, or event-type charts where overlay metrics have no meaningful axis.
+- **No temporal metrics** (`ma`, `std_band`, `vband`): currently all kinds that support any metrics also support temporal metrics, but custom/generic kinds classified without `temporal_metrics=True` would reject them.
+
+Series-group kinds (line, bar, scatter, area, stacked_bar, stackplot, stairs, stem, etc.) support all metrics.
+
 ---
 
 ## Moving Average (ma:N)

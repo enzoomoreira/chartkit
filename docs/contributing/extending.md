@@ -303,6 +303,20 @@ No need to modify `engine.py`. Dispatch is automatic:
 ChartRenderer.render(ax, kind, x_data, y_data, highlight=highlight, **kwargs)
 ```
 
+#### 3. Register in the capabilities table
+
+Add an entry for the new kind in the `_CAPS` dict in `charts/_classification.py`. This controls which features (highlight, metrics, composability) are allowed:
+
+```python
+# In src/chartkit/charts/_classification.py
+_CAPS: dict[str, KindCaps] = {
+    # ... existing entries ...
+    "waterfall": KindCaps("series", highlight=True, temporal_metrics=True, all_metrics=True, composable=True),
+}
+```
+
+If you skip this step, the new kind will be treated as an unclassified generic kind -- all features are allowed (no validation). Adding an explicit entry enables proper validation and documents the kind's capabilities.
+
 Usage:
 
 ```python
