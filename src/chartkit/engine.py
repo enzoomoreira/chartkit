@@ -9,6 +9,7 @@ from loguru import logger
 
 from ._internal import (
     FORMATTERS,
+    get_formatter,
     apply_legend,
     create_figure,
     draw_debug_overlay,
@@ -52,6 +53,7 @@ class ChartingPlotter:
         kind: ChartKind = "line",
         title: str | None = None,
         units: UnitFormat | None = None,
+        decimals: int | None = None,
         source: str | None = None,
         highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
@@ -76,6 +78,9 @@ class ChartingPlotter:
             kind: Chart type.
             title: Title displayed above the chart.
             units: Y axis formatting.
+            decimals: Decimal places for axis tick labels and highlight labels.
+                Overrides the formatter default when provided. Has no effect
+                when *units* is ``None``.
             source: Data source displayed in the footer. Overrides
                 ``branding.default_source`` from config when provided.
             highlight: Data point highlight mode(s). ``True`` or ``'last'``
@@ -131,7 +136,7 @@ class ChartingPlotter:
 
         # 3. Y formatter
         if units:
-            ax.yaxis.set_major_formatter(FORMATTERS[units]())
+            ax.yaxis.set_major_formatter(get_formatter(units, decimals))
 
         # 4. Plot
         ChartRenderer.render(

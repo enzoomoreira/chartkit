@@ -19,7 +19,7 @@ from .extraction import (
     resolve_series,
     should_show_legend,
 )
-from .formatting import FORMATTERS
+from .formatting import FORMATTERS, get_formatter
 from .frequency import infer_freq
 from .highlight import normalize_highlight
 from .pipeline import apply_legend, create_figure, finalize_chart
@@ -30,6 +30,7 @@ from .tick_rotation import apply_tick_rotation
 
 __all__ = [
     "FORMATTERS",
+    "get_formatter",
     "apply_legend",
     "apply_tick_formatting",
     "apply_tick_rotation",

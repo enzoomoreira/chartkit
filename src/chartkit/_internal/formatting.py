@@ -14,7 +14,7 @@ from ..styling import (
     points_formatter,
 )
 
-__all__ = ["FORMATTERS"]
+__all__ = ["FORMATTERS", "get_formatter"]
 
 FORMATTERS = {
     "BRL": lambda: currency_formatter("BRL"),
@@ -30,3 +30,31 @@ FORMATTERS = {
 assert set(FORMATTERS.keys()) == set(get_args(UnitFormat)), (
     f"FORMATTERS keys {set(FORMATTERS.keys())} != UnitFormat {set(get_args(UnitFormat))}"
 )
+
+
+def get_formatter(units: UnitFormat, decimals: int | None = None):
+    """Return the formatter for *units*, optionally overriding decimal places.
+
+    For ``units`` that support a ``decimals`` argument (``"%"``, ``"human"``,
+    ``"points"``, ``"x"``), *decimals* overrides the default when provided.
+    For compact-currency units (``"BRL_compact"``, ``"USD_compact"``), *decimals*
+    maps to ``fraction_digits``.  For full-currency units the argument is ignored.
+    """
+    if decimals is None:
+        return FORMATTERS[units]()
+
+    if units == "%":
+        return percent_formatter(decimals=decimals)
+    if units == "human":
+        return human_readable_formatter(decimals=decimals)
+    if units == "points":
+        return points_formatter(decimals=decimals)
+    if units == "x":
+        return multiplier_formatter(decimals=decimals)
+    if units == "BRL_compact":
+        return compact_currency_formatter("BRL", fraction_digits=decimals)
+    if units == "USD_compact":
+        return compact_currency_formatter("USD", fraction_digits=decimals)
+
+    # BRL / USD: decimal places controlled by Babel; ignore decimals
+    return FORMATTERS[units]()
