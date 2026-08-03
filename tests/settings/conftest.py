@@ -4,16 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from chartkit.settings.loader import reset_config
-
-
-@pytest.fixture(autouse=True)
-def _isolate_config():
-    """Reset config state before and after each test."""
-    reset_config()
-    yield
-    reset_config()
-
 
 @pytest.fixture
 def tmp_project(tmp_path: Path) -> Path:

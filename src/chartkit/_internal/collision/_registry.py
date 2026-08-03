@@ -58,3 +58,21 @@ def register_passive(ax: Axes, artist: Artist) -> None:
     default. Use this to exclude background visuals (bands, shaded areas).
     """
     _passive.setdefault(ax, []).append(artist)
+
+
+def clear_axes_state(ax: Axes) -> None:
+    """Drop every registered artist for a single Axes.
+
+    The weak keys alone do not free the Axes: registered artists hold a
+    strong reference back to it, so the entry keeps its own key alive.
+    """
+    _labels.pop(ax, None)
+    _passive.pop(ax, None)
+    _artist_obstacles.pop(ax, None)
+
+
+def clear_all_state() -> None:
+    """Drop collision state for every Axes."""
+    _labels.clear()
+    _passive.clear()
+    _artist_obstacles.clear()

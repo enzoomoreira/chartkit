@@ -1,12 +1,69 @@
 from __future__ import annotations
 
+import warnings
+
 import matplotlib
 
 matplotlib.use("Agg")
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
+
+from chartkit._internal.collision._registry import clear_all_state
+from chartkit.metrics.registry import MetricRegistry
+from chartkit.settings.loader import reset_config
+
+# Reassigning the backend mid-session tears down the canvas, so it is never
+# part of the snapshot.
+_RC_VOLATILE = frozenset({"backend"})
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--snapshot-update",
+        action="store_true",
+        default=False,
+        help="Rewrite structural render snapshots instead of comparing them.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Global state isolation
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _isolate_global_state():
+    """Reset every piece of process-wide state the library touches.
+
+    chartkit mutates matplotlib rcParams, keeps per-Axes collision state in
+    module-level dicts, caches config in a singleton and registers metrics on
+    a class attribute. Without this fixture, test order changes results and
+    leaked Axes accumulate for the whole session.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        rc_snapshot = {
+            key: value
+            for key, value in matplotlib.rcParams.items()
+            if key not in _RC_VOLATILE
+        }
+    metrics_snapshot = dict(MetricRegistry._metrics)
+
+    reset_config()
+    clear_all_state()
+
+    yield
+
+    plt.close("all")
+    clear_all_state()
+    MetricRegistry._metrics = dict(metrics_snapshot)
+    reset_config()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        matplotlib.rcParams.update(rc_snapshot)
 
 
 # ---------------------------------------------------------------------------

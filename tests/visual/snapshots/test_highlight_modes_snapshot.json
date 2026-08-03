@@ -1,0 +1,91 @@
+{
+  "collections": [
+    "PathCollection",
+    "PathCollection",
+    "PathCollection"
+  ],
+  "figure_texts": [
+    ""
+  ],
+  "legend": null,
+  "lines": [
+    {
+      "first": [
+        19359.0,
+        100.4983
+      ],
+      "label": "price",
+      "last": [
+        19710.0,
+        92.1236
+      ],
+      "linestyle": "-",
+      "marker": "None",
+      "points": 252,
+      "zorder": 3.0
+    }
+  ],
+  "patches": [],
+  "texts": [
+    {
+      "ha": "left",
+      "position": [
+        19710.0,
+        92.6872
+      ],
+      "text": "  92",
+      "va": "center"
+    },
+    {
+      "ha": "center",
+      "position": [
+        "Timestamp:2023-03-14 00:00:00",
+        111.2413
+      ],
+      "text": "110",
+      "va": "bottom"
+    },
+    {
+      "ha": "center",
+      "position": [
+        "Timestamp:2023-12-12 00:00:00",
+        86.7894
+      ],
+      "text": "87",
+      "va": "top"
+    }
+  ],
+  "title": "Highlighted extremes",
+  "xlabel": "",
+  "xlim": [
+    19341.45,
+    19727.55
+  ],
+  "xtick_rotation": [
+    0.0
+  ],
+  "xticklabels": [
+    "2023-01",
+    "2023-03",
+    "2023-05",
+    "2023-07",
+    "2023-09",
+    "2023-11",
+    "2024-01"
+  ],
+  "y_formatter": "FuncFormatter",
+  "ylabel": "",
+  "ylim": [
+    85.9965,
+    112.0343
+  ],
+  "yticklabels": [
+    "85",
+    "90",
+    "95",
+    "100",
+    "105",
+    "110",
+    "115"
+  ]
+}
