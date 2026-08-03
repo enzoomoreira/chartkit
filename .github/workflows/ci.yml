@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+env:
+  # Every job renders headless; keep it explicit so a runner without a display
+  # never falls back to an interactive backend.
+  MPLBACKEND: Agg
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras
+      - name: ruff check
+        run: uv run ruff check src tests
+      - name: ruff format
+        run: uv run ruff format --check src tests
+
+  typecheck:
+    runs-on: ubuntu-latest
+    # Advisory until the type-hint cleanup lands: the baseline is 133 errors,
+    # most of them public signatures typed looser than the runtime validation
+    # actually enforces. Flip to blocking once that reaches zero.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras
+      - run: uv run pyright
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.12", "3.13"]
+        pandas: ["2.2", "3.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --python ${{ matrix.python-version }}
+      - name: Pin pandas ${{ matrix.pandas }}
+        run: uv pip install "pandas~=${{ matrix.pandas }}.0"
+      - name: Report resolved versions
+        run: uv run python -c "import pandas, numpy, matplotlib; print('pandas', pandas.__version__); print('numpy', numpy.__version__); print('matplotlib', matplotlib.__version__)"
+      - run: uv run pytest
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv build
+      - name: Validate distribution metadata
+        run: uvx twine check dist/*
+      - name: Import from the built wheel in a clean environment
+        run: |
+          uv venv /tmp/clean
+          uv pip install --python /tmp/clean/bin/python dist/*.whl
+          /tmp/clean/bin/python -c "
+          import pandas as pd
+          import chartkit
+          df = pd.DataFrame({'v': [1.0, 2.0, 3.0]}, index=pd.date_range('2024-01-31', periods=3, freq='ME'))
+          result = df.chartkit.plot(title='smoke')
+          print('accessor registered, plot returned', type(result).__name__)
+          "
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
