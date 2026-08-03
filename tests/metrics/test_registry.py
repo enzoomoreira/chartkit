@@ -8,10 +8,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-from chartkit.metrics.registry import MetricRegistry
-
 # Ensure builtins are registered
 import chartkit.metrics.builtin  # noqa: F401
+from chartkit.metrics.registry import MetricRegistry
 
 
 @pytest.fixture(autouse=True)

@@ -10,9 +10,9 @@ from matplotlib.figure import Figure
 from matplotlib.path import Path as MplPath
 from matplotlib.transforms import Bbox
 
-from ._obstacles import _PathObstacle, _pad_bbox
-from ._registry import PositionableArtist
 from ...settings.schema import CollisionConfig
+from ._obstacles import _pad_bbox, _PathObstacle
+from ._registry import PositionableArtist
 
 # Named constants for debug visuals
 _DEBUG_ZORDER = 100

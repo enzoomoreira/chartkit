@@ -18,14 +18,13 @@ from ...settings import get_config
 from ...settings.schema import ChartingConfig, CollisionConfig
 from ._debug import _draw_debug_overlay
 from ._obstacles import (
-    _PathObstacle,
     _collect_obstacles,
     _collect_passive_obstacles,
     _pad_bbox,
+    _PathObstacle,
     _shift_bbox,
 )
 from ._registry import PositionableArtist, _labels
-
 
 # -- Shared setup --
 
@@ -528,10 +527,11 @@ def _compute_placement_cost(
     elif movement == "x":
         axis_cost = 0.0 if is_x_only else (1.5 if is_diagonal else 1.0)
     else:  # "xy"
-        if is_y_only or is_x_only:
-            axis_cost = 0.0 if is_y_only else 0.5
-        else:
-            axis_cost = 1.0
+        axis_cost = 1.0
+        if is_y_only:
+            axis_cost = 0.0
+        elif is_x_only:
+            axis_cost = 0.5
 
     # 3. Edge proximity
     shifted = _shift_bbox(label_bbox, dx, dy)
@@ -558,7 +558,7 @@ def _add_connectors(
     by_axes: defaultdict[Axes, list[tuple[PositionableArtist, tuple[float, float]]]] = (
         defaultdict(list)
     )
-    for label, orig in zip(moveables, original_positions):
+    for label, orig in zip(moveables, original_positions, strict=True):
         by_axes[label.axes].append((label, orig))  # type: ignore[union-attr]
 
     for ax, items in by_axes.items():

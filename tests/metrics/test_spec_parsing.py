@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from chartkit.exceptions import RegistryError, ValidationError
-from chartkit.metrics.registry import MetricRegistry, MetricSpec
-
 # Ensure builtins are registered
 import chartkit.metrics.builtin  # noqa: F401
+from chartkit.exceptions import RegistryError, ValidationError
+from chartkit.metrics.registry import MetricRegistry, MetricSpec
 
 
 class TestParseBasic:

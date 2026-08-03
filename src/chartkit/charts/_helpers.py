@@ -78,9 +78,7 @@ def is_categorical_index(x: pd.Index | pd.Series) -> bool:
     idx = pd.Index(x)
     if pd.api.types.is_datetime64_any_dtype(idx) or pd.api.types.is_numeric_dtype(idx):
         return False
-    if isinstance(idx.dtype, pd.CategoricalDtype) or isinstance(
-        idx.dtype, pd.StringDtype
-    ):
+    if isinstance(idx.dtype, (pd.CategoricalDtype, pd.StringDtype)):
         return True
     if idx.dtype == "object":
         non_null = [v for v in idx if v is not None and not pd.isna(v)]

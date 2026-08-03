@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from chartkit._internal.extraction import extract_plot_data
-from chartkit._internal.pipeline import apply_legend  # noqa: F811
+from chartkit._internal.pipeline import apply_legend
 from chartkit.composing.compose import (
     _apply_axis_formatter,
     _validate_layers,
@@ -199,7 +199,7 @@ class TestComposedLegend:
         assert ax.get_legend() is None
 
     def test_consolidates_dual_axis_labels(self) -> None:
-        fig, ax_left = plt.subplots()
+        _, ax_left = plt.subplots()
         ax_right = ax_left.twinx()
         ax_left.plot([1, 2], [1, 2], label="left_series")
         ax_right.plot([1, 2], [10, 20], label="right_series")
@@ -212,7 +212,7 @@ class TestComposedLegend:
         assert "right_series" in texts
 
     def test_right_axis_legend_removed(self) -> None:
-        fig, ax_left = plt.subplots()
+        _, ax_left = plt.subplots()
         ax_right = ax_left.twinx()
         ax_left.plot([1, 2], [1, 2], label="left")
         ax_right.plot([1, 2], [10, 20], label="right")

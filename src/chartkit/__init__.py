@@ -8,10 +8,9 @@ df.chartkit.variation(horizon='year').plot(title='YoY Variation').save('chart.pn
 from ._internal import register_artist_obstacle, register_moveable, register_passive
 from ._logging import configure_logging, disable_logging
 from .accessor import ChartingAccessor
-from .composing import AxisSide, Layer, compose
 from .charts import ChartRenderer
+from .composing import AxisSide, Layer, compose
 from .engine import ChartingPlotter, ChartKind, HighlightInput, UnitFormat
-from .overlays.markers import HighlightMode
 from .exceptions import (
     ChartKitError,
     RegistryError,
@@ -20,6 +19,7 @@ from .exceptions import (
     ValidationError,
 )
 from .metrics import MetricRegistry
+from .overlays.markers import HighlightMode
 from .result import PlotResult
 from .settings import (
     ChartingConfig,
@@ -31,8 +31,8 @@ from .settings import (
     reset_config,
 )
 from .styling.theme import theme
-from .transforms import TransformAccessor
 from .transforms import (
+    TransformAccessor,
     accum,
     annualize,
     despike,

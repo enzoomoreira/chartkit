@@ -6,6 +6,7 @@ Use ``configure_logging()`` to enable and ``disable_logging()`` to revert.
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from typing import TextIO
 
@@ -32,10 +33,8 @@ def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int:
         ID of the added handler (can be passed to ``logger.remove()``).
     """
     for hid in _handler_ids:
-        try:
+        with contextlib.suppress(ValueError):
             logger.remove(hid)
-        except ValueError:
-            pass
     _handler_ids.clear()
 
     logger.enable("chartkit")
@@ -49,8 +48,6 @@ def disable_logging() -> None:
     """Disable library logging and remove added handlers."""
     logger.disable("chartkit")
     for hid in _handler_ids:
-        try:
+        with contextlib.suppress(ValueError):
             logger.remove(hid)
-        except ValueError:
-            pass
     _handler_ids.clear()

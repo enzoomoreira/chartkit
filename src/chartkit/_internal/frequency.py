@@ -91,10 +91,7 @@ def infer_freq(data: pd.DataFrame | pd.Series | pd.Index) -> str | None:
     Accepts DataFrame, Series, or Index directly.
     Returns normalized freq code or None if unable to determine.
     """
-    if isinstance(data, pd.Index):
-        index = data
-    else:
-        index = data.index
+    index = data if isinstance(data, pd.Index) else data.index
 
     if not isinstance(index, pd.DatetimeIndex):
         return None

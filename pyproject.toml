@@ -23,6 +23,8 @@ jupyter = [
 [dependency-groups]
 dev = [
     "pytest>=9.0",
+    "pyright>=1.1.390",
+    "ruff>=0.9",
 ]
 
 [build-system]
@@ -35,6 +37,21 @@ packages = ["src/chartkit"]
 [tool.hatch.build.targets.sdist]
 include = [
     "src/chartkit",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    # The formatter already wraps what it can; the remainder is long strings
+    # and URLs in docstrings, which wrapping would only make harder to read.
+    "E501",
+    # __all__ and __slots__ are grouped by meaning here, not alphabetically.
+    "RUF022",
+    "RUF023",
 ]
 
 [tool.pytest.ini_options]

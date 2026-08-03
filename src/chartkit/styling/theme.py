@@ -2,9 +2,9 @@
 
 import matplotlib.pyplot as plt
 
-from .fonts import load_font
 from ..settings import get_config
 from ..settings.schema import ColorsConfig
+from .fonts import load_font
 
 
 class ChartingTheme:

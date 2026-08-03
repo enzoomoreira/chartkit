@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Protocol, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 
 import pandas as pd
 from loguru import logger
@@ -43,11 +44,11 @@ class ChartRenderer:
     Axes method.
     """
 
-    _enhancers: dict[str, Enhancer] = {}
+    _enhancers: ClassVar[dict[str, Enhancer]] = {}
 
-    _ALIASES: dict[str, str] = KIND_ALIASES
+    _ALIASES: ClassVar[dict[str, str]] = KIND_ALIASES
 
-    _UNSUPPORTED_KINDS: dict[str, str] = {
+    _UNSUPPORTED_KINDS: ClassVar[dict[str, str]] = {
         "imshow": "imshow requires 2D array data, not tabular x/y",
         "contour": "contour requires 2D grid data (X, Y, Z meshgrid)",
         "contourf": "contourf requires 2D grid data (X, Y, Z meshgrid)",
@@ -58,7 +59,7 @@ class ChartRenderer:
         "spy": "spy requires 2D sparse matrix data",
     }
 
-    _KIND_DEFAULTS: dict[str, Callable[..., dict[str, Any]]] = {
+    _KIND_DEFAULTS: ClassVar[dict[str, Callable[..., dict[str, Any]]]] = {
         "plot": lambda config: {"linewidth": config.lines.main_width},
     }
 
@@ -108,9 +109,8 @@ class ChartRenderer:
                 register_artist_obstacle(ax, line, filled=False, colocate=True)
 
         for coll in ax.collections:
-            if id(coll) not in colls_before:
-                if isinstance(coll, PathCollection):
-                    register_artist_obstacle(ax, coll, filled=True)
+            if id(coll) not in colls_before and isinstance(coll, PathCollection):
+                register_artist_obstacle(ax, coll, filled=True)
 
     @classmethod
     def _generic_render(

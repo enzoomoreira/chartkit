@@ -8,7 +8,6 @@ import pytest
 from chartkit.charts._helpers import detect_bar_width, is_categorical_index
 from chartkit.settings.schema import BarsConfig
 
-
 # ---------------------------------------------------------------------------
 # detect_bar_width
 # ---------------------------------------------------------------------------

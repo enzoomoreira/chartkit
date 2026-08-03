@@ -17,7 +17,6 @@ from chartkit.charts._classification import (
 )
 from chartkit.exceptions import ValidationError
 
-
 # ---------------------------------------------------------------------------
 # resolve_kind_alias
 # ---------------------------------------------------------------------------

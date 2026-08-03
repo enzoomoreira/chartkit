@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 from loguru import logger
 from matplotlib.axes import Axes
 
+from ..decorations import add_footer, add_title
+from ..settings import get_config
+from ..styling.theme import theme
 from .extraction import should_show_legend
 from .plot_validation import coerce_axis_limits
 from .tick_formatting import apply_tick_formatting
 from .tick_rotation import apply_tick_rotation
-from ..decorations import add_footer, add_title
-from ..settings import get_config
-from ..styling.theme import theme
 
 if TYPE_CHECKING:
     import pandas as pd

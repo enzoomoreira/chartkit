@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Callable, NamedTuple
+from typing import Any, ClassVar, NamedTuple
 
 import pandas as pd
 from loguru import logger
@@ -43,7 +43,7 @@ class _MetricEntry(NamedTuple):
 class MetricRegistry:
     """Central metrics registry with string spec parsing and batch application."""
 
-    _metrics: dict[str, _MetricEntry] = {}
+    _metrics: ClassVar[dict[str, _MetricEntry]] = {}
 
     @classmethod
     def register(

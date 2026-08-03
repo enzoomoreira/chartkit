@@ -149,18 +149,25 @@ class _DespikeParams(BaseModel):
         if self.window < 3:
             raise ValueError("'window' must be >= 3 (need neighbors on both sides)")
         if self.window % 2 == 0:
-            raise ValueError("'window' must be odd (centered rolling requires symmetric sides)")
+            raise ValueError(
+                "'window' must be odd (centered rolling requires symmetric sides)"
+            )
         if self.threshold <= 0:
             raise ValueError("'threshold' must be positive")
         return self
 
 
 ResampleFreq = Literal[
-    "day", "D",
-    "week", "W",
-    "month", "M",
-    "quarter", "Q",
-    "year", "Y",
+    "day",
+    "D",
+    "week",
+    "W",
+    "month",
+    "M",
+    "quarter",
+    "Q",
+    "year",
+    "Y",
     "annual",
 ]
 

@@ -20,14 +20,14 @@ from matplotlib.transforms import Bbox
 matplotlib.use("Agg")
 
 from chartkit._internal.collision import (
-    _PathObstacle,
+    _artist_obstacles,
     _collect_obstacles,
+    _labels,
+    _PathObstacle,
     _pos_to_numeric,
     register_artist_obstacle,
     register_moveable,
     resolve_collisions,
-    _artist_obstacles,
-    _labels,
 )
 from chartkit._internal.collision._engine import (
     _compute_placement_cost,
@@ -54,13 +54,13 @@ class TestPosToNumeric:
 
     def test_datetime_converted(self) -> None:
         dt = datetime(2023, 6, 15)
-        x, y = _pos_to_numeric(dt, 5.0)
+        x, _ = _pos_to_numeric(dt, 5.0)
         assert isinstance(x, float)
         assert x > 0
 
     def test_timestamp_converted(self) -> None:
         ts = pd.Timestamp("2023-06-15")
-        x, y = _pos_to_numeric(ts, 10.0)
+        x, _ = _pos_to_numeric(ts, 10.0)
         assert isinstance(x, float)
         assert x > 0
 
@@ -156,7 +156,6 @@ class TestColocateSkip:
         register_artist_obstacle(ax, line, filled=False, colocate=True)
 
         fig.draw_without_rendering()
-        renderer = fig.canvas.get_renderer()
 
         pos_before = label.get_position()
         resolve_collisions(ax)

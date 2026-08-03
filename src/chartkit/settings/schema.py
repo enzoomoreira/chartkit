@@ -389,7 +389,7 @@ class _DictSource(PydanticBaseSettingsSource):
 
     def __call__(self) -> dict[str, Any]:
         d: dict[str, Any] = {}
-        for field_name, field in self.settings_cls.model_fields.items():
+        for field_name in self.settings_cls.model_fields:
             val = self._data.get(field_name)
             if val is not None:
                 d[field_name] = val

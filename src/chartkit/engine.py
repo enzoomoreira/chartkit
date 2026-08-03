@@ -8,13 +8,12 @@ import pandas as pd
 from loguru import logger
 
 from ._internal import (
-    FORMATTERS,
-    get_formatter,
     apply_legend,
     create_figure,
     draw_debug_overlay,
     extract_plot_data,
     finalize_chart,
+    get_formatter,
     normalize_highlight,
     register_artist_obstacle,
     resolve_collisions,

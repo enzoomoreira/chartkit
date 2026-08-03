@@ -13,7 +13,6 @@ import pytest
 from chartkit.exceptions import TransformError
 from chartkit.transforms.temporal import resample
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -192,9 +191,7 @@ class TestResampleMonthEnd:
         assert result.index[1].day == 28  # Feb
         assert result.index[2].day == 31  # Mar
 
-    def test_daily_collapse_to_month(
-        self, daily_prices: pd.DataFrame
-    ) -> None:
+    def test_daily_collapse_to_month(self, daily_prices: pd.DataFrame) -> None:
         """Daily -> one per month, no duplicates."""
         result = resample(daily_prices, freq="month")
         assert not result.index.duplicated().any()

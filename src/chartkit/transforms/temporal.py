@@ -505,9 +505,7 @@ def despike(
         params.method,
     )
 
-    rolling_median = data.rolling(
-        params.window, center=True, min_periods=3
-    ).median()
+    rolling_median = data.rolling(params.window, center=True, min_periods=3).median()
 
     deviation = (data - rolling_median).abs()
     mad = deviation.rolling(params.window, center=True, min_periods=3).median()
@@ -613,5 +611,3 @@ def resample(
     if isinstance(result, pd.Series):
         return result.dropna()
     return result.dropna(how="all")
-
-

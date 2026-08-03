@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import get_args
 
-from .plot_validation import UnitFormat
 from ..styling import (
     compact_currency_formatter,
     currency_formatter,
@@ -13,6 +12,7 @@ from ..styling import (
     percent_formatter,
     points_formatter,
 )
+from .plot_validation import UnitFormat
 
 __all__ = ["FORMATTERS", "get_formatter"]
 

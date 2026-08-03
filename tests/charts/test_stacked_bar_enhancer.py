@@ -63,7 +63,7 @@ class TestStackedBar:
         )
         plot_stacked_bar(ax, datetime_index, df, highlight=[])
         # Bottom of second column patches = height of first column patches
-        for pa, pb in zip(ax.containers[0], ax.containers[1]):
+        for pa, pb in zip(ax.containers[0], ax.containers[1], strict=True):
             assert pb.get_y() == pytest.approx(pa.get_height(), abs=0.01)
 
     def test_highlight_shows_total(self, datetime_index: pd.DatetimeIndex) -> None:

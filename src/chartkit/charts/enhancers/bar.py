@@ -89,10 +89,7 @@ def plot_bar(
         for i, col in enumerate(ctx.y_data.columns):
             c = resolve_color(ctx, i)
             offset = offsets[i]
-            if is_datetime:
-                x_pos = x + pd.Timedelta(days=offset)
-            else:
-                x_pos = x_numeric + offset
+            x_pos = x + pd.Timedelta(days=offset) if is_datetime else x_numeric + offset
             ax.bar(
                 x_pos,
                 ctx.y_data[col],

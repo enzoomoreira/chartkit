@@ -6,6 +6,7 @@ Consolidates: tests/test_formatters.py + tests/internal/test_formatting.py.
 from __future__ import annotations
 
 import math
+from typing import ClassVar
 
 import pytest
 
@@ -132,7 +133,7 @@ class TestMultiplierFormatter:
 
 
 class TestFormatterDispatchTable:
-    EXPECTED_KEYS = {
+    EXPECTED_KEYS: ClassVar[set[str]] = {
         "BRL",
         "USD",
         "BRL_compact",

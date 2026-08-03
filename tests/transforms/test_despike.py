@@ -29,9 +29,7 @@ class TestDespikeDetection:
         # All values except the spike at index 5 should be identical
         mask = np.ones(len(known_despike_data), dtype=bool)
         mask[5] = False
-        pd.testing.assert_series_equal(
-            result.iloc[mask], known_despike_data.iloc[mask]
-        )
+        pd.testing.assert_series_equal(result.iloc[mask], known_despike_data.iloc[mask])
 
     def test_no_spikes_returns_original(self, daily_prices: pd.DataFrame) -> None:
         """Data without spikes should pass through unchanged."""
@@ -163,9 +161,31 @@ class TestDespikeEdgeCases:
 
     def test_coerces_dict_input(self) -> None:
         """Dict input should be coerced and despiked."""
-        data = {"price": [100.0, 100.0, 100.0, 500.0, 100.0, 100.0, 100.0,
-                          100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
-                          100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0]}
+        data = {
+            "price": [
+                100.0,
+                100.0,
+                100.0,
+                500.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+                100.0,
+            ]
+        }
         result = despike(data)
         assert isinstance(result, pd.DataFrame)
 

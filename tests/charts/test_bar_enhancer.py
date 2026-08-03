@@ -141,7 +141,7 @@ class TestBarMultiColumn:
         widths_b = [p.get_width() for p in ax.containers[1]]
         assert widths_a[0] == pytest.approx(widths_b[0])
         # Centers of the two groups at the same time point should be symmetric
-        for pa, pb in zip(ax.containers[0], ax.containers[1]):
+        for pa, pb in zip(ax.containers[0], ax.containers[1], strict=True):
             center = (pa.get_x() + pa.get_width() + pb.get_x()) / 2
             assert pa.get_x() + pa.get_width() == pytest.approx(center, abs=1e-6)
 
