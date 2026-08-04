@@ -182,22 +182,40 @@ def _invalidate(self) -> None:
 
 ## Logging System
 
-### Library: loguru
+### Library: logging (standard library)
 
-We use `loguru` instead of `logging` stdlib because:
-- Simpler API (`logger.debug()` vs `logging.getLogger().debug()`)
-- Built-in lazy evaluation (avoids unnecessary formatting)
-- Better Unicode and terminal color support
+chartkit logs through `logging.getLogger(__name__)` in every module, with a
+`NullHandler` attached to the `chartkit` root logger. This is the standard
+library convention: nothing is emitted until the host application configures
+logging, and chartkit never touches logging state it does not own.
+
+An earlier version used `loguru`, which was dropped for two reasons: calling
+`logger.disable("chartkit")` at import time mutated the global loguru logger
+of whatever application imported us, and it forced an opinionated dependency
+on every installation.
+
+### Logging vs Warnings
+
+Logging is for diagnostics. Conditions the caller should act on go through
+`chartkit.warnings` instead, so they surface without any opt-in:
+
+| Situation | Channel |
+|---|---|
+| Dispatch decisions, resolved parameters, cache hits | `logger.debug` |
+| Work performed as requested (spikes replaced, file saved) | `logger.info` |
+| Outcome differs from the request (column dropped, guessed window, ignored parameter) | `warnings.warn` |
+
+The dividing line is whether the user asked for it. `despike()` replacing
+spikes is a log record -- that is the operation. `variation()` quietly
+discarding a text column is a warning.
+
+See [Warning Categories](#warning-categories) below.
 
 ### Disabled by Default
 
-Following best practices for Python libraries, logging is
-disabled by default:
-
 ```python
 # In _logging.py (imported by __init__.py)
-from loguru import logger
-logger.disable("chartkit")
+logging.getLogger("chartkit").addHandler(logging.NullHandler())
 ```
 
 ### Enabling and Disabling Logs
@@ -205,64 +223,66 @@ logger.disable("chartkit")
 ```python
 from chartkit import configure_logging, disable_logging
 
-# Enable DEBUG logs
+# Enable DEBUG logs on stderr
 configure_logging(level="DEBUG")
-
-# Enable INFO logs to stderr
-configure_logging(level="INFO")
 
 # Direct to file
 configure_logging(level="DEBUG", sink=open("chartkit.log", "w"))
 
-# Disable logging and remove handlers
+# Remove handlers added by configure_logging()
 disable_logging()
 ```
 
-`configure_logging()` is idempotent: repeated calls remove the previous handler before adding a new one, avoiding log duplication.
+`configure_logging()` is idempotent: it removes previously added handlers
+before attaching a new one, so repeated calls never duplicate output. It
+returns the `logging.Handler` it created.
 
-### configure_logging() Implementation
+Because these are ordinary stdlib loggers, the host application can also
+configure them directly without calling chartkit at all:
 
 ```python
-_handler_ids: list[int] = []
-
-def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int:
-    # Remove previous handlers
-    for hid in _handler_ids:
-        try:
-            logger.remove(hid)
-        except ValueError:
-            pass
-    _handler_ids.clear()
-
-    logger.enable("chartkit")
-    target = sink if sink is not None else sys.stderr
-    handler_id = logger.add(target, level=level, filter="chartkit")
-    _handler_ids.append(handler_id)
-    return handler_id
-
-
-def disable_logging() -> None:
-    logger.disable("chartkit")
-    for hid in _handler_ids:
-        try:
-            logger.remove(hid)
-        except ValueError:
-            pass
-    _handler_ids.clear()
+import logging
+logging.getLogger("chartkit.collision").setLevel(logging.WARNING)
 ```
 
-### Lazy Evaluation
+### Warning Categories
 
-We use `{}` placeholders instead of f-strings to avoid unnecessary
-formatting when logging is disabled:
+```
+ChartKitWarning(UserWarning)
+├── DataMutationWarning   # data altered beyond what was requested
+├── InferenceWarning      # a value the caller did not supply was guessed
+└── RenderingWarning      # rendered, but not as asked
+```
+
+All four are exported from the package root, so they can be filtered,
+silenced or escalated with the standard machinery:
 
 ```python
-# CORRECT: lazy evaluation
-logger.debug("find_project_root: found {}", current)
+import warnings
+import chartkit
 
-# INCORRECT: always formats, even if DEBUG is disabled
+warnings.simplefilter("error", chartkit.DataMutationWarning)
+```
+
+`chartkit.warnings.warn()` walks out of the package before emitting, so the
+warning is attributed to the user's call site rather than to a file inside
+chartkit.
+
+### %-style Formatting
+
+Log arguments are passed separately rather than pre-formatted, so the string
+is only built when a handler is actually going to emit it:
+
+```python
+# CORRECT: deferred formatting
+logger.debug("find_project_root: found %s", current)
+
+# INCORRECT: always formats, even when DEBUG is disabled
 logger.debug(f"find_project_root: found {current}")
 ```
+
+Warnings are the opposite: `warnings.warn` takes a single string, so those
+messages are formatted eagerly with f-strings.
 
 ### Log Levels by Module
 
@@ -468,12 +488,60 @@ Reasons:
 - Easier to test (can create isolated instances)
 - Avoids inheritance issues
 
-### Why loguru instead of logging stdlib?
+### Why logging stdlib instead of loguru?
 
-- Less boilerplate (one import, ready to use)
-- Native lazy evaluation with `{}`
-- Better default formatting
-- Easy to disable (`logger.disable()`)
+A library should not decide how the application logs. loguru required
+`logger.disable("chartkit")` at import time, which mutates a global logger
+belonging to the host application, and it added a mandatory dependency to
+every install. The stdlib pattern -- a per-module `getLogger(__name__)` plus
+a `NullHandler` on the package root -- is silent by default without touching
+anything the library does not own.
+
+### Why figures are built outside pyplot
+
+`plt.subplots()` registers the figure in pyplot's global manager, which holds
+a reference for the lifetime of the process. For an interactive session that
+is convenient; for a library generating charts in a loop it is a leak, and it
+eventually triggers matplotlib's "more than 20 figures" warning.
+
+`create_figure()` therefore builds `Figure()` directly and attaches a
+`FigureCanvasAgg`. Two consequences follow:
+
+- A chart is released as soon as the caller drops its `PlotResult`.
+- Owning the canvas means `get_renderer()` always exists, so collision
+  resolution and tick rotation work under the pdf, svg and ps backends. See
+  `_internal/rendering.py` for the fallback used when a figure arrives on a
+  canvas we did not create, which happens after `PlotResult.show()`.
+
+`PlotResult.show()` is the one place pyplot is involved: it borrows a manager
+from a throwaway figure so the chart can be displayed. After `show()`, pyplot
+holds a reference, so `close()` matters there.
+
+### Why the theme is a context manager
+
+matplotlib reads `rcParams` as each artist is created, not when the figure is
+saved. Scoping the theme therefore requires wrapping the entire chart --
+figure, render, overlays and decorations -- which is what `theme.context()`
+does. The previous `theme.apply()` wrote 24 keys straight into
+`plt.rcParams`, so a single chart changed the appearance of every other plot
+in the host process.
+
+---
+
+## Import Side Effects
+
+Importing `chartkit` performs three registrations. They are intentional, but
+worth knowing about:
+
+| Effect | Where | Why |
+|---|---|---|
+| Registers the `.chartkit` accessor on `DataFrame` and `Series` | `accessor.py` | This is how pandas extensions work; there is no lazy alternative |
+| Registers the 13 chart enhancers | `charts/enhancers/__init__.py` | Populates `ChartRenderer._enhancers` |
+| Attaches a `NullHandler` to the `chartkit` logger | `_logging.py` | Silences "no handlers" without configuring anything |
+
+Importing does **not** read configuration files, touch `rcParams`, or create
+figures. Config discovery happens on the first `get_config()` call, which is
+triggered by the first plot.
 
 ---
 

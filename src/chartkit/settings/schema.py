@@ -171,11 +171,17 @@ class LayoutConfig(BaseModel):
         figsize: Default figure size ``(width, height)`` in inches.
         dpi: Resolution for saved figures.
         base_style: Matplotlib style applied before custom rcParams.
+        save_bbox: Bounding box mode passed to ``savefig``. ``"tight"``
+            crops to the drawn content; ``"standard"`` keeps the figure at
+            exactly ``figsize``, which is what a fixed report template needs.
+            Cropping also discards the bottom margin that tick rotation
+            reserves for the footer.
     """
 
     figsize: tuple[float, float] = (10.0, 6.0)
     dpi: int = 300
     base_style: str = "seaborn-v0_8-white"
+    save_bbox: Literal["tight", "standard"] = "tight"
     grid: GridConfig = Field(default_factory=GridConfig)
     spines: SpinesConfig = Field(default_factory=SpinesConfig)
     footer: FooterConfig = Field(default_factory=FooterConfig)

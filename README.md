@@ -58,6 +58,38 @@ compose(layer_rate, layer_variation, title="Rate and Monthly Variation", source=
 - **ChartRenderer**: Generic rendering via `ax.{kind}()` for any matplotlib chart type, with enhancers for complex types
 - **TOML + Env Var Configuration**: Customize via TOML file or environment variables (`CHARTKIT_*`)
 
+## Behaviour as a Library
+
+chartkit is designed to leave no trace on the host process:
+
+- **No global `rcParams` mutation.** The theme is scoped to each chart with a
+  context manager, so your other matplotlib plots are unaffected.
+- **No retained figures.** Charts are built outside `pyplot`, so a figure is
+  released as soon as you drop its `PlotResult`. Use `.close()` or the context
+  manager form when generating charts in a loop, and after `.show()`.
+- **Backend agnostic.** Works headless under `Agg`, `pdf` and `svg`.
+- **Silent logging, audible warnings.** Logging follows the stdlib convention
+  and emits nothing until you configure it. Anything that changes your result
+  -- a dropped column, a guessed window, an ignored parameter -- is raised as
+  a `ChartKitWarning` instead, so it is visible by default and filterable.
+
+```python
+import warnings
+import chartkit
+
+# Treat any silent data change as an error
+warnings.simplefilter("error", chartkit.DataMutationWarning)
+
+# Release figures eagerly in a batch job
+for name, frame in datasets.items():
+    with frame.chartkit.plot(title=name) as chart:
+        chart.save(f"{name}.png")
+```
+
+Importing chartkit registers the `.chartkit` pandas accessor and the chart
+enhancers, and attaches a `NullHandler` to its logger. It does not read
+configuration files or create figures -- that happens on the first plot.
+
 ## Documentation
 
 ### Getting Started

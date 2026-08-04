@@ -113,15 +113,34 @@ class PlotResult:
 | Member | Type | Return | Description |
 |--------|------|--------|-------------|
 | `save(path, dpi=None)` | method | `PlotResult` | Saves chart to file |
-| `show()` | method | `PlotResult` | Displays interactive chart |
+| `show()` | method | `PlotResult` | Displays interactive chart (hands the figure to pyplot) |
+| `close()` | method | `None` | Releases the figure and its artists |
 | `axes` | property | `Axes` | Access to matplotlib Axes |
 | `figure` | property | `Figure` | Access to matplotlib Figure |
+
+### Figure Lifecycle
+
+Charts are created outside `pyplot`, so the figure is released as soon as the
+`PlotResult` goes out of scope -- there is no global registry holding it. Call
+`close()` to release it eagerly, or use the context manager form:
+
+```python
+with df.chartkit.plot(title="Report") as chart:
+    chart.save("report.png")
+# figure released here
+```
+
+`close()` matters in two cases: long loops where you want memory freed
+immediately, and after `show()`, which does register the figure with pyplot.
 
 ### Signatures
 
 ```python
 def save(self, path: str, dpi: int | None = None) -> PlotResult
 def show(self) -> PlotResult
+def close(self) -> None
+def __enter__(self) -> PlotResult
+def __exit__(self, exc_type, exc, tb) -> None
 
 @property
 def axes(self) -> Axes
