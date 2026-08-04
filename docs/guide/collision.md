@@ -111,7 +111,8 @@ The collision engine runs after all elements are created and before
 final decorations:
 
 ```
-1. Style           theme.apply()
+0. Theme scope     with theme.context():  (wraps steps 1-9)
+1. Figure          create_figure()
 2. Data            extract_plot_data()
 3. Y Formatter     FORMATTERS[units]()
 4. Plot Core       ChartRenderer dispatch + highlights (register_moveable) + area fills (register_passive)

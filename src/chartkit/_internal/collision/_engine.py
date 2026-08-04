@@ -16,6 +16,7 @@ from matplotlib.transforms import Bbox
 
 from ...settings import get_config
 from ...settings.schema import ChartingConfig, CollisionConfig
+from ..rendering import get_renderer
 from ._debug import _draw_debug_overlay
 from ._obstacles import (
     _collect_obstacles,
@@ -64,7 +65,7 @@ def resolve_collisions(ax: Axes) -> None:
         return
     positionable, original_positions, config = result
     collision = config.collision
-    renderer = ax.figure.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(ax.figure)  # type: ignore[arg-type]
 
     fixed = _collect_obstacles(ax, moveables, renderer)
     logger.debug(
@@ -93,7 +94,7 @@ def resolve_composed_collisions(axes: Sequence[Axes]) -> None:
         return
     positionable, original_positions, config = result
     collision = config.collision
-    renderer = axes[0].figure.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(axes[0].figure)  # type: ignore[arg-type]
 
     seen_ids: set[int] = set()
     fixed: list[_PathObstacle] = []
@@ -128,7 +129,7 @@ def draw_debug_overlay(ax: Axes) -> None:
     config = get_config()
     fig = ax.figure
     fig.draw_without_rendering()
-    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(fig)
 
     positionable = [m for m in moveables if isinstance(m, PositionableArtist)]
     if not positionable:
@@ -158,7 +159,7 @@ def draw_composed_debug_overlay(axes: Sequence[Axes]) -> None:
     config = get_config()
     fig = axes[0].figure
     fig.draw_without_rendering()
-    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(fig)
 
     positionable = [m for m in all_moveables if isinstance(m, PositionableArtist)]
     if not positionable:

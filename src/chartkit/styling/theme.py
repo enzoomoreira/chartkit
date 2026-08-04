@@ -1,28 +1,37 @@
 """Visual theme for charts."""
 
-import matplotlib.pyplot as plt
+from __future__ import annotations
+
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any
+
+import matplotlib as mpl
+from matplotlib import style as mpl_style
 
 from ..settings import get_config
 from ..settings.schema import ColorsConfig
 from .fonts import load_font
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from matplotlib.font_manager import FontProperties
+
+__all__ = ["ChartingTheme", "theme"]
 
 
 class ChartingTheme:
     """Manages the visual identity for charts.
 
     Singleton that encapsulates colors, fonts, and matplotlib rcParams.
-    Uses lazy loading to reflect changes via ``configure()``.
+    Configuration is read on every access, so ``configure()`` takes effect
+    without any explicit invalidation.
     """
 
-    def __init__(self) -> None:
-        self._font = None
-
     @property
-    def font(self):
-        """The loaded ``FontProperties`` instance (lazy-initialized)."""
-        if self._font is None:
-            self._font = load_font()
-        return self._font
+    def font(self) -> FontProperties:
+        """The ``FontProperties`` for the configured font."""
+        return load_font()
 
     @property
     def colors(self) -> ColorsConfig:
@@ -34,13 +43,10 @@ class ChartingTheme:
         """Resolved font family name for matplotlib rcParams."""
         return self.font.get_name()
 
-    def apply(self) -> "ChartingTheme":
-        """Apply the theme globally to matplotlib rcParams."""
-        self._font = None
+    def rc_params(self) -> dict[str, Any]:
+        """Return the rcParams that express the configured visual identity."""
         config = get_config()
-        plt.style.use(config.layout.base_style)
-
-        rc_params = {
+        return {
             # Fonts
             "font.family": self.font_name,
             "font.size": config.fonts.sizes.default,
@@ -68,8 +74,20 @@ class ChartingTheme:
             "axes.spines.bottom": config.layout.spines.bottom,
         }
 
-        plt.rcParams.update(rc_params)
-        return self
+    @contextmanager
+    def context(self) -> Iterator[None]:
+        """Scope the theme to a block instead of mutating global rcParams.
+
+        matplotlib reads rcParams as each artist is created, so the entire
+        chart -- figure, render, overlays and decorations -- must be built
+        inside this block for the theme to take effect.
+        """
+        config = get_config()
+        with (
+            mpl_style.context(config.layout.base_style),
+            mpl.rc_context(self.rc_params()),
+        ):
+            yield
 
 
 # Global singleton instance

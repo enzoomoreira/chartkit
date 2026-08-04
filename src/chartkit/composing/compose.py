@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from loguru import logger
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from .._internal import (
     FORMATTERS,
@@ -21,12 +22,14 @@ from .._internal import (
     save_figure,
     validate_plot_params,
 )
+from .._internal.collision import clear_axes_state
 from .._internal.plot_validation import AxisLimits
 from ..charts import ChartRenderer
 from ..charts._classification import get_kind_caps, resolve_kind_alias
 from ..exceptions import ValidationError
 from ..metrics import MetricRegistry
 from ..result import PlotResult
+from ..styling.theme import theme
 from .layer import AxisSide, Layer
 
 if TYPE_CHECKING:
@@ -38,7 +41,7 @@ __all__ = ["compose"]
 class _ComposePlotter:
     """Minimal plotter that satisfies the Saveable protocol for composed charts."""
 
-    def __init__(self, fig: plt.Figure) -> None:
+    def __init__(self, fig: Figure) -> None:
         self._fig = fig
 
     def save(self, path: str, dpi: int | None = None) -> None:
@@ -72,7 +75,7 @@ def _validate_layers(
 
 
 def _apply_axis_formatter(
-    ax: plt.Axes,
+    ax: Axes,
     side: AxisSide,
     units: UnitFormat | None,
     applied: dict[AxisSide, UnitFormat | None],
@@ -94,7 +97,7 @@ def _apply_axis_formatter(
 
 
 def _render_layer(
-    ax: plt.Axes,
+    ax: Axes,
     layer: Layer,
     x_data: pd.Index | pd.Series,
     y_data: pd.Series | pd.DataFrame,
@@ -157,69 +160,81 @@ def compose(
 
     logger.debug("compose: {} layer(s), title={}", len(layers), title)
 
-    # 1. Style + figure
-    fig, ax_left = create_figure(figsize=figsize, grid=grid)
+    # The whole chart is built inside the theme context: matplotlib reads
+    # rcParams as each artist is created, not at save time.
+    with theme.context():
+        # 1. Figure
+        fig, ax_left = create_figure(figsize=figsize, grid=grid)
 
-    # 2. Right axis (if needed)
-    ax_right: plt.Axes | None = None
-    if any(layer.axis == "right" for layer in layers):
-        ax_right = ax_left.twinx()
-        ax_right.spines["right"].set_visible(True)
+        # 2. Right axis (if needed)
+        ax_right: Axes | None = None
+        if any(layer.axis == "right" for layer in layers):
+            ax_right = ax_left.twinx()
+            ax_right.spines["right"].set_visible(True)
 
-    # 3. Apply formatters and render layers
-    applied_units: dict[AxisSide, UnitFormat | None] = {"left": None, "right": None}
-    axes_map: dict[AxisSide, plt.Axes] = {"left": ax_left}
-    if ax_right is not None:
-        axes_map["right"] = ax_right
+        all_axes: list[Axes] = [ax_left]
+        if ax_right is not None:
+            all_axes.append(ax_right)
 
-    first_x_data: pd.Index | pd.Series | None = None
-    for layer in layers:
-        ax = axes_map[layer.axis]
-        _apply_axis_formatter(ax, layer.axis, layer.units, applied_units)
+        try:
+            # 3. Apply formatters and render layers
+            applied_units: dict[AxisSide, UnitFormat | None] = {
+                "left": None,
+                "right": None,
+            }
+            axes_map: dict[AxisSide, Axes] = {"left": ax_left}
+            if ax_right is not None:
+                axes_map["right"] = ax_right
 
-        x_data, y_data = extract_plot_data(layer.df, layer.x, layer.y)
-        if first_x_data is None:
-            first_x_data = x_data
-        logger.debug(
-            "Rendering layer: kind={}, axis={}, shape={}",
-            layer.kind,
-            layer.axis,
-            layer.df.shape,
-        )
-        _render_layer(ax, layer, x_data, y_data)
+            first_x_data: pd.Index | pd.Series | None = None
+            for layer in layers:
+                ax = axes_map[layer.axis]
+                _apply_axis_formatter(ax, layer.axis, layer.units, applied_units)
 
-    # 4. Legend (consolidated from both axes)
-    apply_legend(ax_left, ax_right, legend=legend)
+                x_data, y_data = extract_plot_data(layer.df, layer.x, layer.y)
+                if first_x_data is None:
+                    first_x_data = x_data
+                logger.debug(
+                    "Rendering layer: kind={}, axis={}, shape={}",
+                    layer.kind,
+                    layer.axis,
+                    layer.df.shape,
+                )
+                _render_layer(ax, layer, x_data, y_data)
 
-    # 5. Collision resolution (unified cross-axis)
-    all_axes: list[plt.Axes] = [ax_left]
-    if ax_right is not None:
-        all_axes.append(ax_right)
+            # 4. Legend (consolidated from both axes)
+            apply_legend(ax_left, ax_right, legend=legend)
 
-    if collision:
-        legend_artist = ax_left.get_legend()
-        if legend_artist is not None:
-            register_artist_obstacle(ax_left, legend_artist, filled=True)
-        resolve_composed_collisions(all_axes)
+            # 5. Collision resolution (unified cross-axis)
+            if collision:
+                legend_artist = ax_left.get_legend()
+                if legend_artist is not None:
+                    register_artist_obstacle(ax_left, legend_artist, filled=True)
+                resolve_composed_collisions(all_axes)
 
-    # 6. Finalize (ticks, axis limits, labels, decorations)
-    finalize_chart(
-        fig,
-        ax_left,
-        tick_format=tick_format,
-        tick_freq=tick_freq,
-        tick_rotation=tick_rotation,
-        x_data=first_x_data,
-        xlim=xlim,
-        ylim=ylim,
-        xlabel=xlabel,
-        ylabel=ylabel,
-        title=title,
-        source=source,
-    )
+            # 6. Finalize (ticks, axis limits, labels, decorations)
+            finalize_chart(
+                fig,
+                ax_left,
+                tick_format=tick_format,
+                tick_freq=tick_freq,
+                tick_rotation=tick_rotation,
+                x_data=first_x_data,
+                xlim=xlim,
+                ylim=ylim,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                title=title,
+                source=source,
+            )
 
-    # 7. Debug overlay (after finalize so geometry is final)
-    if debug:
-        draw_composed_debug_overlay(all_axes)
+            # 7. Debug overlay (after finalize so geometry is final)
+            if debug:
+                draw_composed_debug_overlay(all_axes)
+        finally:
+            # Collision bookkeeping only matters while this chart is being
+            # built; holding it would keep the Axes alive indefinitely.
+            for axes in all_axes:
+                clear_axes_state(axes)
 
     return PlotResult(fig=fig, ax=ax_left, plotter=_ComposePlotter(fig))

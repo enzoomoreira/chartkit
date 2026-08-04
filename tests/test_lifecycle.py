@@ -4,9 +4,6 @@ These assert that importing and using chartkit leaves no trace on the host
 process: no retained figures, no mutated matplotlib defaults, no dependency
 on the active backend. They are the acceptance criteria for the library
 citizenship work.
-
-Every xfail below is strict: it turns into a failure the moment the
-behaviour is fixed, which is the signal to delete the marker.
 """
 
 from __future__ import annotations
@@ -39,11 +36,6 @@ df.chartkit.plot(highlight=True, metrics=["ath"], tick_rotation="auto")
 """
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="create_figure() uses plt.subplots(), which registers the figure "
-    "in the pyplot manager forever",
-)
 def test_plot_does_not_retain_figures(monthly_rates: pd.DataFrame) -> None:
     """Every figure must be collectable once the caller drops its result."""
     refs: list[weakref.ref] = []
@@ -59,11 +51,6 @@ def test_plot_does_not_retain_figures(monthly_rates: pd.DataFrame) -> None:
     assert not alive, f"{len(alive)} of {len(refs)} figures still reachable"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="theme.apply() writes straight into plt.rcParams instead of "
-    "scoping the style to the figure",
-)
 def test_plot_does_not_mutate_global_rcparams(monthly_rates: pd.DataFrame) -> None:
     """Plotting must not change matplotlib defaults for the whole process."""
     before = dict(matplotlib.rcParams)
@@ -75,11 +62,6 @@ def test_plot_does_not_mutate_global_rcparams(monthly_rates: pd.DataFrame) -> No
     assert not changed, f"rcParams leaked: {changed}"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="collision and tick rotation call canvas.get_renderer(), which "
-    "only exists on Agg-derived canvases",
-)
 def test_plot_works_on_non_agg_backend() -> None:
     """Headless PDF/SVG rendering must not depend on the Agg renderer."""
     env = {**os.environ, "PYTHONPATH": str(SRC)}
@@ -93,11 +75,6 @@ def test_plot_works_on_non_agg_backend() -> None:
     assert proc.returncode == 0, proc.stderr
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="registered artists hold a strong reference back to the Axes, so "
-    "the WeakKeyDictionary entry keeps its own key alive",
-)
 @pytest.mark.parametrize("kind", ["plot", "bar", "area", "scatter"])
 def test_repeated_plots_do_not_accumulate_collision_state(
     monthly_rates: pd.DataFrame, kind: str

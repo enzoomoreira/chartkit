@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-import matplotlib.pyplot as plt
 from loguru import logger
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 
 from ..decorations import add_footer, add_title
 from ..settings import get_config
-from ..styling.theme import theme
 from .extraction import should_show_legend
 from .plot_validation import coerce_axis_limits
 from .tick_formatting import apply_tick_formatting
@@ -28,17 +28,27 @@ def create_figure(
     *,
     figsize: tuple[float, float] | None = None,
     grid: bool | None = None,
-) -> tuple[plt.Figure, Axes]:
-    """Apply theme, create figure/axes and optionally override grid.
+) -> tuple[Figure, Axes]:
+    """Create a figure/axes pair and optionally override grid.
+
+    The figure is built directly rather than through ``pyplot`` so it is not
+    registered in the global figure manager -- otherwise every chart would
+    stay alive for the lifetime of the process. Attaching an Agg canvas also
+    guarantees a renderer is available whatever backend the caller selected.
+
+    Must be called inside ``theme.context()``: matplotlib reads rcParams when
+    the figure and its artists are created.
 
     Args:
         figsize: Override figure size. ``None`` uses config default.
         grid: Grid override. ``None`` uses config default.
     """
-    theme.apply()
     config = get_config()
     effective_figsize = figsize or config.layout.figsize
-    fig, ax = plt.subplots(figsize=effective_figsize)
+
+    fig = Figure(figsize=effective_figsize)
+    FigureCanvasAgg(fig)
+    ax = fig.add_subplot()
 
     if grid is not None:
         ax.grid(grid)
@@ -99,7 +109,7 @@ def apply_legend(
 
 
 def finalize_chart(
-    fig: plt.Figure,
+    fig: Figure,
     ax: Axes,
     *,
     tick_format: str | None = None,

@@ -4,18 +4,20 @@ from __future__ import annotations
 
 from typing import Literal
 
-import matplotlib.pyplot as plt
+from matplotlib.artist import setp
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from ..exceptions import ValidationError
 from ..settings import get_config
+from .rendering import get_renderer
 
 __all__ = ["apply_tick_rotation"]
 
 
-def _has_overlap(fig: plt.Figure, ax: Axes) -> bool:
+def _has_overlap(fig: Figure, ax: Axes) -> bool:
     """Check if adjacent X tick labels overlap."""
-    renderer = fig.canvas.get_renderer()
+    renderer = get_renderer(fig)
     labels = [t for t in ax.get_xticklabels() if t.get_text()]
 
     if len(labels) < 2:
@@ -30,10 +32,10 @@ def _has_overlap(fig: plt.Figure, ax: Axes) -> bool:
     return False
 
 
-def _adjust_bottom_margin(fig: plt.Figure, ax: Axes) -> None:
+def _adjust_bottom_margin(fig: Figure, ax: Axes) -> None:
     """Push axes up if rotated tick labels overlap the footer area."""
     fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
+    renderer = get_renderer(fig)
 
     labels = [t for t in ax.get_xticklabels() if t.get_text()]
     if not labels:
@@ -68,7 +70,7 @@ def _apply_angle(ax: Axes, angle: int) -> None:
     else:
         ha, rotation_mode = "left", "anchor"
 
-    plt.setp(
+    setp(
         ax.get_xticklabels(),
         rotation=angle,
         ha=ha,
@@ -77,7 +79,7 @@ def _apply_angle(ax: Axes, angle: int) -> None:
 
 
 def apply_tick_rotation(
-    fig: plt.Figure,
+    fig: Figure,
     ax: Axes,
     *,
     tick_rotation: int | Literal["auto"] | None = None,

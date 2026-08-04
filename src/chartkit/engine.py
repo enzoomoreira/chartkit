@@ -20,6 +20,7 @@ from ._internal import (
     save_figure,
     validate_plot_params,
 )
+from ._internal.collision import clear_axes_state
 from ._internal.plot_validation import AxisLimits, UnitFormat
 from .charts import ChartRenderer
 from .charts._classification import (
@@ -31,6 +32,7 @@ from .exceptions import StateError
 from .metrics import MetricRegistry
 from .overlays import HighlightMode
 from .result import PlotResult
+from .styling.theme import theme
 
 ChartKind = str
 HighlightInput = bool | HighlightMode | list[HighlightMode]
@@ -125,59 +127,66 @@ class ChartingPlotter:
             metrics,
         )
 
-        # 1. Style + figure
-        fig, ax = create_figure(grid=grid)
-        self._fig = fig
-        self._ax = ax
+        # The whole chart is built inside the theme context: matplotlib reads
+        # rcParams as each artist is created, not at save time.
+        with theme.context():
+            # 1. Figure
+            fig, ax = create_figure(grid=grid)
+            self._fig = fig
 
-        # 2. Data
-        x_data, y_data = extract_plot_data(self.df, x, y)
+            try:
+                # 2. Data
+                x_data, y_data = extract_plot_data(self.df, x, y)
 
-        # 3. Y formatter
-        if units:
-            ax.yaxis.set_major_formatter(get_formatter(units, decimals))
+                # 3. Y formatter
+                if units:
+                    ax.yaxis.set_major_formatter(get_formatter(units, decimals))
 
-        # 4. Plot
-        ChartRenderer.render(
-            ax, kind, x_data, y_data, highlight=highlight_modes, **kwargs
-        )
+                # 4. Plot
+                ChartRenderer.render(
+                    ax, kind, x_data, y_data, highlight=highlight_modes, **kwargs
+                )
 
-        # 5. Metrics
-        if metrics:
-            logger.debug("Applying metric(s)")
-            MetricRegistry.apply(ax, x_data, y_data, metrics)
+                # 5. Metrics
+                if metrics:
+                    logger.debug("Applying metric(s)")
+                    MetricRegistry.apply(ax, x_data, y_data, metrics)
 
-        # 6. Legend
-        apply_legend(ax, legend=legend)
+                # 6. Legend
+                apply_legend(ax, legend=legend)
 
-        # 7. Collision resolution
-        if collision:
-            legend_artist = ax.get_legend()
-            if legend_artist is not None:
-                register_artist_obstacle(ax, legend_artist, filled=True)
-            resolve_collisions(ax)
+                # 7. Collision resolution
+                if collision:
+                    legend_artist = ax.get_legend()
+                    if legend_artist is not None:
+                        register_artist_obstacle(ax, legend_artist, filled=True)
+                    resolve_collisions(ax)
 
-        # 8. Finalize (ticks, axis limits, labels, decorations)
-        finalize_chart(
-            fig,
-            ax,
-            tick_format=tick_format,
-            tick_freq=tick_freq,
-            tick_rotation=tick_rotation,
-            x_data=x_data,
-            xlim=xlim,
-            ylim=ylim,
-            xlabel=xlabel,
-            ylabel=ylabel,
-            title=title,
-            source=source,
-        )
+                # 8. Finalize (ticks, axis limits, labels, decorations)
+                finalize_chart(
+                    fig,
+                    ax,
+                    tick_format=tick_format,
+                    tick_freq=tick_freq,
+                    tick_rotation=tick_rotation,
+                    x_data=x_data,
+                    xlim=xlim,
+                    ylim=ylim,
+                    xlabel=xlabel,
+                    ylabel=ylabel,
+                    title=title,
+                    source=source,
+                )
 
-        # 9. Debug overlay (after finalize so geometry is final)
-        if debug:
-            draw_debug_overlay(ax)
+                # 9. Debug overlay (after finalize so geometry is final)
+                if debug:
+                    draw_debug_overlay(ax)
+            finally:
+                # Collision bookkeeping only matters while this chart is being
+                # built; holding it would keep the Axes alive indefinitely.
+                clear_axes_state(ax)
 
-        return PlotResult(fig=self._fig, ax=ax, plotter=self)
+        return PlotResult(fig=fig, ax=ax, plotter=self)
 
     def save(self, path: str, dpi: int | None = None) -> None:
         """Save chart to file.

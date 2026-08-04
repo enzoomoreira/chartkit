@@ -145,9 +145,14 @@ root = find_project_root()
 
 ### Font Cache
 
-`ChartingTheme` caches the loaded font in `_font`. `theme.apply()` invalidates
-this cache (`self._font = None`) before reloading config, ensuring that font
-changes via `configure()` take effect on the next plot.
+`load_font()` caches `FontProperties` in a module-level dict keyed by the
+resolved font path and fallback family. The cache exists because
+`fontManager.addfont()` does not deduplicate: reloading the same file on
+every chart grows matplotlib's font list for the lifetime of the process.
+
+Because the key is the resolved path, a font change via `configure()` takes
+effect on the next plot without explicit invalidation. `clear_font_cache()`
+forces a reload when the file itself changed on disk.
 
 ### Config Cache
 
