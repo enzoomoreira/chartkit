@@ -7,6 +7,7 @@ from .._internal.collision import register_artist_obstacle
 from .._internal.extraction import resolve_series
 from ..settings import get_config
 from ..styling.theme import theme
+from ..warnings import RenderingWarning, warn
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,9 @@ def _add_stat_line(
 
     value = getattr(y_data, stat)()
     if pd.isna(value):
-        logger.warning(
-            "Stat '%s' returned NaN for series, skipping reference line", stat
+        warn(
+            f"Stat '{stat}' returned NaN for series, skipping reference line",
+            RenderingWarning,
         )
         return
 

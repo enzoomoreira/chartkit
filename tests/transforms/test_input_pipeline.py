@@ -25,6 +25,7 @@ from chartkit.transforms.temporal import (
     variation,
     zscore,
 )
+from chartkit.warnings import DataMutationWarning, InferenceWarning
 
 # ---------------------------------------------------------------------------
 # coerce_input
@@ -112,7 +113,8 @@ class TestValidateNumericSeries:
         self, non_datetime_index_df: pd.DataFrame
     ) -> None:
         s = non_datetime_index_df["val"]
-        result = validate_numeric(s)
+        with pytest.warns(InferenceWarning, match="instead of DatetimeIndex"):
+            result = validate_numeric(s)
         assert len(result) == 5
 
 
@@ -124,13 +126,17 @@ class TestValidateNumericDataFrame:
     def test_mixed_df_drops_non_numeric(
         self, multi_series_monthly: pd.DataFrame
     ) -> None:
-        result = validate_numeric(multi_series_monthly)
+        with pytest.warns(DataMutationWarning, match="Dropping non-numeric"):
+            result = validate_numeric(multi_series_monthly)
         assert "category" not in result.columns
         assert len(result.columns) == 3
 
     def test_all_non_numeric_df_raises(self) -> None:
         df = pd.DataFrame({"a": ["x", "y"], "b": ["z", "w"]})
-        with pytest.raises(TransformError, match="No numeric columns"):
+        with (
+            pytest.warns(DataMutationWarning, match="Dropping non-numeric"),
+            pytest.raises(TransformError, match="No numeric columns"),
+        ):
             validate_numeric(df)
 
     def test_empty_df_raises(self, empty_df: pd.DataFrame) -> None:

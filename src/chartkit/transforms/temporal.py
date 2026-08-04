@@ -19,6 +19,7 @@ import pandas as pd
 from .._internal.frequency import infer_freq, normalize_freq_code
 from ..exceptions import TransformError
 from ..settings import get_config
+from ..warnings import InferenceWarning, warn
 from ._validation import (
     _DespikeParams,
     _DiffParams,
@@ -111,10 +112,10 @@ def variation(
             else normalize_freq_code(params.freq)
         )
         if detected in ("QE", "QS", "YE", "YS"):
-            logger.warning(
-                "horizon='month' with %s data resolves to periods=1 "
-                "(period-over-period, not calendar month-over-month)",
-                detected,
+            warn(
+                f"horizon='month' with {detected} data resolves to periods=1 "
+                f"(period-over-period, not calendar month-over-month)",
+                InferenceWarning,
             )
 
     result = data.pct_change(periods=resolved) * 100
@@ -167,9 +168,11 @@ def accum(
         if params.window is not None or params.freq is not None:
             raise
         resolved = get_config().transforms.accum_window
-        logger.info(
-            "Could not auto-detect frequency for accum. Using config accum_window=%s",
-            resolved,
+        warn(
+            f"Could not auto-detect frequency for accum; falling back to "
+            f"config accum_window={resolved}. Pass window= or freq= to be "
+            f"explicit.",
+            InferenceWarning,
         )
 
     factor = 1 + data / 100
@@ -534,7 +537,13 @@ def despike(
         spike_count = int(is_spike.sum())
 
     if spike_count > 0:
-        logger.info("despike: detected %s spike(s)", spike_count)
+        # Replacing spikes is what the caller asked for, so this is a report,
+        # not a warning about an unrequested change.
+        logger.info(
+            "despike: replaced %s spike(s) using method='%s'",
+            spike_count,
+            params.method,
+        )
 
     result = data.copy()
     if params.method == "median":

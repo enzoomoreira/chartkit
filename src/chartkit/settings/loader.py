@@ -9,6 +9,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from ..warnings import RenderingWarning, warn
 from .discovery import find_config_files, find_project_root, reset_project_root_cache
 from .schema import ChartingConfig
 
@@ -33,7 +34,7 @@ def _load_toml(path: Path) -> dict[str, Any]:
         with open(path, "rb") as f:
             return tomllib.load(f)
     except (tomllib.TOMLDecodeError, OSError) as e:
-        logger.warning("Error reading %s: %s", path, e)
+        warn(f"Error reading {path}: {e}", RenderingWarning)
         return {}
 
 

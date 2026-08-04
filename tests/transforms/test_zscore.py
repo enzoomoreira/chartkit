@@ -12,6 +12,7 @@ import pytest
 
 from chartkit.exceptions import TransformError
 from chartkit.transforms.temporal import zscore
+from chartkit.warnings import DataMutationWarning
 
 
 class TestZscoreGlobal:
@@ -66,5 +67,6 @@ class TestZscoreMultiColumn:
     def test_mixed_dtypes_drops_non_numeric(
         self, multi_series_monthly: pd.DataFrame
     ) -> None:
-        result = zscore(multi_series_monthly)
+        with pytest.warns(DataMutationWarning, match="Dropping non-numeric"):
+            result = zscore(multi_series_monthly)
         assert "category" not in result.columns

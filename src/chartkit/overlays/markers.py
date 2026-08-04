@@ -12,6 +12,7 @@ from .._internal.collision import register_moveable, register_passive
 from ..exceptions import RegistryError
 from ..settings import get_config
 from ..styling.theme import theme
+from ..warnings import RenderingWarning, warn
 
 logger = logging.getLogger(__name__)
 
@@ -179,12 +180,12 @@ def add_highlight(
         modes: Highlight modes to apply. ``None`` = ``["last"]``.
     """
     if series.empty:
-        logger.warning("Highlight skipped: series is empty")
+        warn("Highlight skipped: series is empty", RenderingWarning)
         return
 
     valid_series = series.dropna()
     if valid_series.empty:
-        logger.warning("Highlight skipped: all values are NaN")
+        warn("Highlight skipped: all values are NaN", RenderingWarning)
         return
 
     if modes is None:

@@ -14,6 +14,7 @@ import pytest
 
 from chartkit.exceptions import TransformError
 from chartkit.transforms.temporal import accum
+from chartkit.warnings import InferenceWarning
 
 
 class TestAccumKnownValues:
@@ -69,7 +70,9 @@ class TestAccumFreqResolution:
             "chartkit.transforms.temporal.get_config", lambda: mock_config
         )
         df = pd.DataFrame({"rate": [1.0, 2.0, 3.0, 4.0, 5.0]})
-        result = accum(df)
+        with pytest.warns(InferenceWarning) as record:
+            result = accum(df)
+        assert any("auto-detect frequency" in str(w.message) for w in record)
         assert result["rate"].iloc[:2].isna().all()
         assert not np.isnan(result["rate"].iloc[2])
 

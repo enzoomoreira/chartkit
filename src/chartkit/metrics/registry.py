@@ -11,6 +11,7 @@ from matplotlib.axes import Axes
 
 from .._internal.frequency import infer_freq
 from ..exceptions import RegistryError, ValidationError
+from ..warnings import RenderingWarning, warn
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,10 @@ class MetricRegistry:
         raw_params = parts[1:]
         extra = raw_params[len(entry.param_names) :]
         if extra:
-            logger.warning("Extra parameters ignored in '%s': %s", spec, extra)
+            warn(
+                f"Extra parameters ignored in '{spec}': {extra}",
+                RenderingWarning,
+            )
 
         for i, value in enumerate(raw_params):
             if i < len(entry.param_names):

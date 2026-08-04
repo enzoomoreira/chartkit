@@ -6,6 +6,7 @@ from matplotlib.axes import Axes
 from .._internal.collision import register_passive
 from ..settings import get_config
 from ..styling.theme import theme
+from ..warnings import RenderingWarning, warn
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,10 @@ def add_vband(
     end_ts = pd.Timestamp(end)
 
     if start_ts > end_ts:
-        logger.warning("vband: start (%s) is after end (%s)", start_ts, end_ts)
+        warn(
+            f"vband: start ({start_ts}) is after end ({end_ts})",
+            RenderingWarning,
+        )
 
     band_color = color if color is not None else theme.colors.grid
     band_alpha = alpha if alpha is not None else config.bands.alpha

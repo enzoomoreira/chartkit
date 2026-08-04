@@ -16,6 +16,7 @@ from chartkit.composing.compose import (
 from chartkit.composing.layer import Layer
 from chartkit.exceptions import ValidationError
 from chartkit.result import PlotResult
+from chartkit.warnings import RenderingWarning
 
 
 @pytest.fixture(autouse=True)
@@ -157,7 +158,8 @@ class TestAxisFormatter:
         _, ax = plt.subplots()
         applied: dict = {"left": None, "right": None}
         _apply_axis_formatter(ax, "left", "BRL", applied)
-        _apply_axis_formatter(ax, "left", "USD", applied)
+        with pytest.warns(RenderingWarning, match="Conflicting units"):
+            _apply_axis_formatter(ax, "left", "USD", applied)
         assert applied["left"] == "BRL"
 
     def test_left_and_right_independent(self) -> None:

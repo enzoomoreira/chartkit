@@ -9,6 +9,7 @@ from matplotlib.axes import Axes
 
 from ...overlays import add_highlight
 from ...styling.theme import theme
+from ...warnings import RenderingWarning, warn
 from .._helpers import (
     apply_y_origin,
     detect_bar_width,
@@ -51,9 +52,10 @@ def plot_stacked_bar(
     bars = ctx.config.bars
 
     if len(ctx.y_data) > bars.warning_threshold:
-        logger.warning(
-            "Stacked bar with %s points may be hard to read. Consider kind='line'.",
-            len(ctx.y_data),
+        warn(
+            f"Stacked bar with {len(ctx.y_data)} points may be hard to read. "
+            f"Consider kind='line'.",
+            RenderingWarning,
         )
 
     categorical = is_categorical_index(x)

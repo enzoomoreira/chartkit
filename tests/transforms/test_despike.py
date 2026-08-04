@@ -12,6 +12,7 @@ import pytest
 
 from chartkit.exceptions import TransformError
 from chartkit.transforms.temporal import despike
+from chartkit.warnings import InferenceWarning
 
 
 class TestDespikeDetection:
@@ -186,7 +187,8 @@ class TestDespikeEdgeCases:
                 100.0,
             ]
         }
-        result = despike(data)
+        with pytest.warns(InferenceWarning, match="instead of DatetimeIndex"):
+            result = despike(data)
         assert isinstance(result, pd.DataFrame)
 
 

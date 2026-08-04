@@ -14,6 +14,7 @@ import pytest
 
 from chartkit.exceptions import TransformError
 from chartkit.transforms.temporal import normalize
+from chartkit.warnings import DataMutationWarning
 
 
 class TestNormalizeKnownValues:
@@ -81,7 +82,8 @@ class TestNormalizeMultiColumn:
     def test_mixed_dtypes_drops_non_numeric(
         self, multi_series_monthly: pd.DataFrame
     ) -> None:
-        result = normalize(multi_series_monthly, base=100)
+        with pytest.warns(DataMutationWarning, match="Dropping non-numeric"):
+            result = normalize(multi_series_monthly, base=100)
         assert "category" not in result.columns
 
 

@@ -9,6 +9,7 @@ from matplotlib.axes import Axes
 
 from ...exceptions import ValidationError
 from ...overlays import add_highlight
+from ...warnings import RenderingWarning, warn
 from .._helpers import (
     apply_y_origin,
     compute_bar_offsets,
@@ -70,9 +71,10 @@ def plot_bar(
 
     if multi_col:
         if len(ctx.y_data) > bars.warning_threshold:
-            logger.warning(
-                "Bar chart with %s points may be hard to read. Consider kind='line'.",
-                len(ctx.y_data),
+            warn(
+                f"Bar chart with {len(ctx.y_data)} points may be hard to read. "
+                f"Consider kind='line'.",
+                RenderingWarning,
             )
 
         categorical = is_categorical_index(x)
@@ -107,9 +109,10 @@ def plot_bar(
         vals = y_data if isinstance(y_data, pd.Series) else y_data.iloc[:, 0]
 
         if len(vals) > bars.warning_threshold:
-            logger.warning(
-                "Bar chart with %s points may be hard to read. Consider kind='line'.",
-                len(vals),
+            warn(
+                f"Bar chart with {len(vals)} points may be hard to read. "
+                f"Consider kind='line'.",
+                RenderingWarning,
             )
 
         if sort is not None:

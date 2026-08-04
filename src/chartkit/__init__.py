@@ -43,6 +43,12 @@ from .transforms import (
     variation,
     zscore,
 )
+from .warnings import (
+    ChartKitWarning,
+    DataMutationWarning,
+    InferenceWarning,
+    RenderingWarning,
+)
 
 
 def __getattr__(name: str):
@@ -95,6 +101,11 @@ __all__ = [
     "ValidationError",
     "RegistryError",
     "StateError",
+    # Warnings
+    "ChartKitWarning",
+    "DataMutationWarning",
+    "InferenceWarning",
+    "RenderingWarning",
     # Transforms
     "variation",
     "accum",

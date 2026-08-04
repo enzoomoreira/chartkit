@@ -25,6 +25,7 @@ from pydantic import BaseModel, PositiveInt, ValidationError, model_validator
 
 from .._internal.frequency import FREQ_ALIASES, infer_freq, normalize_freq_code
 from ..exceptions import TransformError
+from ..warnings import DataMutationWarning, InferenceWarning, warn
 
 logger = logging.getLogger(__name__)
 
@@ -258,29 +259,29 @@ def validate_numeric(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
         if not pd.api.types.is_numeric_dtype(df):
             raise TransformError(f"Series must be numeric, got dtype '{df.dtype}'")
         if not isinstance(df.index, pd.DatetimeIndex):
-            logger.warning(
-                "Series index is %s instead of DatetimeIndex. "
-                "Frequency auto-detection will not work.",
-                type(df.index).__name__,
+            warn(
+                f"Series index is {type(df.index).__name__} instead of "
+                f"DatetimeIndex. Frequency auto-detection will not work.",
+                InferenceWarning,
             )
         return df
 
     # DataFrame
     non_numeric = df.select_dtypes(exclude="number").columns.tolist()
     if non_numeric:
-        logger.warning(
-            "Dropping non-numeric columns: %s",
-            non_numeric,
+        warn(
+            f"Dropping non-numeric columns: {non_numeric}",
+            DataMutationWarning,
         )
         df = df.select_dtypes(include="number")
         if df.empty:
             raise TransformError("No numeric columns remaining after filtering")
 
     if not isinstance(df.index, pd.DatetimeIndex):
-        logger.warning(
-            "DataFrame index is %s instead of DatetimeIndex. "
-            "Frequency auto-detection will not work.",
-            type(df.index).__name__,
+        warn(
+            f"DataFrame index is {type(df.index).__name__} instead of "
+            f"DatetimeIndex. Frequency auto-detection will not work.",
+            InferenceWarning,
         )
 
     return df

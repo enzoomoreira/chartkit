@@ -8,6 +8,7 @@ from pathlib import Path
 import matplotlib.font_manager as fm
 
 from ..settings import get_assets_path, get_config
+from ..warnings import RenderingWarning, warn
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +57,9 @@ def load_font() -> fm.FontProperties:
 
 def _load_from_path(font_path: Path, fallback: str) -> fm.FontProperties:
     if not font_path.exists():
-        logger.warning(
-            "Font not found: %s. Using fallback: %s",
-            font_path,
-            fallback,
+        warn(
+            f"Font not found: {font_path}. Using fallback: {fallback}",
+            RenderingWarning,
         )
         return fm.FontProperties(family=[fallback])
 
@@ -68,5 +68,5 @@ def _load_from_path(font_path: Path, fallback: str) -> fm.FontProperties:
         logger.info("Font loaded: %s", font_path)
         return fm.FontProperties(fname=str(font_path))
     except Exception as e:
-        logger.warning("Error loading font %s: %s", font_path, e)
+        warn(f"Error loading font {font_path}: {e}", RenderingWarning)
         return fm.FontProperties(family=[fallback])

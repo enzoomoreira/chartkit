@@ -12,6 +12,7 @@ import pytest
 
 from chartkit.exceptions import TransformError
 from chartkit.transforms.temporal import variation
+from chartkit.warnings import DataMutationWarning, InferenceWarning
 
 
 class TestVariationKnownValues:
@@ -47,8 +48,9 @@ class TestVariationMultiColumn:
     def test_mixed_dtypes_drops_non_numeric(
         self, multi_series_monthly: pd.DataFrame
     ) -> None:
-        """String column 'category' is dropped silently."""
-        result = variation(multi_series_monthly, horizon="month")
+        """String column 'category' is dropped, and the caller is told."""
+        with pytest.warns(DataMutationWarning, match="Dropping non-numeric"):
+            result = variation(multi_series_monthly, horizon="month")
         assert "category" not in result.columns
 
 
@@ -76,7 +78,8 @@ class TestVariationHorizons:
         self, quarterly_rates: pd.DataFrame
     ) -> None:
         """horizon='month' on quarterly data -> periods=1 (period-over-period)."""
-        result = variation(quarterly_rates, horizon="month")
+        with pytest.warns(InferenceWarning, match="period-over-period"):
+            result = variation(quarterly_rates, horizon="month")
         assert np.isnan(result["rate"].iloc[0])
         assert not np.isnan(result["rate"].iloc[1])
         # Second value: pct_change(1) = (2.5/2.0 - 1)*100 = 25%

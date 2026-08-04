@@ -30,6 +30,7 @@ from ..exceptions import ValidationError
 from ..metrics import MetricRegistry
 from ..result import PlotResult
 from ..styling.theme import theme
+from ..warnings import RenderingWarning, warn
 from .layer import AxisSide, Layer
 
 logger = logging.getLogger(__name__)
@@ -86,12 +87,10 @@ def _apply_axis_formatter(
         return
     if applied[side] is not None:
         if applied[side] != units:
-            logger.warning(
-                "Conflicting units on %s axis: '%s' vs '%s'. Keeping '%s'.",
-                side,
-                applied[side],
-                units,
-                applied[side],
+            warn(
+                f"Conflicting units on {side} axis: '{applied[side]}' vs "
+                f"'{units}'. Keeping '{applied[side]}'.",
+                RenderingWarning,
             )
         return
     ax.yaxis.set_major_formatter(FORMATTERS[units]())
