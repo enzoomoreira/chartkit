@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Literal
 
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -31,6 +31,8 @@ from ..metrics import MetricRegistry
 from ..result import PlotResult
 from ..styling.theme import theme
 from .layer import AxisSide, Layer
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .._internal.plot_validation import UnitFormat
@@ -85,7 +87,7 @@ def _apply_axis_formatter(
     if applied[side] is not None:
         if applied[side] != units:
             logger.warning(
-                "Conflicting units on {} axis: '{}' vs '{}'. Keeping '{}'.",
+                "Conflicting units on %s axis: '%s' vs '%s'. Keeping '%s'.",
                 side,
                 applied[side],
                 units,
@@ -158,7 +160,7 @@ def compose(
     """
     _validate_layers(layers, legend, tick_freq=tick_freq)
 
-    logger.debug("compose: {} layer(s), title={}", len(layers), title)
+    logger.debug("compose: %s layer(s), title=%s", len(layers), title)
 
     # The whole chart is built inside the theme context: matplotlib reads
     # rcParams as each artist is created, not at save time.
@@ -195,7 +197,7 @@ def compose(
                 if first_x_data is None:
                     first_x_data = x_data
                 logger.debug(
-                    "Rendering layer: kind={}, axis={}, shape={}",
+                    "Rendering layer: kind=%s, axis=%s, shape=%s",
                     layer.kind,
                     layer.axis,
                     layer.df.shape,

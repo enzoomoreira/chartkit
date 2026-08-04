@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from collections.abc import Sequence
 from itertools import chain
 from math import sqrt
 
 import matplotlib.dates as mdates
-from loguru import logger
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import RendererBase
@@ -26,6 +26,8 @@ from ._obstacles import (
     _shift_bbox,
 )
 from ._registry import PositionableArtist, _labels
+
+logger = logging.getLogger(__name__)
 
 # -- Shared setup --
 
@@ -69,7 +71,7 @@ def resolve_collisions(ax: Axes) -> None:
 
     fixed = _collect_obstacles(ax, moveables, renderer)
     logger.debug(
-        "Collision: {} moveable(s), {} obstacle(s)", len(positionable), len(fixed)
+        "Collision: %s moveable(s), %s obstacle(s)", len(positionable), len(fixed)
     )
 
     axes_bbox = ax.get_window_extent(renderer)
@@ -105,7 +107,7 @@ def resolve_composed_collisions(axes: Sequence[Axes]) -> None:
                 seen_ids.add(obs._source_id)
 
     logger.debug(
-        "Composed collision: {} moveable(s), {} obstacle(s), {} axes",
+        "Composed collision: %s moveable(s), %s obstacle(s), %s axes",
         len(positionable),
         len(fixed),
         len(axes),
@@ -349,7 +351,7 @@ def _find_free_position(
             _generate_reactive_candidates(label_bbox, obs, clearance, axes_bbox)
         )
 
-    logger.debug("Candidates: {} proactive, {} reactive", len(proactive), len(reactive))
+    logger.debug("Candidates: %s proactive, %s reactive", len(proactive), len(reactive))
 
     best_cost = float("inf")
     best_displacement: tuple[float, float] | None = None
@@ -374,7 +376,7 @@ def _find_free_position(
     if best_displacement is not None:
         dx, dy = best_displacement
         logger.debug(
-            "Best candidate: cost={:.2f} (dist={:.2f}, valid={}/{})",
+            "Best candidate: cost=%.2f (dist=%.2f, valid=%s/%s)",
             best_cost,
             sqrt(dx**2 + dy**2) / max(label_bbox.height, 1.0),
             valid_count,

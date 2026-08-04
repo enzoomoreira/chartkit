@@ -5,8 +5,11 @@ Shared by transforms and metrics for frequency-aware behavior.
 
 from __future__ import annotations
 
+import logging
+
 import pandas as pd
-from loguru import logger
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "FREQ_ALIASES",
@@ -108,7 +111,7 @@ def infer_freq(data: pd.DataFrame | pd.Series | pd.Index) -> str | None:
         return None
 
     result = normalize_freq_code(raw)
-    logger.debug("Inferred frequency: '{}' (raw: '{}')", result, raw)
+    logger.debug("Inferred frequency: '%s' (raw: '%s')", result, raw)
     return result
 
 

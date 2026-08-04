@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Literal
 
-from loguru import logger
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -15,6 +15,8 @@ from .extraction import should_show_legend
 from .plot_validation import coerce_axis_limits
 from .tick_formatting import apply_tick_formatting
 from .tick_rotation import apply_tick_rotation
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -54,7 +56,7 @@ def create_figure(
         ax.grid(grid)
 
     logger.debug(
-        "create_figure: figsize={}, grid_override={}",
+        "create_figure: figsize=%s, grid_override=%s",
         effective_figsize,
         grid,
     )
@@ -86,7 +88,7 @@ def apply_legend(
 
     if not should_show_legend(labels, legend) or not labels:
         logger.debug(
-            "Legend skipped: {} label(s), legend={}",
+            "Legend skipped: %s label(s), legend=%s",
             len(labels),
             legend,
         )
@@ -102,7 +104,7 @@ def apply_legend(
     )
 
     logger.debug(
-        "Legend applied: {} handle(s), loc='{}'",
+        "Legend applied: %s handle(s), loc='%s'",
         len(handles),
         config.legend.loc,
     )
@@ -160,4 +162,4 @@ def finalize_chart(
         applied.append("title")
     if source:
         applied.append("footer")
-    logger.debug("finalize_chart: overrides=[{}]", ", ".join(applied))
+    logger.debug("finalize_chart: overrides=[%s]", ", ".join(applied))

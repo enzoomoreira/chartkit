@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import tomllib
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from loguru import logger
-
 from .discovery import find_config_files, find_project_root, reset_project_root_cache
 from .schema import ChartingConfig
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ConfigLoader",
@@ -32,7 +33,7 @@ def _load_toml(path: Path) -> dict[str, Any]:
         with open(path, "rb") as f:
             return tomllib.load(f)
     except (tomllib.TOMLDecodeError, OSError) as e:
-        logger.warning("Error reading {}: {}", path, e)
+        logger.warning("Error reading %s: %s", path, e)
         return {}
 
 
@@ -78,7 +79,7 @@ class ConfigLoader:
         """
         with self._lock:
             logger.debug(
-                "configure() called: config_path={}, outputs_path={}, assets_path={}",
+                "configure() called: config_path=%s, outputs_path=%s, assets_path=%s",
                 config_path,
                 outputs_path,
                 assets_path,
@@ -95,7 +96,7 @@ class ConfigLoader:
 
             if overrides:
                 self._overrides = _deep_merge(self._overrides, overrides)
-                logger.debug("Overrides applied: {}", list(overrides.keys()))
+                logger.debug("Overrides applied: %s", list(overrides.keys()))
 
             self._invalidate()
 
@@ -173,7 +174,7 @@ class ConfigLoader:
 
         if self._config_path and self._config_path.exists():
             config_files.insert(0, self._config_path)
-            logger.debug("Explicit config file: {}", self._config_path)
+            logger.debug("Explicit config file: %s", self._config_path)
 
         merged: dict[str, Any] = {}
 
@@ -185,7 +186,7 @@ class ConfigLoader:
 
             if file_config:
                 merged = _deep_merge(merged, file_config)
-                logger.debug("Config merged from: {}", config_file)
+                logger.debug("Config merged from: %s", config_file)
 
         return merged
 

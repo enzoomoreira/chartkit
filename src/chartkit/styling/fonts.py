@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import matplotlib.font_manager as fm
-from loguru import logger
 
 from ..settings import get_assets_path, get_config
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["clear_font_cache", "load_font"]
 
@@ -41,7 +43,7 @@ def load_font() -> fm.FontProperties:
     font_path = Path(font_file)
     if not font_path.is_absolute():
         font_path = get_assets_path() / font_file
-        logger.debug("Resolving relative font: {} -> {}", font_file, font_path)
+        logger.debug("Resolving relative font: %s -> %s", font_file, font_path)
 
     key = (str(font_path), fallback)
     cached = _FONT_CACHE.get(key)
@@ -55,7 +57,7 @@ def load_font() -> fm.FontProperties:
 def _load_from_path(font_path: Path, fallback: str) -> fm.FontProperties:
     if not font_path.exists():
         logger.warning(
-            "Font not found: {}. Using fallback: {}",
+            "Font not found: %s. Using fallback: %s",
             font_path,
             fallback,
         )
@@ -63,8 +65,8 @@ def _load_from_path(font_path: Path, fallback: str) -> fm.FontProperties:
 
     try:
         fm.fontManager.addfont(str(font_path))
-        logger.info("Font loaded: {}", font_path)
+        logger.info("Font loaded: %s", font_path)
         return fm.FontProperties(fname=str(font_path))
     except Exception as e:
-        logger.warning("Error loading font {}: {}", font_path, e)
+        logger.warning("Error loading font %s: %s", font_path, e)
         return fm.FontProperties(family=[fallback])

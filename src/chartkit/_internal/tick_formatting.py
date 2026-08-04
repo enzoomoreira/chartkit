@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import logging
+
 import matplotlib.dates as mdates
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 from matplotlib.ticker import FixedLocator
 
 from ..exceptions import ValidationError
 from ..settings import get_config
 from .plot_validation import TickFreq
+
+logger = logging.getLogger(__name__)
 
 _FREQ_LOCATORS: dict[TickFreq, type[mdates.DateLocator] | tuple] = {
     "day": (mdates.DayLocator, {}),
@@ -134,7 +137,7 @@ def _infer_locator(x_data: pd.Index | pd.Series) -> FixedLocator | None:
     if _is_sparse(freq):
         tick_nums = [mdates.date2num(d) for d in index]
         logger.debug(
-            "Auto-inferred sparse freq '{}', using {} data-aligned ticks",
+            "Auto-inferred sparse freq '%s', using %s data-aligned ticks",
             freq,
             len(tick_nums),
         )
@@ -226,7 +229,7 @@ def apply_tick_formatting(
         if aligned is not None:
             ax.xaxis.set_major_locator(aligned)
             logger.debug(
-                "Tick locator: data-aligned freq='{}', {} ticks",
+                "Tick locator: data-aligned freq='%s', %s ticks",
                 effective_freq,
                 len(aligned.locs),
             )
@@ -234,7 +237,7 @@ def apply_tick_formatting(
             locator_cls, locator_kwargs = _FREQ_LOCATORS[effective_freq]
             ax.xaxis.set_major_locator(locator_cls(**locator_kwargs))
             logger.debug(
-                "Tick locator: {} freq='{}'",
+                "Tick locator: %s freq='%s'",
                 locator_cls.__name__,
                 effective_freq,
             )
@@ -251,4 +254,4 @@ def apply_tick_formatting(
 
     if effective_format is not None:
         ax.xaxis.set_major_formatter(mdates.DateFormatter(effective_format))
-        logger.debug("Tick format: '{}'", effective_format)
+        logger.debug("Tick format: '%s'", effective_format)

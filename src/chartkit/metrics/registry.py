@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import inspect
+import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, NamedTuple
 
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.frequency import infer_freq
 from ..exceptions import RegistryError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -125,7 +127,7 @@ class MetricRegistry:
         raw_params = parts[1:]
         extra = raw_params[len(entry.param_names) :]
         if extra:
-            logger.warning("Extra parameters ignored in '{}': {}", spec, extra)
+            logger.warning("Extra parameters ignored in '%s': %s", spec, extra)
 
         for i, value in enumerate(raw_params):
             if i < len(entry.param_names):

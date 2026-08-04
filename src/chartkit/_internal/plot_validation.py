@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime
 from typing import Any, Literal
 
 import pandas as pd
-from loguru import logger
 from pydantic import BaseModel, StrictBool
 from pydantic import ValidationError as PydanticValidationError
 
 from ..exceptions import ValidationError
+
+logger = logging.getLogger(__name__)
 
 UnitFormat = Literal[
     "BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x"
@@ -56,14 +58,14 @@ def _coerce_limit_value(value: AxisValue) -> Any:
 
     try:
         result = float(value)
-        logger.debug("Coerced axis limit '{}' -> float({})", value, result)
+        logger.debug("Coerced axis limit '%s' -> float(%s)", value, result)
         return result
     except ValueError:
         pass
 
     try:
         result = pd.to_datetime(value)
-        logger.debug("Coerced axis limit '{}' -> datetime({})", value, result)
+        logger.debug("Coerced axis limit '%s' -> datetime(%s)", value, result)
         return result
     except (ValueError, TypeError):
         raise ValidationError(

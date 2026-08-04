@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
 
@@ -15,6 +15,8 @@ from ..exceptions import ValidationError
 from ..overlays import add_highlight
 from ._classification import KIND_ALIASES
 from ._helpers import prepare_render_context, resolve_color
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..overlays import HighlightMode
@@ -97,11 +99,11 @@ class ChartRenderer:
         colls_before = set(id(c) for c in ax.collections)
 
         if kind in cls._enhancers:
-            logger.debug("Dispatch: kind='{}' (enhancer)", kind)
+            logger.debug("Dispatch: kind='%s' (enhancer)", kind)
             cls._enhancers[kind](ax, x, y_data, highlight=highlight, **kwargs)
         else:
             cls._validate_kind(kind)
-            logger.debug("Dispatch: kind='{}' (generic)", kind)
+            logger.debug("Dispatch: kind='%s' (generic)", kind)
             cls._generic_render(ax, kind, x, y_data, highlight, **kwargs)
 
         for line in ax.lines:
@@ -126,7 +128,7 @@ class ChartRenderer:
         ctx = prepare_render_context(y_data, kwargs)
 
         logger.debug(
-            "generic_render: {} series, {} points",
+            "generic_render: %s series, %s points",
             len(ctx.y_data.columns),
             len(ctx.y_data),
         )

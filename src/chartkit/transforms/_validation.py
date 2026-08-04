@@ -5,6 +5,7 @@ Internal module -- not part of the public API.
 
 from __future__ import annotations
 
+import logging
 from typing import Literal
 
 __all__ = [
@@ -20,11 +21,12 @@ __all__ = [
 
 import numpy as np
 import pandas as pd
-from loguru import logger
 from pydantic import BaseModel, PositiveInt, ValidationError, model_validator
 
 from .._internal.frequency import FREQ_ALIASES, infer_freq, normalize_freq_code
 from ..exceptions import TransformError
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Types
@@ -257,7 +259,7 @@ def validate_numeric(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
             raise TransformError(f"Series must be numeric, got dtype '{df.dtype}'")
         if not isinstance(df.index, pd.DatetimeIndex):
             logger.warning(
-                "Series index is {} instead of DatetimeIndex. "
+                "Series index is %s instead of DatetimeIndex. "
                 "Frequency auto-detection will not work.",
                 type(df.index).__name__,
             )
@@ -267,7 +269,7 @@ def validate_numeric(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
     non_numeric = df.select_dtypes(exclude="number").columns.tolist()
     if non_numeric:
         logger.warning(
-            "Dropping non-numeric columns: {}",
+            "Dropping non-numeric columns: %s",
             non_numeric,
         )
         df = df.select_dtypes(include="number")
@@ -276,7 +278,7 @@ def validate_numeric(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
 
     if not isinstance(df.index, pd.DatetimeIndex):
         logger.warning(
-            "DataFrame index is {} instead of DatetimeIndex. "
+            "DataFrame index is %s instead of DatetimeIndex. "
             "Frequency auto-detection will not work.",
             type(df.index).__name__,
         )
@@ -345,7 +347,7 @@ def resolve_periods(
         mapping = FREQ_PERIODS_MAP.get(detected)
         if mapping is not None:
             logger.debug(
-                "Auto-detected frequency '{}' for transform '{}'", detected, transform
+                "Auto-detected frequency '%s' for transform '%s'", detected, transform
             )
             return mapping[transform]
         # Detected frequency but it is not supported

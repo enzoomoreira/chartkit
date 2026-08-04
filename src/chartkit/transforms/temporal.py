@@ -10,11 +10,11 @@ All functions follow the contract:
 
 from __future__ import annotations
 
+import logging
 from typing import overload
 
 import numpy as np
 import pandas as pd
-from loguru import logger
 
 from .._internal.frequency import infer_freq, normalize_freq_code
 from ..exceptions import TransformError
@@ -33,6 +33,8 @@ from ._validation import (
     validate_numeric,
     validate_params,
 )
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "variation",
@@ -99,7 +101,7 @@ def variation(
     params = validate_params(_FreqResolvedParams, periods=periods, freq=freq)
     data = validate_numeric(coerce_input(df))
     resolved = resolve_periods(data, horizon, params.periods, params.freq)
-    logger.debug("variation: horizon='{}', resolved_periods={}", horizon, resolved)
+    logger.debug("variation: horizon='%s', resolved_periods=%s", horizon, resolved)
 
     # Warn when horizon='month' does not mean "calendar month"
     if horizon == "month" and resolved == 1 and params.periods is None:
@@ -110,7 +112,7 @@ def variation(
         )
         if detected in ("QE", "QS", "YE", "YS"):
             logger.warning(
-                "horizon='month' with {} data resolves to periods=1 "
+                "horizon='month' with %s data resolves to periods=1 "
                 "(period-over-period, not calendar month-over-month)",
                 detected,
             )
@@ -160,13 +162,13 @@ def accum(
 
     try:
         resolved = resolve_periods(data, "accum", params.window, params.freq)
-        logger.debug("accum: resolved_window={}", resolved)
+        logger.debug("accum: resolved_window=%s", resolved)
     except TransformError:
         if params.window is not None or params.freq is not None:
             raise
         resolved = get_config().transforms.accum_window
         logger.info(
-            "Could not auto-detect frequency for accum. Using config accum_window={}",
+            "Could not auto-detect frequency for accum. Using config accum_window=%s",
             resolved,
         )
 
@@ -267,7 +269,7 @@ def normalize(
                 )
             matched_date = data.index[idx[0]]
             logger.debug(
-                "normalize: base_date '{}' matched to nearest '{}'", ts, matched_date
+                "normalize: base_date '%s' matched to nearest '%s'", ts, matched_date
             )
             base_value = data.iloc[idx[0]]
     else:
@@ -342,7 +344,7 @@ def annualize(
     params = validate_params(_FreqResolvedParams, periods=periods, freq=freq)
     data = validate_numeric(coerce_input(df))
     resolved = resolve_periods(data, "annualize", params.periods, params.freq)
-    logger.debug("annualize: resolved_periods_per_year={}", resolved)
+    logger.debug("annualize: resolved_periods_per_year=%s", resolved)
     rate_decimal = data / 100
     annualized = (1 + rate_decimal) ** resolved - 1
     return sanitize_result(annualized * 100)
@@ -435,7 +437,7 @@ def zscore(
         all_nan_cols = result.columns[result.isna().all()].tolist()
         if all_nan_cols:
             logger.warning(
-                "zscore produced all-NaN for columns {} (constant data, std=0)",
+                "zscore produced all-NaN for columns %s (constant data, std=0)",
                 all_nan_cols,
             )
     elif result.isna().all():
@@ -499,7 +501,7 @@ def despike(
     )
     data = validate_numeric(coerce_input(df))
     logger.debug(
-        "despike: window={}, threshold={}, method='{}'",
+        "despike: window=%s, threshold=%s, method='%s'",
         params.window,
         params.threshold,
         params.method,
@@ -532,7 +534,7 @@ def despike(
         spike_count = int(is_spike.sum())
 
     if spike_count > 0:
-        logger.info("despike: detected {} spike(s)", spike_count)
+        logger.info("despike: detected %s spike(s)", spike_count)
 
     result = data.copy()
     if params.method == "median":

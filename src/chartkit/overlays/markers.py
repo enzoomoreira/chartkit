@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_moveable, register_passive
 from ..exceptions import RegistryError
 from ..settings import get_config
 from ..styling.theme import theme
+
+logger = logging.getLogger(__name__)
 
 HighlightMode = Literal["last", "max", "min", "all"]
 
@@ -59,7 +61,7 @@ def _resolve_target(
         val = valid_series[idx]
 
     if not np.isfinite(val):
-        logger.debug("Highlight mode '{}': target value is not finite, skipping", mode)
+        logger.debug("Highlight mode '%s': target value is not finite, skipping", mode)
         return None
     return idx, float(val)
 

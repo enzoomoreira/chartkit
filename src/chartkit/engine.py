@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Literal
 
 import pandas as pd
-from loguru import logger
 
 from ._internal import (
     apply_legend,
@@ -33,6 +33,8 @@ from .metrics import MetricRegistry
 from .overlays import HighlightMode
 from .result import PlotResult
 from .styling.theme import theme
+
+logger = logging.getLogger(__name__)
 
 ChartKind = str
 HighlightInput = bool | HighlightMode | list[HighlightMode]
@@ -120,7 +122,7 @@ class ChartingPlotter:
             validate_metrics_for_kind(kind, metrics, resolved=resolved_kind)
 
         logger.debug(
-            "plot: kind={}, shape={}, units={}, metrics={}",
+            "plot: kind=%s, shape=%s, units=%s, metrics=%s",
             kind,
             self.df.shape,
             units,

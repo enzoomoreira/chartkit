@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import cast
 
 import pandas as pd
-from loguru import logger
 
 from ..exceptions import ValidationError
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "extract_plot_data",
@@ -77,7 +79,7 @@ def extract_plot_data(
         y_data = df[y]
 
     logger.debug(
-        "extract_plot_data: x={}, y_columns={}, rows={}",
+        "extract_plot_data: x=%s, y_columns=%s, rows=%s",
         "index" if x is None else x,
         list(y_data.columns) if isinstance(y_data, pd.DataFrame) else [y_data.name],
         len(df),

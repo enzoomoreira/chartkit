@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from loguru import logger
-
 from ..settings import get_charts_path, get_config
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -27,5 +28,5 @@ def save_figure(fig: Figure, path: str, dpi: int | None = None) -> None:
         charts_path.mkdir(parents=True, exist_ok=True)
         path_obj = charts_path / path_obj
 
-    logger.info("Saving: {} (dpi={})", path_obj, dpi)
+    logger.info("Saving: %s (dpi=%s)", path_obj, dpi)
     fig.savefig(path_obj, bbox_inches="tight", dpi=dpi)

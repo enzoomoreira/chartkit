@@ -1,11 +1,14 @@
+import logging
+
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_artist_obstacle
 from .._internal.extraction import resolve_series
 from ..settings import get_config
 from ..styling.theme import theme
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "add_ath_line",
@@ -35,7 +38,7 @@ def _add_stat_line(
     value = getattr(y_data, stat)()
     if pd.isna(value):
         logger.warning(
-            "Stat '{}' returned NaN for series, skipping reference line", stat
+            "Stat '%s' returned NaN for series, skipping reference line", stat
         )
         return
 

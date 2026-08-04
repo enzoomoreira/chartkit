@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 
 from ...overlays import add_highlight
@@ -19,6 +19,8 @@ from .._helpers import (
     validate_y_origin,
 )
 from ..renderer import ChartRenderer
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ...overlays import HighlightMode
@@ -50,7 +52,7 @@ def plot_stacked_bar(
 
     if len(ctx.y_data) > bars.warning_threshold:
         logger.warning(
-            "Stacked bar with {} points may be hard to read. Consider kind='line'.",
+            "Stacked bar with %s points may be hard to read. Consider kind='line'.",
             len(ctx.y_data),
         )
 

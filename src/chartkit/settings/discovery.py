@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from pathlib import Path
 from threading import RLock
 
 from cachetools import LRUCache, cached
-from loguru import logger
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "find_project_root",
@@ -43,12 +45,12 @@ def find_project_root(start_path: Path | None = None) -> Path | None:
 
     current = start_path.resolve()
 
-    logger.debug("find_project_root: starting search from {}", current)
+    logger.debug("find_project_root: starting search from %s", current)
 
     while current != current.parent:
         for marker in PROJECT_ROOT_MARKERS:
             if (current / marker).exists():
-                logger.debug("find_project_root: found {}", current)
+                logger.debug("find_project_root: found %s", current)
                 return current
         current = current.parent
 

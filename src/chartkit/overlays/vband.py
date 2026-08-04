@@ -1,10 +1,13 @@
+import logging
+
 import pandas as pd
-from loguru import logger
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_passive
 from ..settings import get_config
 from ..styling.theme import theme
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["add_vband"]
 
@@ -31,7 +34,7 @@ def add_vband(
     end_ts = pd.Timestamp(end)
 
     if start_ts > end_ts:
-        logger.warning("vband: start ({}) is after end ({})", start_ts, end_ts)
+        logger.warning("vband: start (%s) is after end (%s)", start_ts, end_ts)
 
     band_color = color if color is not None else theme.colors.grid
     band_alpha = alpha if alpha is not None else config.bands.alpha

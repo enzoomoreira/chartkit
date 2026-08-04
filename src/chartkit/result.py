@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
-from loguru import logger
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -58,7 +60,7 @@ class PlotResult:
         """
         import matplotlib.pyplot as plt
 
-        logger.debug("PlotResult.show: '{}'", self.ax.get_title() or "Untitled")
+        logger.debug("PlotResult.show: '%s'", self.ax.get_title() or "Untitled")
 
         # The figure was built outside pyplot, so it has no manager of its
         # own; borrow one from a throwaway figure.
