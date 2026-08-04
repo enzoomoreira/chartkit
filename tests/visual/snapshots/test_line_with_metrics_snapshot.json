@@ -1,109 +1,126 @@
 {
-  "collections": [],
-  "figure_texts": [
-    ""
-  ],
-  "legend": [
-    "21d average",
-    "Peak",
-    "Trough",
-    "price"
-  ],
-  "lines": [
+  "axes": [
     {
-      "first": [
-        19359.0,
-        100.4983
+      "collections": [],
+      "legend": [
+        "21d average",
+        "Peak",
+        "Trough",
+        "price"
       ],
-      "label": "price",
-      "last": [
-        19710.0,
-        92.1236
+      "lines": [
+        {
+          "alpha": null,
+          "color": "#00464d",
+          "first": [
+            19359.0,
+            100.4983
+          ],
+          "label": "price",
+          "last": [
+            19710.0,
+            92.1236
+          ],
+          "linestyle": "-",
+          "linewidth": 2.0,
+          "marker": "None",
+          "points": 252,
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "color": "#00464d",
+          "first": [
+            0.0,
+            110.8507
+          ],
+          "label": "Peak",
+          "last": [
+            1.0,
+            110.8507
+          ],
+          "linestyle": "--",
+          "linewidth": 1.5,
+          "marker": "None",
+          "points": 2,
+          "zorder": 1.0
+        },
+        {
+          "alpha": null,
+          "color": "#8b0000",
+          "first": [
+            0.0,
+            87.18
+          ],
+          "label": "Trough",
+          "last": [
+            1.0,
+            87.18
+          ],
+          "linestyle": "--",
+          "linewidth": 1.5,
+          "marker": "None",
+          "points": 2,
+          "zorder": 1.0
+        },
+        {
+          "alpha": null,
+          "color": "#888888",
+          "first": [
+            19359.0,
+            100.4983
+          ],
+          "label": "21d average",
+          "last": [
+            19710.0,
+            93.189
+          ],
+          "linestyle": "-",
+          "linewidth": 1.5,
+          "marker": "None",
+          "points": 252,
+          "zorder": 2.0
+        }
       ],
-      "linestyle": "-",
-      "marker": "None",
-      "points": 252,
-      "zorder": 3.0
-    },
-    {
-      "first": [
-        0.0,
-        110.8507
+      "patches": [],
+      "side": "left",
+      "texts": [],
+      "title": "Price with metrics",
+      "xlabel": "",
+      "xlim": [
+        19341.45,
+        19727.55
       ],
-      "label": "Peak",
-      "last": [
-        1.0,
-        110.8507
+      "xtick_rotation": [
+        0.0
       ],
-      "linestyle": "--",
-      "marker": "None",
-      "points": 2,
-      "zorder": 1.0
-    },
-    {
-      "first": [
-        0.0,
-        87.18
+      "xticklabels": [
+        "2023-01",
+        "2023-03",
+        "2023-05",
+        "2023-07",
+        "2023-09",
+        "2023-11",
+        "2024-01"
       ],
-      "label": "Trough",
-      "last": [
-        1.0,
-        87.18
+      "y_formatter": "FuncFormatter",
+      "ylabel": "",
+      "ylim": [
+        85.9965,
+        112.0343
       ],
-      "linestyle": "--",
-      "marker": "None",
-      "points": 2,
-      "zorder": 1.0
-    },
-    {
-      "first": [
-        19359.0,
-        100.4983
-      ],
-      "label": "21d average",
-      "last": [
-        19710.0,
-        93.189
-      ],
-      "linestyle": "-",
-      "marker": "None",
-      "points": 252,
-      "zorder": 2.0
+      "yticklabels": [
+        "R$ 85,00",
+        "R$ 90,00",
+        "R$ 95,00",
+        "R$ 100,00",
+        "R$ 105,00",
+        "R$ 110,00",
+        "R$ 115,00"
+      ]
     }
   ],
-  "patches": [],
-  "texts": [],
-  "title": "Price with metrics",
-  "xlabel": "",
-  "xlim": [
-    19341.45,
-    19727.55
-  ],
-  "xtick_rotation": [
-    0.0
-  ],
-  "xticklabels": [
-    "2023-01",
-    "2023-03",
-    "2023-05",
-    "2023-07",
-    "2023-09",
-    "2023-11",
-    "2024-01"
-  ],
-  "y_formatter": "FuncFormatter",
-  "ylabel": "",
-  "ylim": [
-    85.9965,
-    112.0343
-  ],
-  "yticklabels": [
-    "R$ 85,00",
-    "R$ 90,00",
-    "R$ 95,00",
-    "R$ 100,00",
-    "R$ 105,00",
-    "R$ 110,00",
-    "R$ 115,00"
+  "figure_texts": [
+    ""
   ]
 }

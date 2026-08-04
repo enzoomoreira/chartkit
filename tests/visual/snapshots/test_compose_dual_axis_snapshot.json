@@ -1,65 +1,452 @@
 {
-  "collections": [],
-  "figure_texts": [
-    "Fonte: BCB, "
-  ],
-  "legend": [
-    "cdi",
-    "ipca"
-  ],
-  "lines": [
+  "axes": [
     {
-      "first": [
-        19388.0,
-        1.0457
+      "collections": [],
+      "legend": [
+        "cdi",
+        "ipca"
       ],
-      "label": "cdi",
-      "last": [
-        20088.0,
-        0.9768
+      "lines": [
+        {
+          "alpha": null,
+          "color": "#00464d",
+          "first": [
+            19388.0,
+            1.0457
+          ],
+          "label": "cdi",
+          "last": [
+            20088.0,
+            0.9768
+          ],
+          "linestyle": "-",
+          "linewidth": 2.0,
+          "marker": "None",
+          "points": 24,
+          "zorder": 3.0
+        }
       ],
-      "linestyle": "-",
-      "marker": "None",
-      "points": 24,
-      "zorder": 3.0
+      "patches": [],
+      "side": "left",
+      "texts": [],
+      "title": "Dual axis",
+      "xlabel": "",
+      "xlim": [
+        19342.0,
+        20134.0
+      ],
+      "xtick_rotation": [
+        0.0
+      ],
+      "xticklabels": [
+        "2023-01",
+        "2023-04",
+        "2023-07",
+        "2023-10",
+        "2024-01",
+        "2024-04",
+        "2024-07",
+        "2024-10",
+        "2025-01"
+      ],
+      "y_formatter": "FuncFormatter",
+      "ylabel": "",
+      "ylim": [
+        0.6835,
+        1.2072
+      ],
+      "yticklabels": [
+        "0,6%",
+        "0,7%",
+        "0,8%",
+        "0,9%",
+        "1,0%",
+        "1,1%",
+        "1,2%",
+        "1,3%"
+      ]
+    },
+    {
+      "collections": [],
+      "legend": null,
+      "lines": [],
+      "patches": [
+        {
+          "alpha": null,
+          "bbox": [
+            19378.0,
+            0.0,
+            20.0,
+            0.4143
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19406.0,
+            0.0,
+            20.0,
+            0.4296
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19437.0,
+            0.0,
+            20.0,
+            0.6065
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19467.0,
+            0.0,
+            20.0,
+            0.5731
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19498.0,
+            0.0,
+            20.0,
+            0.5825
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19528.0,
+            0.0,
+            20.0,
+            0.5862
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19559.0,
+            0.0,
+            20.0,
+            0.9283
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19590.0,
+            0.0,
+            20.0,
+            0.4187
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19620.0,
+            0.0,
+            20.0,
+            0.3976
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19651.0,
+            0.0,
+            20.0,
+            0.3372
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19681.0,
+            0.0,
+            20.0,
+            0.6232
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19712.0,
+            0.0,
+            20.0,
+            0.7258
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19743.0,
+            0.0,
+            20.0,
+            0.4772
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19772.0,
+            0.0,
+            20.0,
+            0.332
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19803.0,
+            0.0,
+            20.0,
+            0.3351
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19833.0,
+            0.0,
+            20.0,
+            0.6301
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19864.0,
+            0.0,
+            20.0,
+            0.6487
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19894.0,
+            0.0,
+            20.0,
+            0.6086
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19925.0,
+            0.0,
+            20.0,
+            0.3669
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19956.0,
+            0.0,
+            20.0,
+            0.5464
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19986.0,
+            0.0,
+            20.0,
+            0.5233
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20017.0,
+            0.0,
+            20.0,
+            0.5437
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20047.0,
+            0.0,
+            20.0,
+            0.6743
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20078.0,
+            0.0,
+            20.0,
+            0.5447
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        }
+      ],
+      "side": "right",
+      "texts": [],
+      "title": "",
+      "xlabel": "",
+      "xlim": [
+        19342.0,
+        20134.0
+      ],
+      "xtick_rotation": [
+        0.0
+      ],
+      "xticklabels": [
+        "2023-01",
+        "2023-04",
+        "2023-07",
+        "2023-10",
+        "2024-01",
+        "2024-04",
+        "2024-07",
+        "2024-10",
+        "2025-01"
+      ],
+      "y_formatter": "ScalarFormatter",
+      "ylabel": "",
+      "ylim": [
+        0.0,
+        0.9747
+      ],
+      "yticklabels": [
+        "0.0",
+        "0.2",
+        "0.4",
+        "0.6",
+        "0.8",
+        "1.0"
+      ]
     }
   ],
-  "patches": [],
-  "texts": [],
-  "title": "Dual axis",
-  "xlabel": "",
-  "xlim": [
-    19342.0,
-    20134.0
-  ],
-  "xtick_rotation": [
-    0.0
-  ],
-  "xticklabels": [
-    "2023-01",
-    "2023-04",
-    "2023-07",
-    "2023-10",
-    "2024-01",
-    "2024-04",
-    "2024-07",
-    "2024-10",
-    "2025-01"
-  ],
-  "y_formatter": "FuncFormatter",
-  "ylabel": "",
-  "ylim": [
-    0.6835,
-    1.2072
-  ],
-  "yticklabels": [
-    "0,6%",
-    "0,7%",
-    "0,8%",
-    "0,9%",
-    "1,0%",
-    "1,1%",
-    "1,2%",
-    "1,3%"
+  "figure_texts": [
+    "Fonte: BCB, "
   ]
 }

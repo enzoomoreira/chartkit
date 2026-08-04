@@ -115,8 +115,41 @@ class PlotResult:
 | `save(path, dpi=None)` | method | `PlotResult` | Saves chart to file |
 | `show()` | method | `PlotResult` | Displays interactive chart (hands the figure to pyplot) |
 | `close()` | method | `None` | Releases the figure and its artists |
+| `describe(geometry=False)` | method | `dict` | Structural description of the rendered chart |
+| `explain()` | method | `str` | Same information as text, for reading in a terminal |
 | `axes` | property | `Axes` | Access to matplotlib Axes |
 | `figure` | property | `Figure` | Access to matplotlib Figure |
+
+### Inspecting a Chart
+
+`describe()` reports what was rendered without producing an image: series and
+their points, colours, line styles, patches, texts, legend entries, axis limits
+and tick labels. Every Axes in the figure is covered, so a chart composed with
+`compose()` reports its right-hand axis as well.
+
+```python
+result = df.chartkit.plot(kind="bar", units="%")
+
+result.describe()["axes"][0]["lines"][0]["color"]   # '#00464d'
+print(result.explain())                             # human-readable dump
+```
+
+The description is reported in data coordinates, so it does not change when the
+same chart is drawn at a different `figsize` or `dpi`. That makes it safe to
+compare against a stored baseline, which is how the render snapshots in
+`tests/visual/` work.
+
+`geometry=True` adds an `overlaps` entry listing pairs of labels whose drawn
+extents intersect -- the direct way to check that the collision engine placed
+every label readably:
+
+```python
+assert result.describe(geometry=True)["overlaps"] == []
+```
+
+Geometry is measured in pixels and depends on font rasterisation, so use it for
+inspection rather than as a baseline. The same caveat applies to the `position`
+of any label the collision engine moved, even at the default detail level.
 
 ### Figure Lifecycle
 
@@ -139,6 +172,8 @@ immediately, and after `show()`, which does register the figure with pyplot.
 def save(self, path: str, dpi: int | None = None) -> PlotResult
 def show(self) -> PlotResult
 def close(self) -> None
+def describe(self, *, geometry: bool = False) -> dict[str, Any]
+def explain(self) -> str
 def __enter__(self) -> PlotResult
 def __exit__(self, exc_type, exc, tb) -> None
 

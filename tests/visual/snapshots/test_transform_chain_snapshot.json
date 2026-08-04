@@ -1,480 +1,725 @@
 {
-  "collections": [],
-  "figure_texts": [
-    ""
-  ],
-  "legend": [
-    "cdi",
-    "ipca"
-  ],
-  "lines": [],
-  "patches": [
+  "axes": [
     {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
+      "collections": [],
+      "legend": [
+        "cdi",
+        "ipca"
       ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
+      "lines": [],
+      "patches": [
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19743.0,
+            -3.4238,
+            10.0,
+            3.4238
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19772.0,
+            0.0,
+            10.0,
+            38.5169
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19803.0,
+            -3.8147,
+            10.0,
+            3.8147
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19833.0,
+            -23.6598,
+            10.0,
+            23.6598
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19864.0,
+            0.0,
+            10.0,
+            49.1935
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19894.0,
+            0.0,
+            10.0,
+            6.3994
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19925.0,
+            0.0,
+            10.0,
+            11.0473
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19956.0,
+            0.0,
+            10.0,
+            4.1937
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19986.0,
+            -2.5273,
+            10.0,
+            2.5273
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20017.0,
+            0.0,
+            10.0,
+            2.9605
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20047.0,
+            0.0,
+            10.0,
+            4.5473
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20078.0,
+            -12.5237,
+            10.0,
+            12.5237
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#00464d",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19753.0,
+            0.0,
+            10.0,
+            15.1752
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19782.0,
+            -22.7213,
+            10.0,
+            22.7213
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19813.0,
+            -44.7445,
+            10.0,
+            44.7445
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19843.0,
+            0.0,
+            10.0,
+            9.9513
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19874.0,
+            0.0,
+            10.0,
+            11.3475
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19904.0,
+            0.0,
+            10.0,
+            3.8328
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19935.0,
+            -60.4776,
+            10.0,
+            60.4776
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19966.0,
+            0.0,
+            10.0,
+            30.5016
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            19996.0,
+            0.0,
+            10.0,
+            31.6401
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20027.0,
+            0.0,
+            10.0,
+            61.2291
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20057.0,
+            0.0,
+            10.0,
+            8.198
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "bbox": [
+            20088.0,
+            -24.9486,
+            10.0,
+            24.9486
+          ],
+          "edgecolor": "#000000",
+          "facecolor": "#006b6b",
+          "label": "_nolegend_",
+          "type": "Rectangle",
+          "zorder": 3.0
+        }
       ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
+      "side": "left",
+      "texts": [],
+      "title": "YoY variation",
+      "xlabel": "",
+      "xlim": [
+        19725.25,
+        20115.75
       ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
+      "xtick_rotation": [
+        0.0
       ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
+      "xticklabels": [
+        "2024-03",
+        "2024-05",
+        "2024-07",
+        "2024-09",
+        "2024-11",
+        "2025-01"
       ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
+      "y_formatter": "FuncFormatter",
+      "ylabel": "",
+      "ylim": [
+        -66.5629,
+        67.3144
       ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        160.2273,
-        283.8881,
-        19.8464,
-        11.8153
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        217.7817,
-        295.7034,
-        19.8464,
-        132.9188
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        279.3054,
-        282.5391,
-        19.8464,
-        13.1643
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        338.8444,
-        214.0552,
-        19.8464,
-        81.6481
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        400.3681,
-        295.7034,
-        19.8464,
-        169.763
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        459.9072,
-        295.7034,
-        19.8464,
-        22.0839
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        521.4309,
-        295.7034,
-        19.8464,
-        38.1234
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        582.9545,
-        295.7034,
-        19.8464,
-        14.4721
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        642.4936,
-        286.9819,
-        19.8464,
-        8.7215
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        704.0173,
-        295.7034,
-        19.8464,
-        10.2166
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        763.5563,
-        295.7034,
-        19.8464,
-        15.6924
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        825.08,
-        252.4851,
-        19.8464,
-        43.2183
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        null,
-        null,
-        null,
-        null
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        180.0736,
-        295.7034,
-        19.8464,
-        52.3684
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        237.628,
-        217.294,
-        19.8464,
-        78.4093
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        299.1517,
-        141.2938,
-        19.8464,
-        154.4096
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        358.6908,
-        295.7034,
-        19.8464,
-        34.3411
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        420.2145,
-        295.7034,
-        19.8464,
-        39.1592
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        479.7535,
-        295.7034,
-        19.8464,
-        13.2268
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        541.2772,
-        87.0,
-        19.8464,
-        208.7034
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        602.8009,
-        295.7034,
-        19.8464,
-        105.2585
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        662.3399,
-        295.7034,
-        19.8464,
-        109.1875
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        723.8636,
-        295.7034,
-        19.8464,
-        211.2966
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        783.4027,
-        295.7034,
-        19.8464,
-        28.2908
-      ],
-      "type": "Rectangle"
-    },
-    {
-      "bbox": [
-        844.9264,
-        209.6079,
-        19.8464,
-        86.0955
-      ],
-      "type": "Rectangle"
+      "yticklabels": [
+        "-80,0%",
+        "-60,0%",
+        "-40,0%",
+        "-20,0%",
+        "0,0%",
+        "20,0%",
+        "40,0%",
+        "60,0%",
+        "80,0%"
+      ]
     }
   ],
-  "texts": [],
-  "title": "YoY variation",
-  "xlabel": "",
-  "xlim": [
-    19725.25,
-    20115.75
-  ],
-  "xtick_rotation": [
-    0.0
-  ],
-  "xticklabels": [
-    "2024-03",
-    "2024-05",
-    "2024-07",
-    "2024-09",
-    "2024-11",
-    "2025-01"
-  ],
-  "y_formatter": "FuncFormatter",
-  "ylabel": "",
-  "ylim": [
-    -66.5629,
-    67.3144
-  ],
-  "yticklabels": [
-    "-80,0%",
-    "-60,0%",
-    "-40,0%",
-    "-20,0%",
-    "0,0%",
-    "20,0%",
-    "40,0%",
-    "60,0%",
-    "80,0%"
+  "figure_texts": [
+    ""
   ]
 }

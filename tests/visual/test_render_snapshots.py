@@ -10,10 +10,9 @@ from collections.abc import Callable
 
 import pandas as pd
 import pytest
-from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-Snapshotter = Callable[[Figure, Axes], None]
+Snapshotter = Callable[[Figure], None]
 
 
 @pytest.mark.parametrize(
@@ -24,7 +23,7 @@ def test_kind_snapshot(
     monthly_rates: pd.DataFrame, assert_snapshot: Snapshotter, kind: str
 ) -> None:
     result = monthly_rates.chartkit.plot(kind=kind, title=f"{kind} chart")
-    assert_snapshot(result.figure, result.axes)
+    assert_snapshot(result.figure)
 
 
 def test_line_with_metrics_snapshot(
@@ -35,7 +34,7 @@ def test_line_with_metrics_snapshot(
         metrics=["ath|Peak", "atl|Trough", "ma:21|21d average"],
         units="BRL",
     )
-    assert_snapshot(result.figure, result.axes)
+    assert_snapshot(result.figure)
 
 
 def test_highlight_modes_snapshot(
@@ -46,7 +45,7 @@ def test_highlight_modes_snapshot(
         highlight=["last", "max", "min"],
         units="points",
     )
-    assert_snapshot(result.figure, result.axes)
+    assert_snapshot(result.figure)
 
 
 def test_transform_chain_snapshot(
@@ -55,7 +54,7 @@ def test_transform_chain_snapshot(
     result = monthly_rates.chartkit.variation(horizon="year").plot(
         kind="bar", title="YoY variation", units="%", highlight="last"
     )
-    assert_snapshot(result.figure, result.axes)
+    assert_snapshot(result.figure)
 
 
 def test_axis_controls_snapshot(
@@ -69,7 +68,7 @@ def test_axis_controls_snapshot(
         tick_freq="quarter",
         tick_format="%b/%y",
     )
-    assert_snapshot(result.figure, result.axes)
+    assert_snapshot(result.figure)
 
 
 def test_compose_dual_axis_snapshot(
@@ -80,4 +79,4 @@ def test_compose_dual_axis_snapshot(
     left = monthly_rates[["cdi"]].chartkit.layer(units="%")
     right = monthly_rates[["ipca"]].chartkit.layer(kind="bar", axis="right")
     result = compose(left, right, title="Dual axis", source="BCB")
-    assert_snapshot(result.figure, result.axes)
+    assert_snapshot(result.figure)

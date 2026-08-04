@@ -22,6 +22,7 @@ from .extraction import (
 from .formatting import FORMATTERS, get_formatter
 from .frequency import infer_freq
 from .highlight import normalize_highlight
+from .introspection import describe_figure, explain_figure
 from .pipeline import apply_legend, create_figure, finalize_chart
 from .plot_validation import coerce_axis_limits, validate_plot_params
 from .saving import save_figure
@@ -36,8 +37,10 @@ __all__ = [
     "apply_tick_rotation",
     "coerce_axis_limits",
     "create_figure",
+    "describe_figure",
     "draw_composed_debug_overlay",
     "draw_debug_overlay",
+    "explain_figure",
     "extract_plot_data",
     "finalize_chart",
     "infer_freq",

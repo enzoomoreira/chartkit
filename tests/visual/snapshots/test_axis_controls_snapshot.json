@@ -1,78 +1,89 @@
 {
-  "collections": [],
-  "figure_texts": [
-    ""
-  ],
-  "legend": [
-    "cdi",
-    "ipca"
-  ],
-  "lines": [
+  "axes": [
     {
-      "first": [
-        19388.0,
-        1.0457
+      "collections": [],
+      "legend": [
+        "cdi",
+        "ipca"
       ],
-      "label": "cdi",
-      "last": [
-        20088.0,
-        0.9768
+      "lines": [
+        {
+          "alpha": null,
+          "color": "#00464d",
+          "first": [
+            19388.0,
+            1.0457
+          ],
+          "label": "cdi",
+          "last": [
+            20088.0,
+            0.9768
+          ],
+          "linestyle": "-",
+          "linewidth": 2.0,
+          "marker": "None",
+          "points": 24,
+          "zorder": 3.0
+        },
+        {
+          "alpha": null,
+          "color": "#006b6b",
+          "first": [
+            19388.0,
+            0.4143
+          ],
+          "label": "ipca",
+          "last": [
+            20088.0,
+            0.5447
+          ],
+          "linestyle": "-",
+          "linewidth": 2.0,
+          "marker": "None",
+          "points": 24,
+          "zorder": 3.0
+        }
       ],
-      "linestyle": "-",
-      "marker": "None",
-      "points": 24,
-      "zorder": 3.0
-    },
-    {
-      "first": [
-        19388.0,
-        0.4143
+      "patches": [],
+      "side": "left",
+      "texts": [],
+      "title": "Axis controls",
+      "xlabel": "Date",
+      "xlim": [
+        19353.0,
+        20123.0
       ],
-      "label": "ipca",
-      "last": [
-        20088.0,
-        0.5447
+      "xtick_rotation": [
+        0.0
       ],
-      "linestyle": "-",
-      "marker": "None",
-      "points": 24,
-      "zorder": 3.0
+      "xticklabels": [
+        "Mar/23",
+        "Jun/23",
+        "Sep/23",
+        "Dec/23",
+        "Mar/24",
+        "Jun/24",
+        "Sep/24",
+        "Dec/24"
+      ],
+      "y_formatter": "ScalarFormatter",
+      "ylabel": "Rate",
+      "ylim": [
+        0.2894,
+        1.226
+      ],
+      "yticklabels": [
+        "0.2",
+        "0.4",
+        "0.6",
+        "0.8",
+        "1.0",
+        "1.2",
+        "1.4"
+      ]
     }
   ],
-  "patches": [],
-  "texts": [],
-  "title": "Axis controls",
-  "xlabel": "Date",
-  "xlim": [
-    19353.0,
-    20123.0
-  ],
-  "xtick_rotation": [
-    0.0
-  ],
-  "xticklabels": [
-    "Mar/23",
-    "Jun/23",
-    "Sep/23",
-    "Dec/23",
-    "Mar/24",
-    "Jun/24",
-    "Sep/24",
-    "Dec/24"
-  ],
-  "y_formatter": "ScalarFormatter",
-  "ylabel": "Rate",
-  "ylim": [
-    0.2894,
-    1.226
-  ],
-  "yticklabels": [
-    "0.2",
-    "0.4",
-    "0.6",
-    "0.8",
-    "1.0",
-    "1.2",
-    "1.4"
+  "figure_texts": [
+    ""
   ]
 }

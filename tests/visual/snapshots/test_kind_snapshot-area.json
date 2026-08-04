@@ -1,81 +1,104 @@
 {
-  "collections": [
-    "FillBetweenPolyCollection"
+  "axes": [
+    {
+      "collections": [
+        {
+          "alpha": 0.3,
+          "edgecolors": [
+            "#00464d"
+          ],
+          "elements": 1,
+          "facecolors": [
+            "#00464d"
+          ],
+          "label": "_child0",
+          "type": "FillBetweenPolyCollection",
+          "zorder": 3.0
+        }
+      ],
+      "legend": [
+        "cdi",
+        "ipca"
+      ],
+      "lines": [
+        {
+          "alpha": null,
+          "color": "#00464d",
+          "first": [
+            19388.0,
+            1.0457
+          ],
+          "label": "cdi",
+          "last": [
+            20088.0,
+            0.9768
+          ],
+          "linestyle": "-",
+          "linewidth": 2.0,
+          "marker": "None",
+          "points": 24,
+          "zorder": 4.0
+        },
+        {
+          "alpha": null,
+          "color": "#006b6b",
+          "first": [
+            19388.0,
+            0.4143
+          ],
+          "label": "ipca",
+          "last": [
+            20088.0,
+            0.5447
+          ],
+          "linestyle": "-",
+          "linewidth": 2.0,
+          "marker": "None",
+          "points": 24,
+          "zorder": 4.0
+        }
+      ],
+      "patches": [],
+      "side": "left",
+      "texts": [],
+      "title": "area chart",
+      "xlabel": "",
+      "xlim": [
+        19353.0,
+        20123.0
+      ],
+      "xtick_rotation": [
+        0.0
+      ],
+      "xticklabels": [
+        "2023-01",
+        "2023-04",
+        "2023-07",
+        "2023-10",
+        "2024-01",
+        "2024-04",
+        "2024-07",
+        "2024-10",
+        "2025-01"
+      ],
+      "y_formatter": "ScalarFormatter",
+      "ylabel": "",
+      "ylim": [
+        0.2894,
+        1.226
+      ],
+      "yticklabels": [
+        "0.2",
+        "0.4",
+        "0.6",
+        "0.8",
+        "1.0",
+        "1.2",
+        "1.4"
+      ]
+    }
   ],
   "figure_texts": [
     ""
-  ],
-  "legend": [
-    "cdi",
-    "ipca"
-  ],
-  "lines": [
-    {
-      "first": [
-        19388.0,
-        1.0457
-      ],
-      "label": "cdi",
-      "last": [
-        20088.0,
-        0.9768
-      ],
-      "linestyle": "-",
-      "marker": "None",
-      "points": 24,
-      "zorder": 4.0
-    },
-    {
-      "first": [
-        19388.0,
-        0.4143
-      ],
-      "label": "ipca",
-      "last": [
-        20088.0,
-        0.5447
-      ],
-      "linestyle": "-",
-      "marker": "None",
-      "points": 24,
-      "zorder": 4.0
-    }
-  ],
-  "patches": [],
-  "texts": [],
-  "title": "area chart",
-  "xlabel": "",
-  "xlim": [
-    19353.0,
-    20123.0
-  ],
-  "xtick_rotation": [
-    0.0
-  ],
-  "xticklabels": [
-    "2023-01",
-    "2023-04",
-    "2023-07",
-    "2023-10",
-    "2024-01",
-    "2024-04",
-    "2024-07",
-    "2024-10",
-    "2025-01"
-  ],
-  "y_formatter": "ScalarFormatter",
-  "ylabel": "",
-  "ylim": [
-    0.2894,
-    1.226
-  ],
-  "yticklabels": [
-    "0.2",
-    "0.4",
-    "0.6",
-    "0.8",
-    "1.0",
-    "1.2",
-    "1.4"
   ]
 }

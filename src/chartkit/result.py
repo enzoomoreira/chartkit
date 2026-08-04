@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +100,33 @@ class PlotResult:
     def figure(self) -> Figure:
         """The matplotlib Figure for manual customization."""
         return self.fig
+
+    def describe(self, *, geometry: bool = False) -> dict[str, Any]:
+        """Serialise the chart structure as plain data.
+
+        Reports every rendering decision -- series, colours, styles, labels,
+        limits and ticks -- for each Axes in the figure, so a chart can be
+        asserted on and diffed without rasterising it.
+
+        Args:
+            geometry: Also report measured bounding boxes and the pairs of
+                labels whose extents intersect. These depend on font
+                rasterisation, so use them for live inspection rather than
+                as a stored baseline.
+        """
+        from ._internal.introspection import describe_figure
+
+        return describe_figure(self.fig, geometry=geometry)
+
+    def explain(self) -> str:
+        """Describe the chart as text meant to be read in a terminal.
+
+        Same information as ``describe(geometry=True)``, formatted for
+        reading rather than for parsing.
+        """
+        from ._internal.introspection import explain_figure
+
+        return explain_figure(self.fig)
 
     def _repr_png_(self) -> bytes | None:
         """Render inline in Jupyter.

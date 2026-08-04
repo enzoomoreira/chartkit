@@ -47,19 +47,55 @@ tests/
 │   ├── conftest.py                # Config isolation (autouse reset)
 │   ├── test_config_precedence.py  # Config loading, deep merge, schema, env vars
 │   └── test_discovery.py         # find_project_root, find_config_files
-└── transforms/                    # Time series transforms (142 tests)
-    ├── conftest.py                # Known-value fixtures (pre-calculated results)
-    ├── test_accum.py              # Accumulated returns
-    ├── test_annualize.py          # Annualization
-    ├── test_diff.py               # First difference
-    ├── test_drawdown.py           # Drawdown from peak
-    ├── test_freq_resolution.py    # Frequency resolution and period detection
-    ├── test_input_pipeline.py     # Input coercion, sanitization, numeric validation
-    ├── test_normalize.py          # Base-100 normalization
-    ├── test_resample.py           # Frequency resampling
-    ├── test_variation.py          # Month/year variation
-    └── test_zscore.py             # Z-score (global and rolling)
+├── transforms/                    # Time series transforms (142 tests)
+│   ├── conftest.py                # Known-value fixtures (pre-calculated results)
+│   ├── test_accum.py              # Accumulated returns
+│   ├── test_annualize.py          # Annualization
+│   ├── test_diff.py               # First difference
+│   ├── test_drawdown.py           # Drawdown from peak
+│   ├── test_freq_resolution.py    # Frequency resolution and period detection
+│   ├── test_input_pipeline.py     # Input coercion, sanitization, numeric validation
+│   ├── test_normalize.py          # Base-100 normalization
+│   ├── test_resample.py           # Frequency resampling
+│   ├── test_variation.py          # Month/year variation
+│   └── test_zscore.py             # Z-score (global and rolling)
+└── visual/                        # Structural render snapshots
+    ├── conftest.py                # assert_snapshot fixture
+    ├── snapshots/                 # Stored descriptions (one JSON per test)
+    ├── test_introspection.py      # describe()/explain(): coverage, colours, overlap
+    └── test_render_snapshots.py   # Snapshot of each main rendering path
 ```
+
+---
+
+## Visual Regression
+
+Charts are images, so the obvious baseline is a reference PNG. That was
+deliberately avoided: font rasterisation differs between platforms and
+matplotlib releases, so image comparison fails for reasons unrelated to
+chartkit, and when it does fail it reports an RMS delta instead of naming what
+changed.
+
+Instead, `tests/visual/` compares a **structural description** of the chart --
+the same `PlotResult.describe()` available to users, so the tests exercise
+production code rather than a private copy. A broken snapshot names the
+property that changed.
+
+```bash
+uv run pytest tests/visual/                    # Compare against baselines
+uv run pytest tests/visual/ --snapshot-update  # Rewrite after an intended change
+```
+
+`--snapshot-update` rewrites every stored description; **the resulting diff is
+the evidence** that a rendering change did what was intended, so review it
+before committing. A test with no stored snapshot writes one and skips.
+
+Snapshots record the default detail level, which is expressed in data
+coordinates and therefore unaffected by `figsize` or `dpi`. Pixel measurements
+(`describe(geometry=True)`) are never baselined. One exception worth knowing:
+the `position` of a label the collision engine moved is decided from text
+measured in pixels, so it can shift with the platform's fonts even at the
+default level.
 
 ---
 
