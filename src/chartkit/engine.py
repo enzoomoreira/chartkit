@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -21,7 +21,7 @@ from ._internal import (
     validate_plot_params,
 )
 from ._internal.collision import clear_axes_state
-from ._internal.plot_validation import AxisLimits, UnitFormat
+from ._internal.plot_validation import AxisLimits, TickFreq, UnitFormat
 from .charts import ChartRenderer
 from .charts._classification import (
     resolve_kind_alias,
@@ -36,7 +36,39 @@ from .styling.theme import theme
 
 logger = logging.getLogger(__name__)
 
-ChartKind = str
+# Spelling the known kinds as a Literal gives editors autocomplete; the ``| str``
+# arm keeps the type open, because ``ChartRenderer.register_enhancer`` lets users
+# add kinds this module cannot know about.  ``test_chart_kind_literal_is_current``
+# keeps the list honest.
+ChartKind = (
+    Literal[
+        "area",
+        "bar",
+        "barh",
+        "boxplot",
+        "ecdf",
+        "errorbar",
+        "eventplot",
+        "fill",
+        "fill_between",
+        "fill_betweenx",
+        "hist",
+        "line",
+        "loglog",
+        "pie",
+        "plot",
+        "scatter",
+        "semilogx",
+        "semilogy",
+        "stacked_bar",
+        "stackplot",
+        "stairs",
+        "stem",
+        "step",
+        "violinplot",
+    ]
+    | str
+)
 HighlightInput = bool | HighlightMode | list[HighlightMode]
 
 
@@ -61,6 +93,7 @@ class ChartingPlotter:
         highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
         legend: bool | None = None,
+        figsize: tuple[float, float] | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
         xlim: AxisLimits | None = None,
@@ -68,10 +101,10 @@ class ChartingPlotter:
         grid: bool | None = None,
         tick_rotation: int | Literal["auto"] | None = None,
         tick_format: str | None = None,
-        tick_freq: str | None = None,
+        tick_freq: TickFreq | None = None,
         collision: bool = True,
         debug: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotResult:
         """Generate standardized chart.
 
@@ -93,6 +126,8 @@ class ChartingPlotter:
                 (e.g.: ``'ath|Maximum'``, ``'ma:12@col|12M Average'``).
             legend: Legend control. ``None`` = auto (shows when there are
                 2+ labeled artists), ``True`` = force, ``False`` = suppress.
+            figsize: Override figure size ``(width, height)`` in inches.
+                ``None`` uses ``layout.figsize`` from config.
             xlabel: X-axis label.
             ylabel: Y-axis label.
             xlim: X-axis limits as ``(min, max)``. Accepts strings
@@ -133,7 +168,7 @@ class ChartingPlotter:
         # rcParams as each artist is created, not at save time.
         with theme.context():
             # 1. Figure
-            fig, ax = create_figure(grid=grid)
+            fig, ax = create_figure(figsize=figsize, grid=grid)
             self._fig = fig
 
             try:

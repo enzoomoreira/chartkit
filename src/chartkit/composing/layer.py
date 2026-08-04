@@ -24,10 +24,11 @@ class Layer:
 
     Attributes:
         df: Source DataFrame.
-        kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
         x: Column for the X axis. ``None`` uses the DataFrame index.
         y: Column(s) for the Y axis. ``None`` uses all numeric columns.
+        kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
         units: Y-axis formatting (``'BRL'``, ``'USD'``, ``'%'``, etc.).
+        decimals: Decimal places for this layer's axis tick labels.
         highlight: Data point highlight mode(s).
         metrics: Declarative metric(s).
         axis: Which Y axis to use (``'left'`` or ``'right'``).
@@ -35,10 +36,11 @@ class Layer:
     """
 
     df: pd.DataFrame
-    kind: ChartKind = "line"
     x: str | None = None
     y: str | list[str] | None = None
+    kind: ChartKind = "line"
     units: UnitFormat | None = None
+    decimals: int | None = None
     highlight: HighlightInput = False
     metrics: str | list[str] | None = None
     axis: AxisSide = "left"
@@ -47,11 +49,12 @@ class Layer:
 
 def create_layer(
     df: pd.DataFrame,
-    kind: ChartKind = "line",
     x: str | None = None,
     y: str | list[str] | None = None,
     *,
+    kind: ChartKind = "line",
     units: UnitFormat | None = None,
+    decimals: int | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
     axis: AxisSide = "left",
@@ -61,10 +64,12 @@ def create_layer(
 
     Args:
         df: Source DataFrame.
-        kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
         x: Column for the X axis. ``None`` uses the DataFrame index.
         y: Column(s) for the Y axis. ``None`` uses all numeric columns.
+        kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
         units: Y-axis formatting (``'BRL'``, ``'USD'``, ``'%'``, etc.).
+        decimals: Decimal places for this layer's axis tick labels. Has no
+            effect when *units* is ``None``.
         highlight: Data point highlight mode(s).
         metrics: Declarative metric(s).
         axis: Which Y axis to use (``'left'`` or ``'right'``).
@@ -73,7 +78,7 @@ def create_layer(
     Raises:
         ValidationError: Invalid ``units``, ``highlight``, ``axis``, or ``kind``.
     """
-    from .._internal import validate_plot_params
+    from .._internal import normalize_highlight, validate_plot_params
     from ..charts import ChartRenderer
     from ..charts._classification import (
         resolve_kind_alias,
@@ -88,18 +93,23 @@ def create_layer(
 
         raise ValidationError(f"Invalid axis '{axis}'. Expected 'left' or 'right'.")
 
+    # Normalizing here rejects unknown modes at construction; compose() would
+    # otherwise only find out once it is halfway through rendering.
+    highlight_modes = normalize_highlight(highlight)
+
     resolved = resolve_kind_alias(kind)
-    if highlight:
+    if highlight_modes:
         validate_highlight_for_kind(kind, resolved=resolved)
     if metrics:
         validate_metrics_for_kind(kind, metrics, resolved=resolved)
 
     return Layer(
         df=df,
-        kind=kind,
         x=x,
         y=y,
+        kind=kind,
         units=units,
+        decimals=decimals,
         highlight=highlight,
         metrics=metrics,
         axis=axis,

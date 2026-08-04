@@ -1,14 +1,21 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pandas as pd
 
 from .engine import ChartingPlotter
 from .transforms.accessor import TransformAccessor
+from .transforms.types import (
+    DespikeMethod,
+    Freq,
+    Horizon,
+    ResampleFreq,
+    ResampleMethod,
+)
 
 if TYPE_CHECKING:
-    from ._internal.plot_validation import AxisLimits
+    from ._internal.plot_validation import AxisLimits, TickFreq
     from .composing.layer import AxisSide, Layer
     from .engine import ChartKind, HighlightInput, UnitFormat
     from .result import PlotResult
@@ -31,22 +38,24 @@ class ChartingAccessor:
 
     def variation(
         self,
-        horizon: str = "month",
+        horizon: Horizon = "month",
         periods: int | None = None,
-        freq: str | None = None,
+        freq: Freq | None = None,
     ) -> TransformAccessor:
         """Percentage change between periods.
 
         Args:
             horizon: Comparison horizon (``'month'`` or ``'year'``).
-            periods: Explicit number of periods. Mutually exclusive with ``freq``.
+            periods: Explicit number of periods. Must be positive --
+                unlike ``diff()``, where a negative value flips the
+                direction. Mutually exclusive with ``freq``.
             freq: Data frequency (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``,
                 ``'Y'``). Mutually exclusive with ``periods``.
         """
         return TransformAccessor(self._obj).variation(horizon, periods, freq)
 
     def accum(
-        self, window: int | None = None, freq: str | None = None
+        self, window: int | None = None, freq: Freq | None = None
     ) -> TransformAccessor:
         """Cumulative change via compound product in rolling window.
 
@@ -67,25 +76,27 @@ class ChartingAccessor:
         return TransformAccessor(self._obj).diff(periods)
 
     def normalize(
-        self, base: int | None = None, base_date: str | None = None
+        self, base: float | None = None, base_date: str | None = None
     ) -> TransformAccessor:
         """Normalize series to a base value at a specific date.
 
         Args:
-            base: Base value for normalization. ``None`` uses config
-                ``transforms.normalize_base`` (default ``100``).
+            base: Base value for normalization, e.g. ``100`` or ``1.0``.
+                ``None`` uses config ``transforms.normalize_base``
+                (default ``100``).
             base_date: Reference date (parseable by ``pd.Timestamp``).
                 ``None`` uses the first non-NaN value.
         """
         return TransformAccessor(self._obj).normalize(base, base_date)
 
     def annualize(
-        self, periods: int | None = None, freq: str | None = None
+        self, periods: int | None = None, freq: Freq | None = None
     ) -> TransformAccessor:
         """Annualize periodic rate via compound interest.
 
         Args:
-            periods: Number of periods per year for compounding.
+            periods: Number of periods per year for compounding. Must be
+                positive, unlike the ``periods`` of ``diff()``.
                 Mutually exclusive with ``freq``.
             freq: Data frequency (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``,
                 ``'Y'``). Mutually exclusive with ``periods``.
@@ -109,7 +120,7 @@ class ChartingAccessor:
         self,
         window: int = 21,
         threshold: float = 5.0,
-        method: str = "median",
+        method: DespikeMethod = "median",
     ) -> TransformAccessor:
         """Detect and normalize aggressive data spikes (Hampel filter).
 
@@ -124,8 +135,8 @@ class ChartingAccessor:
 
     def resample(
         self,
-        freq: str = "month",
-        method: str = "last",
+        freq: ResampleFreq = "month",
+        method: ResampleMethod = "last",
     ) -> TransformAccessor:
         """Resample to a target frequency.
 
@@ -146,10 +157,12 @@ class ChartingAccessor:
         kind: ChartKind = "line",
         title: str | None = None,
         units: UnitFormat | None = None,
+        decimals: int | None = None,
         source: str | None = None,
         highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
         legend: bool | None = None,
+        figsize: tuple[float, float] | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
         xlim: AxisLimits | None = None,
@@ -157,10 +170,10 @@ class ChartingAccessor:
         grid: bool | None = None,
         tick_rotation: int | Literal["auto"] | None = None,
         tick_format: str | None = None,
-        tick_freq: str | None = None,
+        tick_freq: TickFreq | None = None,
         collision: bool = True,
         debug: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotResult:
         """Create standardized chart.
 
@@ -172,6 +185,9 @@ class ChartingAccessor:
             title: Title displayed above the chart.
             units: Y-axis formatting (``'BRL'``, ``'USD'``, ``'%'``,
                 ``'human'``, ``'points'``, etc.).
+            decimals: Decimal places for axis tick labels and highlight labels.
+                Overrides the formatter default. Has no effect when *units*
+                is ``None``.
             source: Data source for the footer. Overrides
                 ``branding.default_source`` from config when provided.
             highlight: Data point highlight. ``True`` or ``'last'`` highlights
@@ -182,6 +198,8 @@ class ChartingAccessor:
                 (e.g. ``'ath|Maximum'``).
             legend: ``None`` = auto (2+ labeled artists), ``True`` = force,
                 ``False`` = suppress.
+            figsize: Override figure size ``(width, height)`` in inches.
+                ``None`` uses ``layout.figsize`` from config.
             xlabel: X-axis label.
             ylabel: Y-axis label.
             xlim: X-axis limits as ``(min, max)``. Accepts strings
@@ -204,10 +222,12 @@ class ChartingAccessor:
             kind=kind,
             title=title,
             units=units,
+            decimals=decimals,
             source=source,
             highlight=highlight,
             metrics=metrics,
             legend=legend,
+            figsize=figsize,
             xlabel=xlabel,
             ylabel=ylabel,
             xlim=xlim,
@@ -223,23 +243,26 @@ class ChartingAccessor:
 
     def layer(
         self,
-        kind: ChartKind = "line",
         x: str | None = None,
         y: str | list[str] | None = None,
         *,
+        kind: ChartKind = "line",
         units: UnitFormat | None = None,
+        decimals: int | None = None,
         highlight: HighlightInput = False,
         metrics: str | list[str] | None = None,
         axis: AxisSide = "left",
-        **kwargs,
+        **kwargs: Any,
     ) -> Layer:
         """Create a Layer for use with ``compose()``.
 
         Args:
-            kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
             x: Column for the X axis. ``None`` uses the DataFrame index.
             y: Column(s) for the Y axis. ``None`` uses all numeric columns.
+            kind: Chart type (``'line'``, ``'bar'``, ``'area'``, etc.).
             units: Y-axis formatting (``'BRL'``, ``'USD'``, ``'%'``, etc.).
+            decimals: Decimal places for this layer's axis tick labels. Has no
+                effect when *units* is ``None``.
             highlight: Data point highlight mode(s).
             metrics: Declarative metric(s).
             axis: Which Y axis to use (``'left'`` or ``'right'``).
@@ -254,10 +277,11 @@ class ChartingAccessor:
 
         return create_layer(
             self._obj,
-            kind,
             x,
             y,
+            kind=kind,
             units=units,
+            decimals=decimals,
             highlight=highlight,
             metrics=metrics,
             axis=axis,

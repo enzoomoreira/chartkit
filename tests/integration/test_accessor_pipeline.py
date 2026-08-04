@@ -67,3 +67,43 @@ class TestAccessorPipeline:
         result = daily_prices.chartkit.plot(metrics=["ath"])
         assert isinstance(result, PlotResult)
         assert result.figure is not None
+
+
+class TestChartLevelOptionsReachTheChart:
+    """Options added in the API freeze must change the output, not just exist."""
+
+    @pytest.mark.parametrize(
+        "accessor",
+        ["plain", "transformed"],
+    )
+    def test_figsize_overrides_config(
+        self, accessor: str, monthly_rates: pd.DataFrame
+    ) -> None:
+        entry = (
+            monthly_rates.chartkit
+            if accessor == "plain"
+            else monthly_rates.chartkit.variation()
+        )
+        result = entry.plot(figsize=(4.0, 3.0))
+        assert tuple(result.figure.get_size_inches()) == (4.0, 3.0)
+
+    @pytest.mark.parametrize("accessor", ["plain", "transformed"])
+    def test_decimals_reaches_the_formatter(
+        self, accessor: str, monthly_rates: pd.DataFrame
+    ) -> None:
+        entry = (
+            monthly_rates.chartkit
+            if accessor == "plain"
+            else monthly_rates.chartkit.variation()
+        )
+        result = entry.plot(units="%", decimals=3)
+        formatted = result.axes.yaxis.get_major_formatter()(1.23456)
+        assert formatted == "1,235%"
+
+    def test_layer_carries_decimals_to_its_axis(
+        self, monthly_rates: pd.DataFrame
+    ) -> None:
+        from chartkit import compose
+
+        result = compose(monthly_rates[["cdi"]].chartkit.layer(units="%", decimals=3))
+        assert result.axes.yaxis.get_major_formatter()(1.23456) == "1,235%"

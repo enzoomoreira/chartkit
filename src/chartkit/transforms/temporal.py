@@ -11,7 +11,7 @@ All functions follow the contract:
 from __future__ import annotations
 
 import logging
-from typing import overload
+from typing import get_args, overload
 
 import numpy as np
 import pandas as pd
@@ -34,6 +34,7 @@ from ._validation import (
     validate_numeric,
     validate_params,
 )
+from .types import DespikeMethod, Freq, Horizon, ResampleFreq, ResampleMethod
 
 logger = logging.getLogger(__name__)
 
@@ -54,28 +55,28 @@ __all__ = [
 # variation -- percentage change by horizon
 # ---------------------------------------------------------------------------
 
-_VALID_HORIZONS = {"month", "year"}
+_VALID_HORIZONS = frozenset(get_args(Horizon))
 
 
 @overload
 def variation(
     df: pd.DataFrame,
-    horizon: str = "month",
+    horizon: Horizon = "month",
     periods: int | None = None,
-    freq: str | None = None,
+    freq: Freq | None = None,
 ) -> pd.DataFrame: ...
 @overload
 def variation(
     df: pd.Series,
-    horizon: str = "month",
+    horizon: Horizon = "month",
     periods: int | None = None,
-    freq: str | None = None,
+    freq: Freq | None = None,
 ) -> pd.Series: ...
 def variation(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
-    horizon: str = "month",
+    horizon: Horizon = "month",
     periods: int | None = None,
-    freq: str | None = None,
+    freq: Freq | None = None,
 ) -> pd.DataFrame | pd.Series:
     """Percentage change between periods.
 
@@ -90,7 +91,10 @@ def variation(
             and ``'year'`` compares with the same month of the prior year (periods=12).
             For quarterly/annual data, ``'month'`` compares with the prior period
             (period-over-period).
-        periods: Explicit override of the number of periods.
+        periods: Explicit override of the number of periods. Must be
+            positive: a negative lookback would compare each point with
+            a future one. ``diff()`` does accept negatives, because
+            there the sign chooses the direction of the difference.
             Mutually exclusive with ``freq``.
         freq: Data frequency (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
             Mutually exclusive with ``periods``.
@@ -129,16 +133,16 @@ def variation(
 
 @overload
 def accum(
-    df: pd.DataFrame, window: int | None = None, freq: str | None = None
+    df: pd.DataFrame, window: int | None = None, freq: Freq | None = None
 ) -> pd.DataFrame: ...
 @overload
 def accum(
-    df: pd.Series, window: int | None = None, freq: str | None = None
+    df: pd.Series, window: int | None = None, freq: Freq | None = None
 ) -> pd.Series: ...
 def accum(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
     window: int | None = None,
-    freq: str | None = None,
+    freq: Freq | None = None,
 ) -> pd.DataFrame | pd.Series:
     """Cumulative change via compound product in rolling window.
 
@@ -219,18 +223,18 @@ def diff(
 @overload
 def normalize(
     df: pd.DataFrame,
-    base: int | None = None,
+    base: float | None = None,
     base_date: str | None = None,
 ) -> pd.DataFrame: ...
 @overload
 def normalize(
     df: pd.Series,
-    base: int | None = None,
+    base: float | None = None,
     base_date: str | None = None,
 ) -> pd.Series: ...
 def normalize(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
-    base: int | None = None,
+    base: float | None = None,
     base_date: str | None = None,
 ) -> pd.DataFrame | pd.Series:
     """Normalize series to a base value.
@@ -318,16 +322,16 @@ def normalize(
 
 @overload
 def annualize(
-    df: pd.DataFrame, periods: int | None = None, freq: str | None = None
+    df: pd.DataFrame, periods: int | None = None, freq: Freq | None = None
 ) -> pd.DataFrame: ...
 @overload
 def annualize(
-    df: pd.Series, periods: int | None = None, freq: str | None = None
+    df: pd.Series, periods: int | None = None, freq: Freq | None = None
 ) -> pd.Series: ...
 def annualize(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
     periods: int | None = None,
-    freq: str | None = None,
+    freq: Freq | None = None,
 ) -> pd.DataFrame | pd.Series:
     """Annualize periodic rate via compound interest.
 
@@ -339,7 +343,8 @@ def annualize(
 
     Args:
         df: Input data (rates in percentage).
-        periods: Number of periods per year for compounding.
+        periods: Number of periods per year for compounding. Must be
+            positive, unlike the ``periods`` of ``diff()``.
             Mutually exclusive with ``freq``.
         freq: Data frequency (``'D'``, ``'B'``, ``'W'``, ``'M'``, ``'Q'``, ``'Y'``).
             Mutually exclusive with ``periods``.
@@ -461,20 +466,20 @@ def despike(
     df: pd.DataFrame,
     window: int = 21,
     threshold: float = 5.0,
-    method: str = "median",
+    method: DespikeMethod = "median",
 ) -> pd.DataFrame: ...
 @overload
 def despike(
     df: pd.Series,
     window: int = 21,
     threshold: float = 5.0,
-    method: str = "median",
+    method: DespikeMethod = "median",
 ) -> pd.Series: ...
 def despike(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
     window: int = 21,
     threshold: float = 5.0,
-    method: str = "median",
+    method: DespikeMethod = "median",
 ) -> pd.DataFrame | pd.Series:
     """Detect and normalize aggressive data spikes using a Hampel filter.
 
@@ -576,13 +581,17 @@ _RESAMPLE_OFFSETS: dict[str, str] = {
 
 
 @overload
-def resample(df: pd.DataFrame, freq: str = ..., method: str = ...) -> pd.DataFrame: ...
+def resample(
+    df: pd.DataFrame, freq: ResampleFreq = ..., method: ResampleMethod = ...
+) -> pd.DataFrame: ...
 @overload
-def resample(df: pd.Series, freq: str = ..., method: str = ...) -> pd.Series: ...
+def resample(
+    df: pd.Series, freq: ResampleFreq = ..., method: ResampleMethod = ...
+) -> pd.Series: ...
 def resample(
     df: pd.DataFrame | pd.Series | dict | list | np.ndarray,
-    freq: str = "month",
-    method: str = "last",
+    freq: ResampleFreq = "month",
+    method: ResampleMethod = "last",
 ) -> pd.DataFrame | pd.Series:
     """Resample temporal data to a target frequency.
 

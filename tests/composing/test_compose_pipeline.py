@@ -145,30 +145,37 @@ class TestAxisFormatter:
     def test_none_units_does_nothing(self) -> None:
         _, ax = plt.subplots()
         applied: dict = {"left": None, "right": None}
-        _apply_axis_formatter(ax, "left", None, applied)
+        _apply_axis_formatter(ax, "left", None, None, applied)
         assert applied["left"] is None
 
     def test_valid_units_applied(self) -> None:
         _, ax = plt.subplots()
         applied: dict = {"left": None, "right": None}
-        _apply_axis_formatter(ax, "left", "%", applied)
-        assert applied["left"] == "%"
+        _apply_axis_formatter(ax, "left", "%", None, applied)
+        assert applied["left"] == ("%", None)
 
     def test_conflicting_units_keeps_first(self) -> None:
         _, ax = plt.subplots()
         applied: dict = {"left": None, "right": None}
-        _apply_axis_formatter(ax, "left", "BRL", applied)
+        _apply_axis_formatter(ax, "left", "BRL", None, applied)
         with pytest.warns(RenderingWarning, match="Conflicting units"):
-            _apply_axis_formatter(ax, "left", "USD", applied)
-        assert applied["left"] == "BRL"
+            _apply_axis_formatter(ax, "left", "USD", None, applied)
+        assert applied["left"] == ("BRL", None)
 
     def test_left_and_right_independent(self) -> None:
         _, ax = plt.subplots()
         applied: dict = {"left": None, "right": None}
-        _apply_axis_formatter(ax, "left", "%", applied)
-        _apply_axis_formatter(ax, "right", "BRL", applied)
-        assert applied["left"] == "%"
-        assert applied["right"] == "BRL"
+        _apply_axis_formatter(ax, "left", "%", None, applied)
+        _apply_axis_formatter(ax, "right", "BRL", None, applied)
+        assert applied["left"] == ("%", None)
+        assert applied["right"] == ("BRL", None)
+
+    def test_decimals_travel_with_units(self) -> None:
+        _, ax = plt.subplots()
+        applied: dict = {"left": None, "right": None}
+        _apply_axis_formatter(ax, "left", "%", 2, applied)
+        assert applied["left"] == ("%", 2)
+        assert ax.yaxis.get_major_formatter()(1.234) == "1,23%"
 
 
 # ---------------------------------------------------------------------------

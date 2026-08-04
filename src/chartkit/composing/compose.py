@@ -10,12 +10,12 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from .._internal import (
-    FORMATTERS,
     apply_legend,
     create_figure,
     draw_composed_debug_overlay,
     extract_plot_data,
     finalize_chart,
+    get_formatter,
     normalize_highlight,
     register_artist_obstacle,
     resolve_composed_collisions,
@@ -23,7 +23,7 @@ from .._internal import (
     validate_plot_params,
 )
 from .._internal.collision import clear_axes_state
-from .._internal.plot_validation import AxisLimits
+from .._internal.plot_validation import AxisLimits, TickFreq
 from ..charts import ChartRenderer
 from ..charts._classification import get_kind_caps, resolve_kind_alias
 from ..exceptions import ValidationError
@@ -54,7 +54,7 @@ class _ComposePlotter:
 def _validate_layers(
     layers: tuple[Layer, ...],
     legend: bool | None,
-    tick_freq: str | None = None,
+    tick_freq: TickFreq | None = None,
 ) -> None:
     validate_plot_params(units=None, legend=legend, tick_freq=tick_freq)
 
@@ -81,20 +81,22 @@ def _apply_axis_formatter(
     ax: Axes,
     side: AxisSide,
     units: UnitFormat | None,
-    applied: dict[AxisSide, UnitFormat | None],
+    decimals: int | None,
+    applied: dict[AxisSide, tuple[UnitFormat, int | None] | None],
 ) -> None:
     if units is None:
         return
-    if applied[side] is not None:
-        if applied[side] != units:
+    current = applied[side]
+    if current is not None:
+        if current != (units, decimals):
             warn(
-                f"Conflicting units on {side} axis: '{applied[side]}' vs "
-                f"'{units}'. Keeping '{applied[side]}'.",
+                f"Conflicting units on {side} axis: '{current[0]}' vs "
+                f"'{units}'. Keeping '{current[0]}'.",
                 RenderingWarning,
             )
         return
-    ax.yaxis.set_major_formatter(FORMATTERS[units]())
-    applied[side] = units
+    ax.yaxis.set_major_formatter(get_formatter(units, decimals))
+    applied[side] = (units, decimals)
 
 
 def _render_layer(
@@ -125,7 +127,7 @@ def compose(
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,
-    tick_freq: str | None = None,
+    tick_freq: TickFreq | None = None,
     collision: bool = True,
     debug: bool = False,
 ) -> PlotResult:
@@ -156,6 +158,12 @@ def compose(
 
     Raises:
         ValidationError: No layers provided or all layers on right axis.
+
+    Note:
+        Tick locating and formatting are driven by the **first** layer's X data
+        alone. Layers sharing an axis are expected to span a comparable range;
+        when they do not, matplotlib still autoscales the axis to fit them all,
+        but the tick spacing is chosen for the first layer.
     """
     _validate_layers(layers, legend, tick_freq=tick_freq)
 
@@ -179,7 +187,7 @@ def compose(
 
         try:
             # 3. Apply formatters and render layers
-            applied_units: dict[AxisSide, UnitFormat | None] = {
+            applied_units: dict[AxisSide, tuple[UnitFormat, int | None] | None] = {
                 "left": None,
                 "right": None,
             }
@@ -190,7 +198,9 @@ def compose(
             first_x_data: pd.Index | pd.Series | None = None
             for layer in layers:
                 ax = axes_map[layer.axis]
-                _apply_axis_formatter(ax, layer.axis, layer.units, applied_units)
+                _apply_axis_formatter(
+                    ax, layer.axis, layer.units, layer.decimals, applied_units
+                )
 
                 x_data, y_data = extract_plot_data(layer.df, layer.x, layer.y)
                 if first_x_data is None:

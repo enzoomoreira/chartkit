@@ -21,35 +21,24 @@ __all__ = [
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, PositiveInt, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    PositiveFloat,
+    PositiveInt,
+    ValidationError,
+    model_validator,
+)
 
 from .._internal.frequency import FREQ_ALIASES, infer_freq, normalize_freq_code
 from ..exceptions import TransformError
 from ..warnings import DataMutationWarning, InferenceWarning, warn
+from .types import DespikeMethod, Freq, ResampleFreq, ResampleMethod
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Types
 # ---------------------------------------------------------------------------
-
-FreqLiteral = Literal[
-    "D",
-    "B",
-    "W",
-    "M",
-    "Q",
-    "Y",
-    "BME",
-    "BMS",
-    "daily",
-    "business",
-    "weekly",
-    "monthly",
-    "quarterly",
-    "yearly",
-    "annual",
-]
 
 TransformName = Literal["month", "year", "accum", "annualize"]
 
@@ -87,7 +76,7 @@ class _FreqResolvedParams(BaseModel):
     """Validation for transforms that resolve periods via frequency (variation, annualize)."""
 
     periods: PositiveInt | None = None
-    freq: FreqLiteral | None = None
+    freq: Freq | None = None
 
     @model_validator(mode="after")
     def _periods_xor_freq(self) -> _FreqResolvedParams:
@@ -100,7 +89,7 @@ class _RollingParams(BaseModel):
     """Validation for accum."""
 
     window: PositiveInt | None = None
-    freq: FreqLiteral | None = None
+    freq: Freq | None = None
 
     @model_validator(mode="after")
     def _window_xor_freq(self) -> _RollingParams:
@@ -110,9 +99,13 @@ class _RollingParams(BaseModel):
 
 
 class _NormalizeParams(BaseModel):
-    """Validation for normalize."""
+    """Validation for normalize.
 
-    base: PositiveInt | None = None
+    ``base`` is a float so a series can be rebased to 1.0 -- the convention for
+    index/multiple charts -- as well as to the usual 100.
+    """
+
+    base: PositiveFloat | None = None
     base_date: str | None = None
 
 
@@ -145,7 +138,7 @@ class _DespikeParams(BaseModel):
 
     window: PositiveInt = 21
     threshold: float = 5.0
-    method: Literal["median", "interpolate"] = "median"
+    method: DespikeMethod = "median"
 
     @model_validator(mode="after")
     def _validate(self) -> _DespikeParams:
@@ -160,26 +153,11 @@ class _DespikeParams(BaseModel):
         return self
 
 
-ResampleFreq = Literal[
-    "day",
-    "D",
-    "week",
-    "W",
-    "month",
-    "M",
-    "quarter",
-    "Q",
-    "year",
-    "Y",
-    "annual",
-]
-
-
 class _ResampleParams(BaseModel):
     """Validation for resample."""
 
     freq: ResampleFreq = "month"
-    method: Literal["last", "first", "mean", "sum"] = "last"
+    method: ResampleMethod = "last"
 
 
 # ---------------------------------------------------------------------------
