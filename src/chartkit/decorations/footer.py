@@ -3,6 +3,10 @@ from matplotlib.figure import Figure
 from ..settings import get_config
 from ..styling.theme import theme
 
+# Trimmed from both ends of the formatted footer. Templates join their fields
+# with punctuation, so an empty field leaves the separator behind.
+_DANGLING = " ,;|-–—/"  # noqa: RUF001 - the dashes are data, not prose
+
 
 def add_footer(fig: Figure, source: str | None = None) -> None:
     """Add standard footer to the chart, aligned with the left edge of the axes.
@@ -31,6 +35,10 @@ def add_footer(fig: Figure, source: str | None = None) -> None:
         footer_text = branding.footer_format_no_source.format(
             company_name=branding.company_name,
         )
+
+    # ``company_name`` defaults to empty, which turns the default template
+    # into "Fonte: Bloomberg, " -- a separator pointing at nothing.
+    footer_text = footer_text.strip(_DANGLING)
 
     # Align with left edge of axes (chart area)
     x_pos = fig.axes[0].get_position().x0 if fig.axes else 0.01
