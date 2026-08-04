@@ -26,6 +26,7 @@ __all__ = [
     "FrequencyDetectionConfig",
     "BarsConfig",
     "BandsConfig",
+    "FillsConfig",
     "MarkersConfig",
     "CollisionConfig",
     "TicksConfig",
@@ -270,6 +271,18 @@ class BandsConfig(BaseModel):
     alpha: float = 0.15
 
 
+class FillsConfig(BaseModel):
+    """Opacity of filled chart bodies.
+
+    Attributes:
+        area_alpha: Fill opacity for ``kind='area'``.
+        violin_alpha: Body opacity for ``kind='violinplot'``.
+    """
+
+    area_alpha: float = Field(default=0.3, ge=0.0, le=1.0)
+    violin_alpha: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
 class MarkersConfig(BaseModel):
     """Data point highlight marker configuration.
 
@@ -419,6 +432,7 @@ class ChartingConfig(BaseSettings):
     lines: LinesConfig = Field(default_factory=LinesConfig)
     bars: BarsConfig = Field(default_factory=BarsConfig)
     bands: BandsConfig = Field(default_factory=BandsConfig)
+    fills: FillsConfig = Field(default_factory=FillsConfig)
     markers: MarkersConfig = Field(default_factory=MarkersConfig)
     collision: CollisionConfig = Field(default_factory=CollisionConfig)
     transforms: TransformsConfig = Field(default_factory=TransformsConfig)

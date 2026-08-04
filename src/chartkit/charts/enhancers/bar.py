@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -21,8 +20,6 @@ from .._helpers import (
     validate_y_origin,
 )
 from ..renderer import ChartRenderer
-
-logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ...overlays import HighlightMode
@@ -162,10 +159,14 @@ def plot_barh(
     Semantics are inverted vs ``bar``: the Y axis holds categories/positions,
     the X axis holds values. ``y_origin`` controls the X-axis origin.
 
+    ``highlight`` is rejected upstream by ``KindCaps`` -- the markers place
+    themselves against a vertical value axis, which ``barh`` does not have.
+
     Keyword Args:
         sort: ``None``, ``'ascending'`` or ``'descending'``. Single-column only.
         color: Explicit color or ``'cycle'`` to cycle theme colors per bar.
     """
+    del highlight
     y_origin = validate_y_origin(y_origin)
     sort = kwargs.pop("sort", None)
     multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
@@ -239,6 +240,3 @@ def plot_barh(
         all_vals = vals
 
     apply_y_origin(ax, y_origin, all_vals, bars.auto_margin, axis="x")
-
-    if highlight:
-        logger.debug("barh: highlight not supported for horizontal bars, skipping")

@@ -98,12 +98,47 @@ class TestValidateKind:
         ChartRenderer.validate_kind("scatter")
 
     def test_private_method_raises(self) -> None:
-        with pytest.raises(ValidationError, match="not a valid"):
+        with pytest.raises(ValidationError, match="not a supported chart type"):
             ChartRenderer.validate_kind("_internal")
 
     def test_nonexistent_method_raises(self) -> None:
-        with pytest.raises(ValidationError, match="not a valid"):
+        with pytest.raises(ValidationError, match="not a supported chart type"):
             ChartRenderer.validate_kind("totally_fake_method_xyz")
+
+    @pytest.mark.parametrize(
+        "kind", ["clear", "set_title", "grid", "legend", "twinx", "remove"]
+    )
+    def test_non_plotting_axes_methods_raise(self, kind: str) -> None:
+        """An Axes method that is not a chart type must not reach matplotlib."""
+        with pytest.raises(ValidationError, match="not a supported chart type"):
+            ChartRenderer.validate_kind(kind)
+
+    @pytest.mark.parametrize(
+        "kind", ["hlines", "vlines", "psd", "acorr", "hexbin", "broken_barh"]
+    )
+    def test_incompatible_signature_kinds_raise(self, kind: str) -> None:
+        """Plotting methods that do not take ``(x, y)`` are rejected up front."""
+        with pytest.raises(ValidationError, match="not a supported chart type"):
+            ChartRenderer.validate_kind(kind)
+
+    def test_error_lists_the_available_kinds(self) -> None:
+        with pytest.raises(ValidationError) as excinfo:
+            ChartRenderer.validate_kind("nope")
+        for kind in ("line", "bar", "scatter", "pie"):
+            assert kind in str(excinfo.value)
+
+    @pytest.mark.parametrize("kind", ChartRenderer.available())
+    def test_every_available_kind_renders(
+        self, kind: str, monthly_rates: pd.DataFrame
+    ) -> None:
+        """``available()`` is a promise: each kind must produce a chart."""
+        result = monthly_rates[["cdi"]].chartkit.plot(kind=kind)
+        try:
+            axes = result.axes
+            drawn = len(axes.lines) + len(axes.patches) + len(axes.collections)
+            assert drawn > 0, f"kind '{kind}' rendered nothing"
+        finally:
+            result.close()
 
 
 # ---------------------------------------------------------------------------

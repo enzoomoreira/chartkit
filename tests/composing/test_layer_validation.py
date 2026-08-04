@@ -14,7 +14,7 @@ class TestCreateLayerValidation:
 
     def test_invalid_kind_raises(self) -> None:
         df = pd.DataFrame({"a": [1, 2, 3]})
-        with pytest.raises(ValidationError, match="not a valid matplotlib"):
+        with pytest.raises(ValidationError, match="not a supported chart type"):
             create_layer(df, kind="invalid")  # type: ignore[arg-type]
 
     def test_invalid_axis_raises(self) -> None:

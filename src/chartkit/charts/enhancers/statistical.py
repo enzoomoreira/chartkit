@@ -56,6 +56,7 @@ def plot_violinplot(
     via ``set_facecolor()`` / ``set_edgecolor()``.
     """
     ctx = prepare_render_context(y_data, kwargs)
+    alpha = kwargs.pop("alpha", ctx.config.fills.violin_alpha)
 
     cols = ctx.y_data.columns.tolist()
     arrays = [ctx.y_data[col].dropna().values for col in cols]
@@ -67,7 +68,7 @@ def plot_violinplot(
         c = resolve_color(ctx, i)
         body.set_facecolor(c)
         body.set_edgecolor(c)
-        body.set_alpha(0.7)
+        body.set_alpha(alpha)
         body.set_zorder(ctx.zorder)
 
     positions = list(range(1, len(cols) + 1))

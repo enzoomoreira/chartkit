@@ -61,6 +61,25 @@ class ChartRenderer:
         "spy": "spy requires 2D sparse matrix data",
     }
 
+    # Axes methods the generic path can drive with the ``(x, y_series)`` calling
+    # convention.  Anything outside this set either takes a different signature
+    # (``hlines``, ``psd``) or is not a plotting method at all (``clear``,
+    # ``set_title``) -- both used to surface as a raw matplotlib TypeError.
+    # Enhancer-backed kinds are validated by registration, not by this set.
+    _GENERIC_KINDS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "plot",
+            "scatter",
+            "step",
+            "errorbar",
+            "fill",
+            "fill_betweenx",
+            "loglog",
+            "semilogx",
+            "semilogy",
+        }
+    )
+
     _KIND_DEFAULTS: ClassVar[dict[str, Callable[..., dict[str, Any]]]] = {
         "plot": lambda config: {"linewidth": config.lines.main_width},
     }
@@ -174,19 +193,16 @@ class ChartRenderer:
 
     @classmethod
     def _validate_kind(cls, kind: str) -> None:
-        """Validate that ``ax.{kind}`` exists as a callable on Axes."""
+        """Validate that *kind* is a chart type the generic path can render."""
         if kind in cls._UNSUPPORTED_KINDS:
             raise ValidationError(
                 f"Chart kind '{kind}' is not supported: {cls._UNSUPPORTED_KINDS[kind]}."
             )
-        if kind.startswith("_"):
+        if kind not in cls._GENERIC_KINDS:
+            available = ", ".join(cls.available())
             raise ValidationError(
-                f"Chart kind '{kind}' is not a valid matplotlib Axes method."
-            )
-        method = getattr(Axes, kind, None)
-        if method is None or not callable(method):
-            raise ValidationError(
-                f"Chart kind '{kind}' is not a valid matplotlib Axes method."
+                f"Chart kind '{kind}' is not a supported chart type. "
+                f"Available: {available}."
             )
 
     @classmethod
@@ -199,5 +215,9 @@ class ChartRenderer:
 
     @classmethod
     def available(cls) -> list[str]:
-        """Return registered enhancer names (generic kinds are open-ended)."""
-        return sorted(cls._enhancers.keys())
+        """Return every kind that can be rendered, including user-facing aliases."""
+        canonical = set(cls._enhancers) | cls._GENERIC_KINDS
+        aliases = {
+            alias for alias, target in cls._ALIASES.items() if target in canonical
+        }
+        return sorted(canonical | aliases)

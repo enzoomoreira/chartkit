@@ -48,7 +48,7 @@ _CAPS: dict[str, KindCaps] = {
     "scatter":      KindCaps("series", highlight=True,  temporal_metrics=True,  all_metrics=True,  composable=True),
     "step":         KindCaps("series", highlight=True,  temporal_metrics=True,  all_metrics=True,  composable=True),
     "bar":          KindCaps("series", highlight=True,  temporal_metrics=True,  all_metrics=True,  composable=True),
-    "barh":         KindCaps("series", highlight=True,  temporal_metrics=True,  all_metrics=True,  composable=True),
+    "barh":         KindCaps("series", highlight=False, temporal_metrics=True,  all_metrics=True,  composable=True),
     "stacked_bar":  KindCaps("series", highlight=True,  temporal_metrics=True,  all_metrics=True,  composable=True),
     "fill_between": KindCaps("series", highlight=True,  temporal_metrics=True,  all_metrics=True,  composable=True),
     "stackplot":    KindCaps("series", highlight=False, temporal_metrics=True,  all_metrics=True,  composable=True),

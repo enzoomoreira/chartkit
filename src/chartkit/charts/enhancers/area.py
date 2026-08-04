@@ -34,7 +34,7 @@ def plot_area(
     For stacked areas use ``kind='stackplot'`` instead.
     """
     ctx = prepare_render_context(y_data, kwargs)
-    alpha = kwargs.pop("alpha", 0.3)
+    alpha = kwargs.pop("alpha", ctx.config.fills.area_alpha)
 
     if ctx.y_data.shape[1] == 2:
         _fill_between_pair(ax, x, ctx, alpha, **kwargs)

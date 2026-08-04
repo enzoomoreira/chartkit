@@ -45,5 +45,8 @@ def plot_pie(
     c = [resolve_color(ctx, i) for i in range(len(vals))]
     labels = [str(label) for label in x]
 
-    ax.pie(vals, labels=labels, colors=c, **kwargs)
+    # ax.pie() takes no zorder of its own, so honour the context on the wedges.
+    wedges = ax.pie(vals, labels=labels, colors=c, **kwargs)[0]
+    for wedge in wedges:
+        wedge.set_zorder(ctx.zorder)
     ax.set_aspect("equal")
