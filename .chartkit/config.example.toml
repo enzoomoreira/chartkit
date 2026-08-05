@@ -170,10 +170,14 @@ axis = "both"         # "x", "y", ou "both"
 # monthly_threshold = 25   # Dias entre pontos para considerar mensal
 # annual_threshold = 300
 
-# --- Bandas e marcadores -----------------------------------------------------
+# --- Bandas, preenchimentos e marcadores -------------------------------------
 
 # [bands]
 # alpha = 0.15
+
+# [fills]
+# area_alpha = 0.3      # Opacidade do preenchimento de kind='area'
+# violin_alpha = 0.7    # Opacidade do corpo de kind='violinplot'
 
 # [markers]
 # scatter_size = 30

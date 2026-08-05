@@ -122,6 +122,10 @@ std_band_full_format = "DP({deviations})"         # Full-series mode label
 [bands]
 alpha = 0.15
 
+[fills]
+area_alpha = 0.3     # Opacity of kind='area' fills
+violin_alpha = 0.7   # Opacity of kind='violinplot' bodies
+
 [collision]
 movement = "y"
 obstacle_padding_px = 8.0

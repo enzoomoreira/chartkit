@@ -59,13 +59,15 @@ If `y` is not specified, all numeric columns will be plotted.
 |-----------|------|---------|-------------|
 | `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the DataFrame index |
 | `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses all numeric columns |
-| `kind` | `ChartKind` | `"line"` | Chart type: `"line"`, `"bar"`, `"barh"`, `"stacked_bar"`, `"area"`, `"hist"`, `"pie"`, `"scatter"`, `"step"`, `"stem"`, `"stairs"`, `"boxplot"`, `"violinplot"`, `"ecdf"`, `"eventplot"`, `"stackplot"`, or any valid matplotlib Axes method |
+| `kind` | `ChartKind` | `"line"` | Chart type. See [Supported Kinds](#supported-kinds) for the full list |
 | `title` | `str \| None` | `None` | Chart title |
 | `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see [Formatters](#formatters-table)) |
+| `decimals` | `int \| None` | `None` | Decimal places for tick and highlight labels. Overrides the formatter default. No effect when `units` is `None` |
 | `source` | `str \| None` | `None` | Data source for footer |
 | `highlight` | `HighlightInput` | `False` | Highlight mode(s): `True`, `'last'`, `'max'`, `'min'`, `'all'`, or a list |
 | `metrics` | `str \| list[str] \| None` | `None` | Declarative metrics (see [Metrics Guide](metrics.md)) |
 | `legend` | `bool \| None` | `None` | `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `figsize` | `tuple[float, float] \| None` | `None` | Figure size `(width, height)` in inches. `None` uses `layout.figsize` from config |
 | `xlabel` | `str \| None` | `None` | X-axis label |
 | `ylabel` | `str \| None` | `None` | Y-axis label |
 | `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
@@ -73,7 +75,7 @@ If `y` is not specified, all numeric columns will be plotted.
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| "auto" \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
-| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config. See [Smart Tick Alignment](#smart-tick-alignment) |
+| `tick_freq` | `TickFreq \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config. See [Smart Tick Alignment](#smart-tick-alignment) |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Show collision debug overlay (see [Collision Guide](collision.md)) |
 | `**kwargs` | - | - | Chart-specific args (e.g., `sort`, `color`, `y_origin` for bars) |
@@ -304,7 +306,26 @@ For stacked areas use `kind='stackplot'` instead.
 
 ## Other Chart Types
 
-chartkit supports many additional chart types through registered enhancers and generic rendering. Any valid matplotlib Axes method can be used as `kind`.
+chartkit supports many additional chart types through registered enhancers and generic rendering.
+
+### Supported Kinds
+
+`kind` accepts one of the 24 kinds below. Anything else raises `ValidationError` listing the
+available options -- the check happens before rendering starts, so an unsupported kind never
+reaches matplotlib as a confusing `TypeError`.
+
+```python
+from chartkit.charts import ChartRenderer
+
+ChartRenderer.available()
+# ['area', 'bar', 'barh', 'boxplot', 'ecdf', 'errorbar', 'eventplot', 'fill',
+#  'fill_between', 'fill_betweenx', 'hist', 'line', 'loglog', 'pie', 'plot',
+#  'scatter', 'semilogx', 'semilogy', 'stacked_bar', 'stackplot', 'stairs',
+#  'stem', 'step', 'violinplot']
+```
+
+`line` is an alias for `plot` and `area` is an alias for `fill_between`. Registering an
+enhancer with `ChartRenderer.register_enhancer` adds a kind to this list.
 
 ### Enhancers (Specialized Handling)
 
@@ -338,7 +359,9 @@ df.chartkit.plot(kind='boxplot', title="Distribution by Column")
 
 ### Generic Rendering
 
-Any matplotlib Axes method not listed above works automatically:
+These kinds have no enhancer -- they are driven straight through `ax.{kind}(x, y_series)`:
+
+`plot`, `scatter`, `step`, `errorbar`, `fill`, `fill_betweenx`, `loglog`, `semilogx`, `semilogy`
 
 ```python
 df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
@@ -347,11 +370,19 @@ df.chartkit.plot(kind='step', where='mid')
 
 Extra `**kwargs` are passed directly to the matplotlib method.
 
-### Unsupported Kinds
+### Rejected Kinds
 
-Chart kinds that require 2D grid data or vector fields are explicitly blocked with descriptive error messages:
+Two groups are refused, both before any rendering happens:
+
+**2D grid data and vector fields** get a dedicated message explaining the mismatch, because the
+name is plausible but a DataFrame of series is the wrong input shape:
 
 `imshow`, `contour`, `contourf`, `pcolormesh`, `quiver`, `streamplot`, `barbs`, `spy`
+
+**Everything else** gets the generic "not a supported chart type" error with the available list.
+This covers matplotlib methods that take a different signature (`hlines`, `psd`, `hexbin`) as
+well as `Axes` methods that do not plot at all (`clear`, `set_title`, `twinx`) -- both used to
+surface as a raw matplotlib error mentioning arguments the caller never passed.
 
 ---
 
@@ -422,6 +453,39 @@ The `human` format is similar to `BRL_compact`, but without the currency symbol.
 | `'x'` | Multiplier | 12,3x |
 
 Currency formatters use the [Babel](https://babel.pocoo.org/) library and support any ISO 4217 currency code.
+
+### Decimal Places
+
+Each formatter carries a default -- one place for `%`, `human` and `x`, none for `points`.
+`decimals` overrides it for both the axis ticks and the highlight labels, so the two never
+disagree:
+
+```python
+# 10,5% by default
+df.chartkit.plot(units='%')
+
+# 10,47% -- basis-point precision for a rate series
+df.chartkit.plot(units='%', decimals=2)
+
+# R$ 1,23 bi instead of R$ 1,2 bi
+df.chartkit.plot(units='BRL_compact', decimals=2)
+```
+
+| Units | Honours `decimals` |
+|-------|--------------------|
+| `'%'`, `'human'`, `'points'`, `'x'` | Yes |
+| `'BRL_compact'`, `'USD_compact'` | Yes, as the fraction digits of the compact suffix |
+| `'BRL'`, `'USD'` | **No** -- Babel derives the digit count from the currency (two for both) |
+
+`decimals` also has no effect when `units` is `None`, since there is no formatter to configure.
+In `compose()` it belongs to the layer, next to the `units` it refines:
+
+```python
+compose(
+    revenue.chartkit.layer(units='BRL_compact'),
+    margin.chartkit.layer(units='%', decimals=2, axis='right'),
+)
+```
 
 ---
 

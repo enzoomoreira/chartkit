@@ -1,5 +1,22 @@
 # Project Changelog
 
+## [2026-08-04 22:02]
+### Changed
+- **BREAKING -- `layer()` reordenado para espelhar `plot()`**: A ordem posicional passou de `(kind, x, y)` para `(x, y)` com `kind` keyword-only. `layer('data', 'valor')` agora seleciona as mesmas colunas que `plot('data', 'valor')`. Chamadas que passavam `kind` posicionalmente precisam usar `kind=`
+- **BREAKING -- `kind` validado contra allowlist**: A validacao aceitava qualquer atributo chamavel de `Axes`; apenas 9 kinds genericos funcionam de fato pela convencao `(x, y_series)`. Metodos com assinatura incompativel (`hlines`, `psd`, `hexbin`) e metodos que nao plotam (`clear`, `set_title`, `twinx`) agora levantam `ValidationError` listando os kinds disponiveis, em vez de vazar um `TypeError` cru do matplotlib
+- **BREAKING -- `barh` rejeita `highlight`**: `KindCaps` declarava `highlight=True` mas o enhancer descartava o parametro silenciosamente. A capability foi alinhada ao comportamento -- os marcadores se posicionam contra um eixo vertical de valores, que `barh` nao possui
+- **`normalize(base=)` aceita `float`**: Era `PositiveInt`, o que impedia rebasear para `1.0` -- convencao para graficos de indice e multiplo
+- **Tipos dos transforms expostos como `Literal`**: `horizon`, `freq`, `method` deixam de ser `str` nas assinaturas publicas (`chartkit.transforms.types`), dando autocomplete e checagem estatica dos valores que os validadores ja exigiam em runtime
+- **`tick_freq` anotado como `TickFreq`**: Era `str` nas fachadas, embora `plot_validation` ja restringisse os valores
+
+### Added
+- **`decimals` e `figsize` nas fachadas publicas**: `decimals` existia so em `ChartingPlotter.plot`; `figsize` so em `compose()`. Ambos agora aparecem em `plot()` dos dois accessors, e `decimals` tambem no `Layer` -- ao lado do `units` que ele refina, ja que cada eixo e formatado independentemente
+- **`FillsConfig`**: `fills.area_alpha` (default `0.3`) e `fills.violin_alpha` (default `0.7`) tornam configuraveis opacidades antes hardcoded nos enhancers
+- **`ChartKind` como `Literal | str`**: 24 kinds conhecidos ganham autocomplete sem fechar o tipo para enhancers registrados pelo usuario
+- **`tests/test_api_parity.py`**: Compara nome, ordem, default e anotacao entre as tres copias de `plot()` e as duas de `layer()`, e verifica por sentinela que todo parametro aceito chega de fato ao engine. Um parametro que existe na assinatura mas nunca e repassado agora quebra o build
+- **Validacao de `highlight` na construcao do `Layer`**: Modos invalidos eram descobertos so no meio do rendering de `compose()`
+- **`zorder` aplicado nas wedges de `pie`**: `ax.pie()` nao aceita `zorder`, entao o valor do `RenderContext` era perdido
+
 ## [2026-03-22 22:17]
 ### Added
 - **Sistema de classificacao de chart kinds (`_classification.py`)**: Tabela declarativa `KindCaps` define capacidades de cada chart kind (highlight, metrics temporais, composability, axis group). Validacao early-fail em `engine.py`, `create_layer()` e `compose()` bloqueia combinacoes incompativeis antes do rendering

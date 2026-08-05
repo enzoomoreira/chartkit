@@ -16,10 +16,12 @@ def plot(
     kind: ChartKind = "line",
     title: str | None = None,
     units: UnitFormat | None = None,
+    decimals: int | None = None,
     source: str | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
     legend: bool | None = None,
+    figsize: tuple[float, float] | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
     xlim: AxisLimits | None = None,
@@ -27,12 +29,17 @@ def plot(
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,
-    tick_freq: str | None = None,
+    tick_freq: TickFreq | None = None,
     collision: bool = True,
     debug: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> PlotResult
 ```
+
+`ChartingAccessor.plot`, `TransformAccessor.plot` and `ChartingPlotter.plot` share this
+signature exactly -- parameter names, order, defaults and annotations. `tests/test_api_parity.py`
+enforces it, and also asserts that every parameter is actually forwarded to the engine rather
+than accepted and dropped.
 
 #### Parameters
 
@@ -40,13 +47,15 @@ def plot(
 |-----------|------|---------|-------------|
 | `x` | `str \| None` | `None` | Column for X-axis. If `None`, uses the index |
 | `y` | `str \| list[str] \| None` | `None` | Column(s) for Y-axis. If `None`, uses numeric columns |
-| `kind` | `ChartKind` | `"line"` | Chart type: any registered enhancer (`"bar"`, `"barh"`, `"area"`, `"hist"`, `"pie"`, `"stem"`, etc.) or valid matplotlib Axes method (`"scatter"`, `"step"`, etc.) |
+| `kind` | `ChartKind` | `"line"` | Chart type. Must be one of `ChartRenderer.available()`; anything else raises `ValidationError` |
 | `title` | `str \| None` | `None` | Chart title |
 | `units` | `UnitFormat \| None` | `None` | Y-axis formatting (see table below) |
+| `decimals` | `int \| None` | `None` | Decimal places for axis tick labels and highlight labels, overriding the formatter default. Ignored by `"BRL"` / `"USD"` (Babel derives the digit count from the currency) and when `units` is `None` |
 | `source` | `str \| None` | `None` | Data source for footer. When `None`, uses `branding.default_source` as fallback |
 | `highlight` | `HighlightInput` | `False` | Highlight mode(s). `True` / `'last'` = last value; `'max'` / `'min'` = extremes. Accepts list to combine modes (e.g., `['max', 'min']`) |
 | `metrics` | `str \| list[str] \| None` | `None` | Metric(s) to apply (string or list) |
 | `legend` | `bool \| None` | `None` | Legend control. `None` = auto (shows with 2+ artists), `True` = force, `False` = suppress |
+| `figsize` | `tuple[float, float] \| None` | `None` | Figure size `(width, height)` in inches. `None` uses `layout.figsize` from config |
 | `xlabel` | `str \| None` | `None` | X-axis label |
 | `ylabel` | `str \| None` | `None` | Y-axis label |
 | `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
@@ -54,7 +63,7 @@ def plot(
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
-| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
+| `tick_freq` | `TickFreq \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Draw collision debug overlay (colored bboxes for obstacles, labels, and line paths) |
 | `**kwargs` | - | - | Chart-specific parameters (e.g., `y_origin='auto'`) and extra matplotlib args |
@@ -80,7 +89,14 @@ Metrics support custom labels via `|` syntax: `'ath|Maximum'`, `'ma:12@col|12M A
 #### Types
 
 ```python
-ChartKind = str  # any valid matplotlib Axes method or registered enhancer
+# The Literal arm drives editor autocomplete; the `| str` arm keeps the type open
+# for kinds added via ChartRenderer.register_enhancer().
+ChartKind = Literal[
+    "area", "bar", "barh", "boxplot", "ecdf", "errorbar", "eventplot", "fill",
+    "fill_between", "fill_betweenx", "hist", "line", "loglog", "pie", "plot",
+    "scatter", "semilogx", "semilogy", "stacked_bar", "stackplot", "stairs",
+    "stem", "step", "violinplot",
+] | str
 UnitFormat = Literal["BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x"]
 TickFreq = Literal["day", "week", "month", "quarter", "semester", "year"]
 HighlightMode = Literal["last", "max", "min", "all"]
@@ -214,18 +230,37 @@ Chainable accessor for transformations. Each method returns a new `TransformAcce
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `variation()` | `variation(horizon: str = "month", periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Percentage variation by horizon (`'month'` or `'year'`, frequency auto-detection) |
-| `accum()` | `accum(window: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Accumulated via compound product in rolling window (fallback: `config.transforms.accum_window`) |
+| `variation()` | `variation(horizon: Horizon = "month", periods: int \| None = None, freq: Freq \| None = None) -> TransformAccessor` | Percentage variation by horizon (`'month'` or `'year'`, frequency auto-detection) |
+| `accum()` | `accum(window: int \| None = None, freq: Freq \| None = None) -> TransformAccessor` | Accumulated via compound product in rolling window (fallback: `config.transforms.accum_window`) |
 | `diff()` | `diff(periods: int = 1) -> TransformAccessor` | Absolute difference between periods (periods != 0; negative for forward diff) |
-| `normalize()` | `normalize(base: int \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normalize series (default: `config.transforms.normalize_base`) |
+| `normalize()` | `normalize(base: float \| None = None, base_date: str \| None = None) -> TransformAccessor` | Normalize series (default: `config.transforms.normalize_base`) |
 | `drawdown()` | `drawdown() -> TransformAccessor` | Percentage distance from historical peak |
 | `zscore()` | `zscore(window: int \| None = None) -> TransformAccessor` | Statistical standardization (global or rolling, window >= 2) |
-| `annualize()` | `annualize(periods: int \| None = None, freq: str \| None = None) -> TransformAccessor` | Annualize periodic rate via compound interest (frequency auto-detection) |
-| `despike()` | `despike(window: int = 21, threshold: float = 5.0, method: str = "median") -> TransformAccessor` | Remove aggressive data spikes via Hampel filter (window must be odd >= 3) |
-| `resample()` | `resample(freq: str = "month", method: str = "last") -> TransformAccessor` | Downsample to target frequency (`'day'`/`'week'`/`'month'`/`'quarter'`/`'year'`; agg: `'last'`/`'first'`/`'mean'`/`'sum'`) |
-| `layer()` | `layer(kind, x, y, *, units, highlight, metrics, axis, **kwargs) -> Layer` | Create a Layer for `compose()` |
-| `plot()` | `plot(x, y, *, kind, title, units, source, highlight, metrics, legend, xlabel, ylabel, xlim, ylim, grid, tick_rotation, tick_format, tick_freq, collision, debug, **kwargs) -> PlotResult` | Finalize chain and plot (same parameters as `df.chartkit.plot()`) |
+| `annualize()` | `annualize(periods: int \| None = None, freq: Freq \| None = None) -> TransformAccessor` | Annualize periodic rate via compound interest (frequency auto-detection) |
+| `despike()` | `despike(window: int = 21, threshold: float = 5.0, method: DespikeMethod = "median") -> TransformAccessor` | Remove aggressive data spikes via Hampel filter (window must be odd >= 3) |
+| `resample()` | `resample(freq: ResampleFreq = "month", method: ResampleMethod = "last") -> TransformAccessor` | Downsample to target frequency (`'day'`/`'week'`/`'month'`/`'quarter'`/`'year'`; agg: `'last'`/`'first'`/`'mean'`/`'sum'`) |
+| `layer()` | `layer(x, y, *, kind, units, decimals, highlight, metrics, axis, **kwargs) -> Layer` | Create a Layer for `compose()` |
+| `plot()` | `plot(x, y, *, kind, title, units, decimals, source, highlight, metrics, legend, figsize, xlabel, ylabel, xlim, ylim, grid, tick_rotation, tick_format, tick_freq, collision, debug, **kwargs) -> PlotResult` | Finalize chain and plot (same parameters as `df.chartkit.plot()`) |
 | `df` | `@property -> pd.DataFrame` | Access to transformed DataFrame |
+
+### Types
+
+The values the runtime validators already enforced are exposed as `Literal` aliases in
+`chartkit.transforms.types`, so a typo is caught by the type checker instead of at call time:
+
+```python
+Horizon        = Literal["month", "year"]
+Freq           = Literal["D", "B", "W", "M", "Q", "Y", "BME", "BMS",
+                         "daily", "business", "weekly", "monthly",
+                         "quarterly", "yearly", "annual"]
+DespikeMethod  = Literal["median", "interpolate"]
+ResampleFreq   = Literal["day", "D", "week", "W", "month", "M",
+                         "quarter", "Q", "year", "Y", "annual"]
+ResampleMethod = Literal["last", "first", "mean", "sum"]
+```
+
+`normalize(base=...)` is a `float`, not an `int`: rebasing to `1.0` is the convention for index
+and multiple charts, alongside the usual `100`.
 
 ---
 
@@ -247,13 +282,16 @@ def compose(
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,
-    tick_freq: str | None = None,
+    tick_freq: TickFreq | None = None,
     collision: bool = True,
     debug: bool = False,
 ) -> PlotResult
 ```
 
 Compose multiple layers into a single chart with optional dual axes.
+
+`compose()` takes only chart-level options. Per-series settings -- including `units` and its
+companion `decimals` -- live on the `Layer`, because each axis is formatted independently.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -269,7 +307,7 @@ Compose multiple layers into a single chart with optional dual axes.
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
 | `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
-| `tick_freq` | `str \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
+| `tick_freq` | `TickFreq \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
 | `debug` | `bool` | `False` | Draw collision debug overlay |
 
@@ -283,35 +321,40 @@ AxisSide = Literal["left", "right"]
 @dataclass(frozen=True)
 class Layer:
     df: pd.DataFrame
-    kind: ChartKind = "line"
     x: str | None = None
     y: str | list[str] | None = None
+    kind: ChartKind = "line"
     units: UnitFormat | None = None
+    decimals: int | None = None
     highlight: HighlightInput = False
     metrics: str | list[str] | None = None
     axis: AxisSide = "left"
     kwargs: dict[str, Any] = field(default_factory=dict)
 ```
 
-Create layers via `df.chartkit.layer()` or `df.chartkit.variation().layer()`. The `create_layer()` function validates eagerly (units, highlight, kind, axis) before constructing the Layer.
+Create layers via `df.chartkit.layer()` or `df.chartkit.variation().layer()`. The `create_layer()` function validates eagerly (units, highlight, kind, axis) before constructing the Layer, so an invalid layer fails at creation rather than halfway through `compose()`.
 
 ### df.chartkit.layer()
 
 ```python
 def layer(
-    kind: ChartKind = "line",
     x: str | None = None,
     y: str | list[str] | None = None,
     *,
+    kind: ChartKind = "line",
     units: UnitFormat | None = None,
+    decimals: int | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
     axis: AxisSide = "left",
-    **kwargs,
+    **kwargs: Any,
 ) -> Layer
 ```
 
-Same parameters as `plot()` but limited to data and rendering options. Chart-level options (`title`, `source`, `legend`, `xlabel`, `ylabel`, `xlim`, `ylim`, `grid`, `tick_rotation`, `tick_format`, `tick_freq`, `collision`, `debug`) are passed to `compose()` instead.
+Positional parameters mirror `plot()`: `layer('date', 'value')` selects the same columns that
+`plot('date', 'value')` would. `kind` is keyword-only in both.
+
+Same parameters as `plot()` but limited to data and rendering options. Chart-level options (`title`, `source`, `legend`, `figsize`, `xlabel`, `ylabel`, `xlim`, `ylim`, `grid`, `tick_rotation`, `tick_format`, `tick_freq`, `collision`, `debug`) are passed to `compose()` instead.
 
 ---
 
@@ -363,20 +406,31 @@ Aliases are defined centrally in `charts/_classification.py` as `KIND_ALIASES` a
 | `"line"` | `"plot"` |
 | `"area"` | `"fill_between"` |
 
-### Unsupported Kinds
-
-These chart kinds require 2D grid or vector field data and are explicitly blocked:
-
-`imshow`, `contour`, `contourf`, `pcolormesh`, `quiver`, `streamplot`, `barbs`, `spy`
-
 ### Generic Rendering
 
-Any valid matplotlib Axes method not listed above works automatically:
+These kinds have no enhancer and are driven straight through `ax.{kind}(x, y_series)`:
+
+`plot`, `scatter`, `step`, `errorbar`, `fill`, `fill_betweenx`, `loglog`, `semilogx`, `semilogy`
 
 ```python
 df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
 df.chartkit.plot(kind='step', where='mid')
 ```
+
+### Rejected Kinds
+
+`kind` is validated against an allowlist rather than "is it a callable `Axes` attribute". Two
+groups are refused:
+
+**2D grid and vector field data** get a dedicated message naming the input-shape mismatch:
+
+`imshow`, `contour`, `contourf`, `pcolormesh`, `quiver`, `streamplot`, `barbs`, `spy`
+
+**Everything else** raises `ValidationError` listing `available()`. This covers `Axes` methods
+with an incompatible signature (`hlines`, `vlines`, `psd`, `acorr`, `hexbin`, `broken_barh`) and
+methods that do not plot at all (`clear`, `set_title`, `grid`, `legend`, `twinx`, `remove`).
+Previously both reached matplotlib and raised a `TypeError` about arguments the caller never
+wrote.
 
 ### Post-Render Collision Registration
 
@@ -401,8 +455,8 @@ def plot_my_chart(ax, x, y_data, highlight, **kwargs):
 |--------|--------|-------------|
 | `register_enhancer(name)` | decorator | Registers specialized chart handler |
 | `render(ax, kind, x, y_data, highlight, **kwargs)` | `None` | Renders chart (enhancer or generic) |
-| `validate_kind(kind)` | `None` | Validates kind (rejects unsupported, private, and non-existent methods) |
-| `available()` | `list[str]` | Lists registered enhancer names |
+| `validate_kind(kind)` | `None` | Validates kind against the allowlist. Raises `ValidationError` |
+| `available()` | `list[str]` | Sorted list of every accepted kind: enhancers, generic kinds and aliases |
 
 ---
 
@@ -576,6 +630,7 @@ class ChartingConfig(BaseSettings):
     lines: LinesConfig
     bars: BarsConfig
     bands: BandsConfig
+    fills: FillsConfig
     markers: MarkersConfig
     collision: CollisionConfig
     ticks: TicksConfig
@@ -728,6 +783,15 @@ class ChartingConfig(BaseSettings):
 | Field | Type | Default |
 |-------|------|---------|
 | `alpha` | `float` | `0.15` |
+
+#### FillsConfig
+
+Opacity of filled chart bodies. Both are constrained to `0.0 <= alpha <= 1.0`.
+
+| Field | Type | Default | Applies to |
+|-------|------|---------|------------|
+| `area_alpha` | `float` | `0.3` | `kind='area'` fills |
+| `violin_alpha` | `float` | `0.7` | `kind='violinplot'` bodies |
 
 #### MarkersConfig
 

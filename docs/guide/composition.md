@@ -165,7 +165,7 @@ Avoid `%` and `BRL` on the same side unless intentionally normalized first.
 
 ### Passing chart-level options to `layer()`
 
-`layer()` only accepts data and rendering options: `kind`, `x`, `y`, `units`, `highlight`, `metrics`, `axis`, and chart-specific `**kwargs`.
+`layer()` only accepts data and rendering options: `x`, `y`, `kind`, `units`, `decimals`, `highlight`, `metrics`, `axis`, and chart-specific `**kwargs`.
 
 Chart-level options go to `compose()` instead:
 
