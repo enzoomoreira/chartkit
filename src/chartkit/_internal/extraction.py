@@ -64,6 +64,10 @@ def extract_plot_data(
 
     if y is None:
         y_data = df.select_dtypes(include=["number"])
+        # A numeric x column is already the horizontal axis; leaving it in the
+        # implicit y selection draws it against itself as a diagonal line.
+        if x is not None and x in y_data.columns:
+            y_data = y_data.drop(columns=[x])
         if y_data.empty:
             raise ValidationError(
                 "No numeric columns found in DataFrame. "
@@ -75,6 +79,14 @@ def extract_plot_data(
         if missing:
             raise ValidationError(
                 f"Column(s) not found: {missing}. Available: {list(df.columns)}"
+            )
+        # df[["a", "a"]]["a"] returns a DataFrame, and every enhancer that
+        # indexes a column by name would get a frame where it expects a Series.
+        duplicates = sorted({c for c in cols if cols.count(c) > 1})
+        if duplicates:
+            raise ValidationError(
+                f"Duplicate column(s) in y: {duplicates}. "
+                "Each series may only be plotted once."
             )
         y_data = df[y]
 

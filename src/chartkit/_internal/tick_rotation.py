@@ -109,7 +109,9 @@ def apply_tick_rotation(
                 angle = 90
                 _apply_angle(ax, angle)
     else:
-        if not isinstance(effective, int):
+        # bool is a subclass of int, so ``tick_rotation=True`` would silently mean
+        # a 1 degree rotation -- almost certainly not what the caller meant.
+        if isinstance(effective, bool) or not isinstance(effective, int):
             raise ValidationError(
                 f"tick_rotation must be an int or 'auto', got {type(effective).__name__}: {effective!r}"
             )

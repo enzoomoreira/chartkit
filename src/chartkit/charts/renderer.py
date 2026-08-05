@@ -178,6 +178,7 @@ class ChartRenderer:
                     cast(pd.Series, ctx.y_data[col]),
                     style=style,
                     color=c,
+                    x=x,
                     modes=highlight,
                 )
 

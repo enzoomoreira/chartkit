@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Literal
 
+import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -24,6 +25,13 @@ if TYPE_CHECKING:
     from .plot_validation import AxisLimits
 
 __all__ = ["apply_legend", "create_figure", "finalize_chart"]
+
+
+def _is_temporal(x_data: pd.Index | pd.Series | None) -> bool:
+    """Whether *x_data* puts dates on the axis."""
+    if x_data is None:
+        return False
+    return bool(pd.api.types.is_datetime64_any_dtype(pd.Index(x_data)))
 
 
 def create_figure(
@@ -118,6 +126,7 @@ def finalize_chart(
     tick_freq: str | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     x_data: pd.Index | pd.Series | None = None,
+    temporal_axis: bool = True,
     xlim: AxisLimits | None = None,
     ylim: AxisLimits | None = None,
     xlabel: str | None = None,
@@ -129,14 +138,20 @@ def finalize_chart(
 
     Applies tick formatting, tick rotation, axis limits, axis labels,
     and decorations (title + footer) in the canonical order.
+
+    Args:
+        temporal_axis: Whether the X axis carries *x_data*.  ``False`` for
+            kinds that put binned values or column positions there, which must
+            not receive a date locator or formatter.
     """
-    apply_tick_formatting(
-        ax, tick_format=tick_format, tick_freq=tick_freq, x_data=x_data
-    )
+    if temporal_axis:
+        apply_tick_formatting(
+            ax, tick_format=tick_format, tick_freq=tick_freq, x_data=x_data
+        )
     apply_tick_rotation(fig, ax, tick_rotation=tick_rotation)
 
     if xlim is not None:
-        ax.set_xlim(coerce_axis_limits(xlim))
+        ax.set_xlim(coerce_axis_limits(xlim, prefer_dates=_is_temporal(x_data)))
     if ylim is not None:
         ax.set_ylim(coerce_axis_limits(ylim))
 

@@ -17,18 +17,17 @@ from ._internal import (
     normalize_highlight,
     register_artist_obstacle,
     resolve_collisions,
-    save_figure,
     validate_plot_params,
 )
 from ._internal.collision import clear_axes_state
 from ._internal.plot_validation import AxisLimits, TickFreq, UnitFormat
 from .charts import ChartRenderer
 from .charts._classification import (
+    kind_has_temporal_axis,
     resolve_kind_alias,
     validate_highlight_for_kind,
     validate_metrics_for_kind,
 )
-from .exceptions import StateError
 from .metrics import MetricRegistry
 from .overlays import HighlightMode
 from .result import PlotResult
@@ -77,8 +76,6 @@ class ChartingPlotter:
 
     def __init__(self, df: pd.DataFrame) -> None:
         self.df = df
-        self._fig = None
-        self._ax = None
 
     def plot(
         self,
@@ -169,7 +166,6 @@ class ChartingPlotter:
         with theme.context():
             # 1. Figure
             fig, ax = create_figure(figsize=figsize, grid=grid)
-            self._fig = fig
 
             try:
                 # 2. Data
@@ -192,14 +188,12 @@ class ChartingPlotter:
                 # 6. Legend
                 apply_legend(ax, legend=legend)
 
-                # 7. Collision resolution
-                if collision:
-                    legend_artist = ax.get_legend()
-                    if legend_artist is not None:
-                        register_artist_obstacle(ax, legend_artist, filled=True)
-                    resolve_collisions(ax)
-
-                # 8. Finalize (ticks, axis limits, labels, decorations)
+                # 7. Finalize (ticks, axis limits, labels, decorations)
+                #
+                # Runs before collision on purpose: tick rotation, axis limits
+                # and the bottom-margin adjustment all move the data area, and
+                # a label placed against the pre-finalize geometry lands in the
+                # wrong place once that happens.
                 finalize_chart(
                     fig,
                     ax,
@@ -207,6 +201,7 @@ class ChartingPlotter:
                     tick_freq=tick_freq,
                     tick_rotation=tick_rotation,
                     x_data=x_data,
+                    temporal_axis=kind_has_temporal_axis(kind, resolved=resolved_kind),
                     xlim=xlim,
                     ylim=ylim,
                     xlabel=xlabel,
@@ -215,7 +210,14 @@ class ChartingPlotter:
                     source=source,
                 )
 
-                # 9. Debug overlay (after finalize so geometry is final)
+                # 8. Collision resolution, against the final geometry
+                if collision:
+                    legend_artist = ax.get_legend()
+                    if legend_artist is not None:
+                        register_artist_obstacle(ax, legend_artist, filled=True)
+                    resolve_collisions(ax)
+
+                # 9. Debug overlay (after collision so placements are final)
                 if debug:
                     draw_debug_overlay(ax)
             finally:
@@ -223,14 +225,4 @@ class ChartingPlotter:
                 # built; holding it would keep the Axes alive indefinitely.
                 clear_axes_state(ax)
 
-        return PlotResult(fig=fig, ax=ax, plotter=self)
-
-    def save(self, path: str, dpi: int | None = None) -> None:
-        """Save chart to file.
-
-        Raises:
-            StateError: If no chart has been generated yet.
-        """
-        if self._fig is None:
-            raise StateError("No chart generated yet. Call plot() first.")
-        save_figure(self._fig, path, dpi)
+        return PlotResult(fig=fig, ax=ax)

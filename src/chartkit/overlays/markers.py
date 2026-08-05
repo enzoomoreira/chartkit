@@ -54,12 +54,16 @@ def _resolve_target(
     if mode == "last":
         idx = valid_series.index[-1]
         val = valid_series.iloc[-1]
-    elif mode == "max":
-        idx = valid_series.idxmax()
-        val = valid_series[idx]
-    else:  # min
-        idx = valid_series.idxmin()
-        val = valid_series[idx]
+    else:
+        # Positional lookup: ``series[idxmax()]`` returns every row sharing that
+        # label when the index repeats, and np.isfinite() cannot take a Series.
+        pos = (
+            int(valid_series.to_numpy().argmax())
+            if mode == "max"
+            else int(valid_series.to_numpy().argmin())
+        )
+        idx = valid_series.index[pos]
+        val = valid_series.iloc[pos]
 
     if not np.isfinite(val):
         logger.debug("Highlight mode '%s': target value is not finite, skipping", mode)

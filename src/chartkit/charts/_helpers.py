@@ -37,6 +37,7 @@ class RenderContext:
     config: ChartingConfig
     colors: list[str]
     user_color: str | None
+    color_offset: int
     zorder: float
     y_data: pd.DataFrame
 
@@ -47,13 +48,20 @@ def prepare_render_context(
 ) -> RenderContext:
     """Extract common enhancer boilerplate into a context object.
 
-    Pops ``color`` and ``zorder`` from *kwargs* (mutates in place).
-    Coerces ``y_data`` from Series to single-column DataFrame.
+    Pops ``color``, ``color_offset`` and ``zorder`` from *kwargs* (mutates in
+    place). Coerces ``y_data`` from Series to single-column DataFrame.
+
+    ``color_offset`` is where the palette is picked up rather than where it
+    starts. One render call cycles through its own columns, so a caller that
+    renders a chart across several calls -- ``compose()`` does, one per layer
+    -- passes the number of colours already taken to keep going instead of
+    starting over.
     """
     config = get_config()
     if isinstance(y_data, pd.Series):
         y_data = y_data.to_frame()
     user_color = kwargs.pop("color", None)
+    color_offset = kwargs.pop("color_offset", 0)
     user_zorder = kwargs.pop("zorder", None)
     colors = theme.colors.cycle()
     zorder = user_zorder if user_zorder is not None else config.layout.zorder.data
@@ -61,6 +69,7 @@ def prepare_render_context(
         config=config,
         colors=colors,
         user_color=user_color,
+        color_offset=color_offset,
         zorder=zorder,
         y_data=y_data,
     )
@@ -70,7 +79,12 @@ def resolve_color(ctx: RenderContext, index: int) -> str:
     """Resolve color for column at *index* using user override or theme cycle."""
     if ctx.user_color is not None:
         return ctx.user_color
-    return ctx.colors[index % len(ctx.colors)]
+    if not ctx.colors:
+        raise ValidationError(
+            "Theme color palette is empty; cannot assign a series color. "
+            "Set colors.cycle in the configuration."
+        )
+    return ctx.colors[(index + ctx.color_offset) % len(ctx.colors)]
 
 
 def is_categorical_index(x: pd.Index | pd.Series) -> bool:
@@ -82,7 +96,9 @@ def is_categorical_index(x: pd.Index | pd.Series) -> bool:
         return True
     if idx.dtype == "object":
         non_null = [v for v in idx if v is not None and not pd.isna(v)]
-        return all(isinstance(v, str) for v in non_null)
+        # ``all([])`` is True, which would classify an empty index as categorical
+        # and send it down the category-axis path with nothing to label.
+        return bool(non_null) and all(isinstance(v, str) for v in non_null)
     return False
 
 
@@ -142,6 +158,12 @@ def apply_y_origin(
         if not clean.empty:
             vmin, vmax = clean.min(), clean.max()
             margin = (vmax - vmin) * auto_margin
+            if margin == 0:
+                # A constant series has no spread to take a fraction of, and
+                # set_lim(v, v) is a singular transform: matplotlib warns and
+                # expands it anyway. Pick the padding ourselves so the warning
+                # never fires -- it becomes an error under ``-W error``.
+                margin = abs(vmin) * auto_margin or auto_margin
             set_lim(vmin - margin, vmax + margin)
     else:
         vmin, vmax = get_lim()
@@ -173,6 +195,12 @@ def _coerce_datetime_index(x: pd.Index | pd.Series) -> pd.DatetimeIndex | None:
         return pd.DatetimeIndex(idx)
 
     if is_categorical_index(idx):
+        return None
+
+    # pd.to_datetime reads plain numbers as nanoseconds since the epoch, so a
+    # year index like [2020, 2021] would come back as 1970-01-01. A numeric axis
+    # is not a date axis; say so instead of inventing timestamps.
+    if pd.api.types.is_numeric_dtype(idx):
         return None
 
     if idx.dtype == "object":

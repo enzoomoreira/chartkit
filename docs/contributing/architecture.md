@@ -69,22 +69,21 @@ DataFrame -> Accessor -> Plotter -> PlotResult
    - Dispatches via `ChartRenderer.render(ax, kind, ...)` (enhancer or generic `ax.{kind}()`)
    - Applies metrics via `MetricRegistry.apply()`
    - Applies legend via `apply_legend()`
-   - Resolves label collisions via `resolve_collisions(ax)` (when `collision=True`)
    - Finalizes via `finalize_chart()` (tick formatting, tick rotation, axis limits, labels, decorations)
-   - Draws debug overlay via `draw_debug_overlay(ax)` (when `debug=True`, after finalize)
+   - Resolves label collisions via `resolve_collisions(ax)` (when `collision=True`), against the finalized geometry
+   - Draws debug overlay via `draw_debug_overlay(ax)` (when `debug=True`, after collision)
 
 6. **compose()**: Orchestrator for multi-layer charts:
    - Creates figure via `create_figure()` with optional twinx for right axis
    - Renders each layer on its target axes
    - Applies legend via `apply_legend()` (consolidates handles from both axes)
-   - Resolves cross-axis collisions via `resolve_composed_collisions(axes)`
    - Finalizes via `finalize_chart()` (shared pipeline)
-   - Draws debug overlay via `draw_composed_debug_overlay(axes)` (when `debug=True`, after finalize)
-   - Returns `PlotResult` with `_ComposePlotter` (satisfies `Saveable` Protocol)
+   - Resolves cross-axis collisions via `resolve_composed_collisions(axes)`, against the finalized geometry
+   - Draws debug overlay via `draw_composed_debug_overlay(axes)` (when `debug=True`, after collision)
+   - Returns `PlotResult` wrapping the figure it built
 
 7. **PlotResult**: Encapsulated result with:
    - Reference to Figure and Axes
-   - `plotter: Saveable` (Protocol-based, works with both ChartingPlotter and _ComposePlotter)
    - `.save()` and `.show()` methods for chaining
    - `.axes` and `.figure` properties for direct access
 
@@ -102,8 +101,8 @@ flowchart TD
     D4 --> D5["4. ChartRenderer.render(kind)"]
     D5 --> D6["5. MetricRegistry.apply()"]
     D6 --> D6b["6. apply_legend()"]
-    D6b --> D7["7. resolve_collisions() (if collision=True)"]
-    D7 --> D8["8. finalize_chart() (ticks, rotation, limits, labels, decorations)"]
+    D6b --> D7["7. finalize_chart() (ticks, rotation, limits, labels, decorations)"]
+    D7 --> D8["8. resolve_collisions() (if collision=True)"]
     D8 --> D9["9. draw_debug_overlay() (if debug=True)"]
     D9 --> E["PlotResult"]
 ```
@@ -155,7 +154,7 @@ src/chartkit/
 ├── composing/            # Multi-layer chart composition
 │   ├── __init__.py       # Facade: compose, Layer, AxisSide, create_layer
 │   ├── layer.py          # Layer (frozen dataclass) + AxisSide + create_layer()
-│   └── compose.py        # compose() orchestrator + _ComposePlotter (Saveable)
+│   └── compose.py        # compose() orchestrator
 │
 ├── overlays/             # Secondary visual elements
 │   ├── __init__.py       # Facade
@@ -223,7 +222,7 @@ tests/                    # Test suite (603 tests)
 | `_logging.py` | loguru setup (`logger.disable`) + `configure_logging()` |
 | `accessor.py` | Registers `.chartkit` on DataFrames and Series; delegates to TransformAccessor, ChartingPlotter, or create_layer |
 | `engine.py` | Orchestrates single-chart creation; delegates to `_internal` (pipeline, rendering, collision) |
-| `result.py` | Encapsulates result (`Saveable` Protocol); enables chaining with `.save()` and `.show()` |
+| `result.py` | Encapsulates the Figure/Axes pair; enables chaining with `.save()` and `.show()` |
 
 ### Settings
 
@@ -251,7 +250,7 @@ tests/                    # Test suite (603 tests)
 | `charts/enhancers/*.py` | 13 enhancers: bar, barh, stacked_bar, area, hist, pie, stackplot, stem, stairs, boxplot, violinplot, ecdf, eventplot |
 | `composing/layer.py` | Layer (frozen dataclass) + AxisSide + create_layer() with eager validation |
 | `_internal/pipeline.py` | Shared pipeline steps: create_figure(), apply_legend(), finalize_chart() |
-| `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions, _ComposePlotter |
+| `composing/compose.py` | compose() orchestrator; dual-axis, cross-axis collisions |
 | `overlays/*` | Adds secondary elements (MA, ATH/ATL/AVG, bands, markers, std_band, vband) |
 | `decorations/footer.py` | Adds footer with branding and source |
 | `decorations/title.py` | Adds styled title on axes |

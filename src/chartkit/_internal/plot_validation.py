@@ -47,43 +47,55 @@ def validate_plot_params(
         raise ValidationError("Invalid plot parameters:\n" + "\n".join(msgs)) from exc
 
 
-def _coerce_limit_value(value: AxisValue) -> Any:
+def _coerce_limit_value(value: AxisValue, prefer_dates: bool) -> Any:
     """Coerce a single axis limit value.
 
-    Strings are tried as float first (so ``"100"`` stays numeric),
-    then as date via ``pd.to_datetime``.
+    Strings are tried as float first (so ``"100"`` stays numeric), then as date
+    via ``pd.to_datetime``.  On a date axis the order is reversed: ``"2024"``
+    is a year there, and reading it as ``2024.0`` would put the limit two
+    millennia away from the data.
     """
     if value is None or not isinstance(value, str):
         return value
 
-    try:
-        result = float(value)
-        logger.debug("Coerced axis limit '%s' -> float(%s)", value, result)
+    attempts = (
+        (pd.to_datetime, "datetime") if prefer_dates else (float, "float"),
+        (float, "float") if prefer_dates else (pd.to_datetime, "datetime"),
+    )
+
+    for convert, label in attempts:
+        try:
+            result = convert(value)
+        except (ValueError, TypeError):
+            continue
+        logger.debug("Coerced axis limit '%s' -> %s(%s)", value, label, result)
         return result
-    except ValueError:
-        pass
 
-    try:
-        result = pd.to_datetime(value)
-        logger.debug("Coerced axis limit '%s' -> datetime(%s)", value, result)
-        return result
-    except (ValueError, TypeError):
-        raise ValidationError(
-            f"Cannot interpret '{value}' as a number or date for axis limit."
-        ) from None
+    raise ValidationError(
+        f"Cannot interpret '{value}' as a number or date for axis limit."
+    )
 
 
-def coerce_axis_limits(limits: tuple[Any, Any]) -> tuple[Any, Any]:
+def coerce_axis_limits(
+    limits: tuple[Any, Any], *, prefer_dates: bool = False
+) -> tuple[Any, Any]:
     """Coerce axis limit values, converting strings to dates or numbers.
 
     Accepts ``(min, max)`` where each element can be a string
     (``"2024-01-01"`` or ``"100"``), numeric, datetime, or ``None``.
+
+    Args:
+        prefer_dates: Resolve ambiguous strings such as ``"2024"`` as dates
+            rather than numbers.  Set when the target axis carries dates.
     """
     if len(limits) != 2:
         raise ValidationError(
             f"Axis limits must be a 2-tuple (min, max), got {len(limits)} elements."
         )
-    return (_coerce_limit_value(limits[0]), _coerce_limit_value(limits[1]))
+    return (
+        _coerce_limit_value(limits[0], prefer_dates),
+        _coerce_limit_value(limits[1], prefer_dates),
+    )
 
 
 __all__ = [

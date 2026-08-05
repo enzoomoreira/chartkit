@@ -40,7 +40,9 @@ df.chartkit.plot(
 ```
 
 Internally, the `engine.py` pipeline calls `resolve_collisions(ax)` after
-all elements have been registered.
+all elements have been registered *and* after `finalize_chart()` has set the
+axis limits, tick rotation and margins -- the placement is measured in pixels,
+so it has to be computed against the geometry the reader will actually see.
 
 ### Disabling the Engine
 
@@ -118,13 +120,13 @@ final decorations:
 4. Plot Core       ChartRenderer dispatch + highlights (register_moveable) + area fills (register_passive)
 5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_artist_obstacle) + band (register_passive)
 6. Legend          apply_legend()
-7. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
-8. Finalize        finalize_chart() (tick formatting, rotation, limits, labels, decorations)
-9. Debug overlay   if debug=True: draw_debug_overlay(ax) (after finalize so geometry is final)
+7. Finalize        finalize_chart() (tick formatting, rotation, limits, labels, decorations)
+8. Collisions      if collision=True: register legend obstacle + resolve_collisions(ax)
+9. Debug overlay   if debug=True: draw_debug_overlay(ax) (after collision so placements are final)
 -> PlotResult
 ```
 
-For composed charts, `resolve_composed_collisions(axes)` replaces step 7,
+For composed charts, `resolve_composed_collisions(axes)` replaces step 8,
 merging labels from all axes (left + right) into a single pool. Similarly,
 `draw_composed_debug_overlay(axes)` replaces step 9.
 

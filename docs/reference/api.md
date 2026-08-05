@@ -111,17 +111,14 @@ AxisLimits = tuple[AxisValue, AxisValue]
 
 ## PlotResult
 
-Plot result with method chaining. The `plotter` field accepts any object satisfying the `Saveable` Protocol (either `ChartingPlotter` or composed chart plotter).
+Plot result with method chaining. Holds the figure it describes, and `save()` writes
+that figure -- both `plot()` and `compose()` return the same shape.
 
 ```python
-class Saveable(Protocol):
-    def save(self, path: str, dpi: int | None = None) -> None: ...
-
 @dataclass
 class PlotResult:
     fig: Figure
     ax: Axes
-    plotter: Saveable
 ```
 
 ### Methods and Properties

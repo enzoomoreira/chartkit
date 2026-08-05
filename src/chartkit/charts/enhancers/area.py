@@ -44,7 +44,7 @@ def plot_area(
     if highlight and ctx.y_data.shape[1] == 1:
         col = ctx.y_data.columns[0]
         c = resolve_color(ctx, 0)
-        add_highlight(ax, ctx.y_data[col], style="line", color=c, modes=highlight)
+        add_highlight(ax, ctx.y_data[col], style="line", color=c, x=x, modes=highlight)
 
 
 def _fill_between_pair(

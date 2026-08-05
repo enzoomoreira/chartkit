@@ -1,5 +1,28 @@
 # Project Changelog
 
+## [2026-08-04 23:18]
+### Fixed
+- **Eixos nao-temporais recebiam formatacao de data**: com `ticks.date_format` configurado -- o uso normal da lib -- `hist`, `ecdf`, `boxplot` e `violinplot` rotulavam o eixo X com `"Jan/1970"`, porque o `finalize_chart` aplicava `DateFormatter` sem olhar o que o kind poe naquele eixo. Agora so o grupo `series` do `KindCaps` recebe locator e formatter de data
+- **Colisao resolvida antes da geometria final**: `resolve_collisions` rodava antes do `finalize_chart` aplicar limites, rotacao e margem. Como a resolucao mede sobreposicao em pixels, os labels eram posicionados contra uma geometria que mudava logo depois -- com `ylim` comprimindo os dados, dois labels sobrepunham 46x14 px. As duas etapas trocaram de ordem no `engine` e no `compose`
+- **`stairs` descartava as datas**: `ax.stairs(values)` sem `edges` gera `range(n+1)`, jogando o eixo para 0..n. Agora as bordas sao derivadas do x real (datetime ou numerico); indice categorico mantem o comportamento posicional
+- **Highlight ancorado no rotulo do indice**: `add_highlight` era chamado sem `x=` no caminho generico e nos enhancers de `area`, `stem` e `stairs`, posicionando o marcador pelo label em vez da coordenada
+- **`idxmax`/`idxmin` com indice duplicado**: devolviam Series e estouravam em `np.isfinite`. Trocado por busca posicional via `argmax`/`argmin`
+- **Coluna X reincluida em Y**: `plot(x='ano')` com `y=None` deixava `ano` no `select_dtypes` e desenhava a coluna contra si mesma
+- **`y=['a','a']`**: `df[['a','a']]['a']` devolve DataFrame e quebrava o broadcasting dos enhancers. Agora rejeitado com mensagem clara
+- **`xlim=('2023','2024')` em eixo de datas**: a coercao tentava `float` antes de data, virando 2023.0 -- dois milenios longe dos dados. Em eixo temporal a ordem se inverte
+- **`sort` em eixo datetime/numerico era no-op**: as barras eram reordenadas mas redesenhadas em suas proprias datas, reproduzindo o grafico original. Agora rejeitado -- ranquear e operacao categorica, e `barh` ja funciona por ser ordinal
+- **`y_origin='auto'` com serie constante**: `set_ylim(v, v)` emitia `UserWarning` de transformacao singular, que vira erro sob `-W error`
+- **`tick_rotation=True` aceito como angulo**: `isinstance(True, int)` fazia `True` significar 1 grau
+- **`normalize_highlight` com valor nao-iteravel**: vazava `TypeError` fora da hierarquia `ChartKitError`
+- **Paleta vazia**: `resolve_color` estourava `ZeroDivisionError` no modulo
+- **Indice numerico lido como nanossegundos**: `_coerce_datetime_index([2020, 2021])` devolvia 1970-01-01
+- **Indice object vazio classificado como categorico**: `all([])` e `True`
+
+### Changed
+- **BREAKING -- `PlotResult` nao tem mais o campo `plotter`**: `save()` agora escreve `self.fig`. Antes delegava ao plotter que construiu o grafico, cujo `_fig` era sobrescrito a cada `plot()` -- um `ChartingPlotter` reutilizado fazia o primeiro `PlotResult` salvar a figura do segundo
+- **BREAKING -- `ChartingPlotter.save()` removido**: existia so para esse caminho com estado. O dono da figura e o `PlotResult`
+- **`Saveable` Protocol e `_ComposePlotter` removidos**: existiam apenas para satisfazer o campo `plotter`
+
 ## [2026-08-04 22:02]
 ### Changed
 - **BREAKING -- `layer()` reordenado para espelhar `plot()`**: A ordem posicional passou de `(kind, x, y)` para `(x, y)` com `kind` keyword-only. `layer('data', 'valor')` agora seleciona as mesmas colunas que `plot('data', 'valor')`. Chamadas que passavam `kind` posicionalmente precisam usar `kind=`

@@ -28,6 +28,15 @@ def normalize_highlight(highlight: HighlightInput) -> list[HighlightMode]:
                 f"Highlight mode '{highlight}' invalid. Available: {available}"
             )
         return [cast(HighlightMode, highlight)]
+
+    # Anything else has to be iterated. Letting the TypeError escape would put an
+    # exception outside the ChartKitError hierarchy in front of the caller.
+    if not isinstance(highlight, (list, tuple)):
+        raise ValidationError(
+            f"Highlight must be a bool, a mode string, or a list of modes, "
+            f"got {type(highlight).__name__}: {highlight!r}"
+        )
+
     modes: list[HighlightMode] = []
     for m in highlight:
         if m not in _VALID_MODES:

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Literal
 
 import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 
 from .._internal import (
     apply_legend,
@@ -19,7 +18,6 @@ from .._internal import (
     normalize_highlight,
     register_artist_obstacle,
     resolve_composed_collisions,
-    save_figure,
     validate_plot_params,
 )
 from .._internal.collision import clear_axes_state
@@ -39,16 +37,6 @@ if TYPE_CHECKING:
     from .._internal.plot_validation import UnitFormat
 
 __all__ = ["compose"]
-
-
-class _ComposePlotter:
-    """Minimal plotter that satisfies the Saveable protocol for composed charts."""
-
-    def __init__(self, fig: Figure) -> None:
-        self._fig = fig
-
-    def save(self, path: str, dpi: int | None = None) -> None:
-        save_figure(self._fig, path, dpi)
 
 
 def _validate_layers(
@@ -104,14 +92,33 @@ def _render_layer(
     layer: Layer,
     x_data: pd.Index | pd.Series,
     y_data: pd.Series | pd.DataFrame,
+    color_offset: int,
 ) -> None:
     highlight_modes = normalize_highlight(layer.highlight)
     ChartRenderer.render(
-        ax, layer.kind, x_data, y_data, highlight=highlight_modes, **layer.kwargs
+        ax,
+        layer.kind,
+        x_data,
+        y_data,
+        highlight=highlight_modes,
+        color_offset=color_offset,
+        **layer.kwargs,
     )
 
     if layer.metrics:
         MetricRegistry.apply(ax, x_data, y_data, layer.metrics)
+
+
+def _cycle_slots_used(layer: Layer, y_data: pd.Series | pd.DataFrame) -> int:
+    """How many palette entries *layer* consumed.
+
+    A layer given an explicit colour takes none. It is already distinct from
+    everything else, and charging it a slot would push the remaining layers
+    into the palette wraparound sooner than necessary.
+    """
+    if layer.kwargs.get("color") is not None:
+        return 0
+    return 1 if isinstance(y_data, pd.Series) else len(y_data.columns)
 
 
 def compose(
@@ -196,6 +203,10 @@ def compose(
                 axes_map["right"] = ax_right
 
             first_x_data: pd.Index | pd.Series | None = None
+            # One palette for the whole chart, advancing across every layer
+            # regardless of axis: the legend consolidates both axes, so two
+            # series sharing a colour would be ambiguous in a single legend.
+            color_offset = 0
             for layer in layers:
                 ax = axes_map[layer.axis]
                 _apply_axis_formatter(
@@ -211,19 +222,18 @@ def compose(
                     layer.axis,
                     layer.df.shape,
                 )
-                _render_layer(ax, layer, x_data, y_data)
+                _render_layer(ax, layer, x_data, y_data, color_offset)
+                color_offset += _cycle_slots_used(layer, y_data)
 
             # 4. Legend (consolidated from both axes)
             apply_legend(ax_left, ax_right, legend=legend)
 
-            # 5. Collision resolution (unified cross-axis)
-            if collision:
-                legend_artist = ax_left.get_legend()
-                if legend_artist is not None:
-                    register_artist_obstacle(ax_left, legend_artist, filled=True)
-                resolve_composed_collisions(all_axes)
-
-            # 6. Finalize (ticks, axis limits, labels, decorations)
+            # 5. Finalize (ticks, axis limits, labels, decorations)
+            #
+            # Runs before collision on purpose: tick rotation, axis limits and
+            # the bottom-margin adjustment all move the data area, and a label
+            # placed against the pre-finalize geometry lands in the wrong place
+            # once that happens.
             finalize_chart(
                 fig,
                 ax_left,
@@ -239,7 +249,14 @@ def compose(
                 source=source,
             )
 
-            # 7. Debug overlay (after finalize so geometry is final)
+            # 6. Collision resolution (unified cross-axis), against final geometry
+            if collision:
+                legend_artist = ax_left.get_legend()
+                if legend_artist is not None:
+                    register_artist_obstacle(ax_left, legend_artist, filled=True)
+                resolve_composed_collisions(all_axes)
+
+            # 7. Debug overlay (after collision so placements are final)
             if debug:
                 draw_composed_debug_overlay(all_axes)
         finally:
@@ -248,4 +265,4 @@ def compose(
             for axes in all_axes:
                 clear_axes_state(axes)
 
-    return PlotResult(fig=fig, ax=ax_left, plotter=_ComposePlotter(fig))
+    return PlotResult(fig=fig, ax=ax_left)

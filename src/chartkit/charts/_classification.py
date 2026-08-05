@@ -10,6 +10,7 @@ __all__ = [
     "KIND_ALIASES",
     "KindCaps",
     "get_kind_caps",
+    "kind_has_temporal_axis",
     "resolve_kind_alias",
     "validate_highlight_for_kind",
     "validate_metrics_for_kind",
@@ -79,6 +80,23 @@ def resolve_kind_alias(kind: str) -> str:
 def get_kind_caps(kind: str) -> KindCaps | None:
     """Return capabilities for a known kind, or ``None`` for unclassified generic kinds."""
     return _CAPS.get(kind)
+
+
+def kind_has_temporal_axis(kind: str, resolved: str | None = None) -> bool:
+    """Whether the X axis of *kind* carries the DataFrame's x data.
+
+    Only the ``series`` group plots x against y.  ``hist`` and ``ecdf`` put
+    binned values there, ``boxplot`` and ``violinplot`` put one position per
+    column, and ``pie`` has no axis at all -- applying a date locator or a
+    ``DateFormatter`` to any of them labels the axis with 1970 timestamps.
+
+    Unclassified generic kinds are assumed temporal, matching the behaviour
+    they had before the classification table existed.
+    """
+    if resolved is None:
+        resolved = resolve_kind_alias(kind)
+    caps = get_kind_caps(resolved)
+    return caps is None or caps.group == "series"
 
 
 def validate_highlight_for_kind(kind: str, resolved: str | None = None) -> None:

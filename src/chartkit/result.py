@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +16,7 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 
-class Saveable(Protocol):
-    def save(self, path: str, dpi: int | None = None) -> None: ...
-
-
-__all__ = ["PlotResult", "Saveable"]
+__all__ = ["PlotResult"]
 
 
 @dataclass
@@ -38,10 +34,13 @@ class PlotResult:
 
     fig: Figure
     ax: Axes
-    plotter: Saveable
 
     def save(self, path: str, dpi: int | None = None) -> PlotResult:
         """Save the chart to a file. Returns ``self`` for chaining.
+
+        Saves ``self.fig``. Routing this through the plotter that built the
+        chart used to mean a reused plotter wrote whichever figure it had
+        drawn most recently, not this one.
 
         Args:
             path: Output file path. If relative, saves to the configured
@@ -49,7 +48,9 @@ class PlotResult:
                 (``.png``, ``.jpg``, ``.svg``, ``.pdf``).
             dpi: Resolution override. ``None`` uses config ``layout.dpi``.
         """
-        self.plotter.save(path, dpi=dpi)
+        from ._internal.saving import save_figure
+
+        save_figure(self.fig, path, dpi)
         return self
 
     def show(self) -> PlotResult:

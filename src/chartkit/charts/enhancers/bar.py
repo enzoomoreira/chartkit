@@ -113,8 +113,17 @@ def plot_bar(
             )
 
         if sort is not None:
-            ascending = sort == "ascending"
-            vals = vals.sort_values(ascending=ascending)
+            # Sorting reorders the values but each bar is still drawn at its own
+            # x coordinate, so a datetime or numeric axis puts them right back
+            # where they were -- the chart came out identical to the unsorted
+            # one. Ranking is a categorical operation; say so instead.
+            if not is_categorical_index(x):
+                raise ValidationError(
+                    "sort requires a categorical X axis; got "
+                    f"{pd.Index(x).dtype}. Use kind='barh', or convert the "
+                    "index to labels first."
+                )
+            vals = vals.sort_values(ascending=sort == "ascending")
             x = vals.index
 
         if ctx.user_color == "cycle":
