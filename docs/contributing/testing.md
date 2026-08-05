@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 603 tests covering all modules with business logic.
+Test suite for chartkit with 701 tests covering all modules with business logic.
 
 ---
 
@@ -59,10 +59,11 @@ tests/
 │   ├── test_resample.py           # Frequency resampling
 │   ├── test_variation.py          # Month/year variation
 │   └── test_zscore.py             # Z-score (global and rolling)
-└── visual/                        # Structural render snapshots
+└── visual/                        # Structural render snapshots (37 tests)
     ├── conftest.py                # assert_snapshot fixture
     ├── snapshots/                 # Stored descriptions (one JSON per test)
-    ├── test_introspection.py      # describe()/explain(): coverage, colours, overlap
+    ├── test_introspection.py      # describe()/explain(): coverage, colours,
+    │                              # containers, scale offset, overlap
     └── test_render_snapshots.py   # Snapshot of each main rendering path
 ```
 
@@ -96,6 +97,10 @@ coordinates and therefore unaffected by `figsize` or `dpi`. Pixel measurements
 the `position` of a label the collision engine moved is decided from text
 measured in pixels, so it can shift with the platform's fonts even at the
 default level.
+
+`explain()` summarises where `describe()` enumerates: a daily bar chart reports
+its hundreds of rectangles as one line per colour group. Assert on `describe()`
+when a test needs the individual artists.
 
 ---
 

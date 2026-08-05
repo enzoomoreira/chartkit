@@ -2,6 +2,7 @@
   "axes": [
     {
       "collections": [],
+      "containers": [],
       "legend": [
         "21d average",
         "Peak",
@@ -86,6 +87,7 @@
       "side": "left",
       "texts": [],
       "title": "Price with metrics",
+      "x_offset": "",
       "xlabel": "",
       "xlim": [
         19341.45,
@@ -104,6 +106,7 @@
         "2024-01"
       ],
       "y_formatter": "FuncFormatter",
+      "y_offset": "",
       "ylabel": "",
       "ylim": [
         85.9965,

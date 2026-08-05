@@ -6,6 +6,7 @@ Axes, survives a change of figure size, and reports label overlap honestly.
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -111,6 +112,88 @@ class TestGeometry:
         )
 
 
+class TestContainers:
+    """matplotlib marks bar rectangles ``_nolegend_``; the group holds the name."""
+
+    def test_bar_series_is_named(self, monthly_rates: pd.DataFrame) -> None:
+        described = monthly_rates[["cdi"]].chartkit.plot(kind="bar").describe()
+        axes = described["axes"][0]
+
+        # A single series draws no legend, so nothing else carries the name.
+        assert axes["legend"] is None
+        assert [group["label"] for group in axes["containers"]] == ["cdi"]
+
+    def test_grouped_bars_name_every_series(self, monthly_rates: pd.DataFrame) -> None:
+        described = monthly_rates.chartkit.plot(kind="bar").describe()
+
+        labels = [group["label"] for group in described["axes"][0]["containers"]]
+        assert labels == ["cdi", "ipca"]
+
+    def test_line_charts_have_no_containers(self, monthly_rates: pd.DataFrame) -> None:
+        described = monthly_rates.chartkit.plot().describe()
+
+        assert described["axes"][0]["containers"] == []
+
+
+class TestScaleOffset:
+    """Ticks reading 8.395 on an axis running in billions are not 8.395."""
+
+    @pytest.fixture
+    def billions(self, monthly_index: pd.DatetimeIndex) -> pd.DataFrame:
+        n = len(monthly_index)
+        return pd.DataFrame(
+            {"mktcap": 8.4e9 + np.linspace(0, 8e6, n)}, index=monthly_index
+        )
+
+    def test_default_formatter_offset_is_reported(self, billions: pd.DataFrame) -> None:
+        described = billions.chartkit.plot().describe()["axes"][0]
+
+        assert described["y_offset"] == "1e9"
+        # The ticks alone would read as single digits.
+        assert all(len(label) < 8 for label in described["yticklabels"])
+
+    def test_numeric_index_offset_is_reported(self) -> None:
+        df = pd.DataFrame(
+            {"y": np.linspace(1.0, 2.0, 20)},
+            index=np.linspace(5.0e8, 5.0e8 + 1000, 20),
+        )
+
+        described = df.chartkit.plot(kind="scatter").describe()["axes"][0]
+
+        assert described["x_offset"] == "+5e8"
+
+    def test_currency_formatter_has_no_offset(self, billions: pd.DataFrame) -> None:
+        # A currency formatter writes the magnitude into every tick instead.
+        described = billions.chartkit.plot(units="BRL").describe()["axes"][0]
+
+        assert described["y_offset"] == ""
+
+    def test_date_axis_has_no_offset(self, monthly_rates: pd.DataFrame) -> None:
+        described = monthly_rates.chartkit.plot().describe()["axes"][0]
+
+        assert described["x_offset"] == ""
+        assert described["y_offset"] == ""
+
+    def test_right_axis_offset_is_reported(
+        self, monthly_rates: pd.DataFrame, billions: pd.DataFrame
+    ) -> None:
+        result = compose(
+            monthly_rates[["cdi"]].chartkit.layer(units="%"),
+            billions.chartkit.layer(kind="bar", axis="right"),
+        )
+
+        described = result.describe()
+
+        assert described["axes"][0]["y_offset"] == ""
+        assert described["axes"][1]["y_offset"] == "1e9"
+
+    def test_explain_surfaces_the_offset(self, billions: pd.DataFrame) -> None:
+        text = billions.chartkit.plot().explain()
+
+        assert "scale offset" in text
+        assert "1e9" in text
+
+
 class TestPortability:
     """Data-space fields must not move when the figure is drawn larger."""
 
@@ -138,3 +221,38 @@ class TestExplain:
 
         assert "Axes[0] (left)" in text
         assert "Axes[1] (right)" in text
+
+    def test_names_every_layer_of_a_larger_composition(
+        self, multi_series_monthly: pd.DataFrame
+    ) -> None:
+        # Two layers share the left axis and the third is drawn as bars on the
+        # right, so no single Axes or artist type holds the whole chart.
+        result = compose(
+            multi_series_monthly[["fund_a"]].chartkit.layer(units="%"),
+            multi_series_monthly[["fund_b"]].chartkit.layer(),
+            multi_series_monthly[["fund_c"]].chartkit.layer(kind="bar", axis="right"),
+        )
+
+        text = result.explain()
+
+        for series in ("fund_a", "fund_b", "fund_c"):
+            assert series in text, f"{series} missing from:\n{text}"
+
+    def test_names_a_bar_series_with_no_legend_to_carry_it(
+        self, monthly_rates: pd.DataFrame
+    ) -> None:
+        result = monthly_rates[["cdi"]].chartkit.plot(kind="bar")
+
+        assert result.describe()["axes"][0]["legend"] is None
+        assert "cdi" in result.explain()
+
+    def test_patches_are_summarised_rather_than_listed(
+        self, daily_prices: pd.DataFrame
+    ) -> None:
+        # Hundreds of bars must not become hundreds of lines.
+        result = daily_prices.chartkit.plot(kind="bar")
+
+        text = result.explain()
+
+        assert len(result.describe()["axes"][0]["patches"]) > 100
+        assert text.count("Rectangle") == 1

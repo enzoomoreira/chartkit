@@ -2,6 +2,7 @@
   "axes": [
     {
       "collections": [],
+      "containers": [],
       "legend": [
         "cdi",
         "ipca"
@@ -48,6 +49,7 @@
       "side": "left",
       "texts": [],
       "title": "Axis controls",
+      "x_offset": "",
       "xlabel": "Date",
       "xlim": [
         19353.0,
@@ -67,6 +69,7 @@
         "Dec/24"
       ],
       "y_formatter": "ScalarFormatter",
+      "y_offset": "",
       "ylabel": "Rate",
       "ylim": [
         0.2894,

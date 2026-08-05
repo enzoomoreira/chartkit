@@ -134,6 +134,26 @@ result.describe()["axes"][0]["lines"][0]["color"]   # '#00464d'
 print(result.explain())                             # human-readable dump
 ```
 
+Two fields exist because matplotlib keeps the information away from the artist
+you would expect to hold it:
+
+- `containers` names each group of patches. A bar chart marks its rectangles
+  `_nolegend_` and puts the series name on the `BarContainer`, so a
+  single-series bar chart -- which draws no legend -- carries its name nowhere
+  else.
+- `x_offset` / `y_offset` report the common factor the tick formatter pulled
+  out into a corner annotation. Without `units`, an axis running in billions
+  draws ticks reading `8.395` to `8.403` alongside a `1e9` marker; reading the
+  ticks alone understates it by that factor. The currency, percentage and date
+  formatters produce no offset and report `""`.
+
+```python
+described = df.chartkit.plot(kind="bar").describe()["axes"][0]
+
+[group["label"] for group in described["containers"]]   # ['revenue']
+described["y_offset"]                                   # '1e9'
+```
+
 The description is reported in data coordinates, so it does not change when the
 same chart is drawn at a different `figsize` or `dpi`. That makes it safe to
 compare against a stored baseline, which is how the render snapshots in

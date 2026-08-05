@@ -2,6 +2,7 @@
   "axes": [
     {
       "collections": [],
+      "containers": [],
       "legend": [
         "cdi",
         "ipca"
@@ -48,6 +49,7 @@
       "side": "left",
       "texts": [],
       "title": "line chart",
+      "x_offset": "",
       "xlabel": "",
       "xlim": [
         19353.0,
@@ -68,6 +70,7 @@
         "2025-01"
       ],
       "y_formatter": "ScalarFormatter",
+      "y_offset": "",
       "ylabel": "",
       "ylim": [
         0.2894,

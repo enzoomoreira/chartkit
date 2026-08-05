@@ -142,6 +142,21 @@ def _describe_collection(collection: Any) -> dict[str, Any]:
     }
 
 
+def _describe_container(container: Any) -> dict[str, Any]:
+    """Name the group a set of patches belongs to.
+
+    matplotlib labels a bar chart on the container and marks the individual
+    rectangles ``_nolegend_``, so a single-series bar chart -- which draws no
+    legend -- carries its series name nowhere else. Element counts are left
+    out: they are already visible in ``patches``, and a StemContainer's length
+    counts its three artists rather than its stems.
+    """
+    return {
+        "type": type(container).__name__,
+        "label": container.get_label(),
+    }
+
+
 def _describe_text(text: Any) -> dict[str, Any]:
     return {
         "text": text.get_text(),
@@ -150,6 +165,21 @@ def _describe_text(text: Any) -> dict[str, Any]:
         "ha": text.get_ha(),
         "va": text.get_va(),
     }
+
+
+def _offset(axis: Any) -> str:
+    """Report the common factor the formatter pulled out of the tick labels.
+
+    With no ``units`` the default ScalarFormatter factors the scale into a
+    corner annotation, so an axis whose ticks read 8.395 to 8.403 is really
+    running in billions. Reporting the ticks alone understates it by that
+    factor. Formatters without an offset -- the currency and percentage ones,
+    and the date formatter on the X axis -- return an empty string.
+    """
+    # The offset only exists once the formatter has seen the tick locations,
+    # which is what get_ticklabels() triggers.
+    axis.get_ticklabels()
+    return axis.get_major_formatter().get_offset()
 
 
 def _axis_side(ax: Axes) -> str:
@@ -174,11 +204,14 @@ def _describe_axes(ax: Axes) -> dict[str, Any]:
         "ylim": _round([float(v) for v in ax.get_ylim()]),
         "lines": [_describe_line(line) for line in ax.lines],
         "patches": [_describe_patch(patch, ax) for patch in ax.patches],
+        "containers": [_describe_container(group) for group in ax.containers],
         "collections": [_describe_collection(coll) for coll in ax.collections],
         "texts": [_describe_text(text) for text in ax.texts],
         "legend": sorted(t.get_text() for t in legend.get_texts()) if legend else None,
         "xticklabels": [label.get_text() for label in ax.get_xticklabels()],
         "yticklabels": [label.get_text() for label in ax.get_yticklabels()],
+        "x_offset": _offset(ax.xaxis),
+        "y_offset": _offset(ax.yaxis),
         "xtick_rotation": _round(
             [float(label.get_rotation()) for label in ax.get_xticklabels()][:1]
         ),
@@ -269,6 +302,31 @@ def _format_line(line: dict[str, Any]) -> str:
     )
 
 
+def _format_patches(patches: list[dict[str, Any]]) -> list[str]:
+    """Summarise patches by kind and colour rather than listing every one.
+
+    A daily bar chart draws hundreds of rectangles, and printing each one
+    buries the rest of the chart. The group extent says what the individual
+    coordinates would.
+    """
+    groups: dict[tuple[str, str | None], list[list[float]]] = {}
+    for patch in patches:
+        box = patch["bbox"]
+        # A bar for a NaN observation has no extent to fold into the group.
+        if box is None or any(value is None for value in box):
+            continue
+        groups.setdefault((patch["type"], patch["facecolor"]), []).append(box)
+
+    return [
+        f"    - {len(boxes)}x {kind} {color}"
+        f"  x {_round(min(b[0] for b in boxes))}"
+        f"..{_round(max(b[0] + b[2] for b in boxes))}"
+        f"  y {_round(min(b[1] for b in boxes))}"
+        f"..{_round(max(b[1] + b[3] for b in boxes))}"
+        for (kind, color), boxes in groups.items()
+    ]
+
+
 def _format_axes(index: int, axes: dict[str, Any]) -> list[str]:
     out = [f"Axes[{index}] ({axes['side']})"]
     if axes["title"]:
@@ -278,10 +336,14 @@ def _format_axes(index: int, axes: dict[str, Any]) -> list[str]:
         f"  xlabel: {axes['xlabel'] or '-'}   ylabel: {axes['ylabel'] or '-'}"
         f"   y_formatter: {axes['y_formatter']}"
     )
+    if axes["x_offset"] or axes["y_offset"]:
+        out.append(
+            f"  scale offset: x={axes['x_offset'] or '-'}   y={axes['y_offset'] or '-'}"
+        )
 
     for key, formatter in (
         ("lines", _format_line),
-        ("patches", lambda p: f"    - {p['type']} {p['facecolor']} bbox={p['bbox']}"),
+        ("containers", lambda c: f"    - {c['label']!r}  {c['type']}"),
         (
             "collections",
             lambda c: f"    - {c['type']} {c['elements']} el {c['facecolors']}",
@@ -295,6 +357,10 @@ def _format_axes(index: int, axes: dict[str, Any]) -> list[str]:
         if items:
             out.append(f"  {key} ({len(items)}):")
             out.extend(formatter(item) for item in items)
+
+    if axes["patches"]:
+        out.append(f"  patches ({len(axes['patches'])}):")
+        out.extend(_format_patches(axes["patches"]))
 
     if axes["legend"]:
         out.append(f"  legend: {', '.join(axes['legend'])}")

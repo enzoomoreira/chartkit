@@ -2,6 +2,16 @@
   "axes": [
     {
       "collections": [],
+      "containers": [
+        {
+          "label": "cdi",
+          "type": "BarContainer"
+        },
+        {
+          "label": "ipca",
+          "type": "BarContainer"
+        }
+      ],
       "legend": [
         "cdi",
         "ipca"
@@ -684,6 +694,7 @@
       "side": "left",
       "texts": [],
       "title": "bar chart",
+      "x_offset": "",
       "xlabel": "",
       "xlim": [
         19342.0,
@@ -704,6 +715,7 @@
         "2025-01"
       ],
       "y_formatter": "ScalarFormatter",
+      "y_offset": "",
       "ylabel": "",
       "ylim": [
         0.0,

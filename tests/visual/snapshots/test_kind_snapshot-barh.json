@@ -2,6 +2,16 @@
   "axes": [
     {
       "collections": [],
+      "containers": [
+        {
+          "label": "cdi",
+          "type": "BarContainer"
+        },
+        {
+          "label": "ipca",
+          "type": "BarContainer"
+        }
+      ],
       "legend": [
         "cdi",
         "ipca"
@@ -684,6 +694,7 @@
       "side": "left",
       "texts": [],
       "title": "barh chart",
+      "x_offset": "",
       "xlabel": "",
       "xlim": [
         0.0,
@@ -703,6 +714,7 @@
         "1.4"
       ],
       "y_formatter": "FuncFormatter",
+      "y_offset": "",
       "ylabel": "",
       "ylim": [
         -1.59,

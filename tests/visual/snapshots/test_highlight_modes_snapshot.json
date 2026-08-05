@@ -42,6 +42,7 @@
           "zorder": 5.0
         }
       ],
+      "containers": [],
       "legend": null,
       "lines": [
         {
@@ -98,6 +99,7 @@
         }
       ],
       "title": "Highlighted extremes",
+      "x_offset": "",
       "xlabel": "",
       "xlim": [
         19341.45,
@@ -116,6 +118,7 @@
         "2024-01"
       ],
       "y_formatter": "FuncFormatter",
+      "y_offset": "",
       "ylabel": "",
       "ylim": [
         85.9965,
