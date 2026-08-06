@@ -1,5 +1,6 @@
 from matplotlib.figure import Figure
 
+from ..exceptions import ValidationError
 from ..settings import get_config
 from ..styling.theme import theme
 
@@ -27,14 +28,22 @@ def add_footer(fig: Figure, source: str | None = None) -> None:
         source = branding.default_source
 
     if source:
-        footer_text = branding.footer_format.format(
-            source=source,
-            company_name=branding.company_name,
-        )
+        setting, template = "footer_format", branding.footer_format
+        fields = {"source": source, "company_name": branding.company_name}
     else:
-        footer_text = branding.footer_format_no_source.format(
-            company_name=branding.company_name,
-        )
+        setting = "footer_format_no_source"
+        template = branding.footer_format_no_source
+        fields = {"company_name": branding.company_name}
+
+    try:
+        footer_text = template.format(**fields)
+    except KeyError as exc:
+        # A typo in the TOML template otherwise surfaces as a bare KeyError
+        # from inside plot(), naming the placeholder but not where it lives.
+        raise ValidationError(
+            f"branding.{setting} references unknown placeholder {exc}. "
+            f"Available: {', '.join('{' + name + '}' for name in fields)}."
+        ) from exc
 
     # ``company_name`` defaults to empty, which turns the default template
     # into "Fonte: Bloomberg, " -- a separator pointing at nothing.

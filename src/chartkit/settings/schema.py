@@ -349,7 +349,11 @@ class LocaleConfig(BaseModel):
 class MagnitudeConfig(BaseModel):
     """Suffixes for human-readable number formatting (1k, 1M, 1B, 1T)."""
 
-    suffixes: list[str] = Field(default_factory=lambda: ["", "k", "M", "B", "T"])
+    # The formatter walks this list by magnitude and indexes the last entry as
+    # its ceiling, so an empty list is an IndexError waiting for a big number.
+    suffixes: list[str] = Field(
+        default_factory=lambda: ["", "k", "M", "B", "T"], min_length=1
+    )
 
 
 class FormattersConfig(BaseModel):

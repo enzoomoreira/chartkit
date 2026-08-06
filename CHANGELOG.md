@@ -1,5 +1,16 @@
 # Project Changelog
 
+## [2026-08-05 01:26]
+### Fixed
+- **`points_formatter` truncava em vez de arredondar**: `int(x)` corta em direcao ao zero, entao o label do maximo de uma serie que chega a 110,85 dizia `110`. Num grafico cuja funcao e destacar o extremo, isso subestimava a maxima em quase um ponto inteiro. A snapshot `test_highlight_modes_snapshot` registra a correcao (`"110"` -> `"111"`)
+- **`footer_format` com placeholder desconhecido**: `str.format` levantava `KeyError` cru no meio do `plot()`, nomeando a chave mas nao onde ela mora. Agora e `ValidationError` citando o setting e os placeholders validos
+- **`std_band_full_format` nao aceitava `{window}`**: o ramo full-series passava so `deviations`, entao um template que mencionasse `{window}` -- valido no ramo rolling -- morria com `KeyError`. Os dois ramos recebem os mesmos campos
+- **`vband` com data ilegivel**: vazava `DateParseError` do pandas, fora da hierarquia `ChartKitError`
+- **`formatters.magnitude.suffixes` vazio**: o formatter indexa a ultima entrada como teto, entao a lista vazia era um `IndexError` esperando um numero grande o suficiente. Rejeitado no schema via `min_length=1`
+
+### Pending decision
+- **F3.26 -- `min_periods=1` na media movel**: os 11 primeiros pontos de uma `MM12` sao medias de 1 a 11 amostras, com a legenda dizendo `MM12`; o mesmo vale para `std_band`. Mudar o default de `lines.moving_avg_min_periods` para a janela cheia torna a linha honesta com o rotulo, ao custo de 11 pontos iniciais vazios, e e breaking. Aguardando decisao
+
 ## [2026-08-05 00:41]
 ### Fixed
 - **`despike(method='interpolate')` imputava NaNs do proprio input**: `interpolate()` preenche toda lacuna que encontra, entao os NaNs que o chamador forneceu voltavam como valores inventados. Agora so as posicoes que o filtro zerou sao preenchidas

@@ -65,12 +65,16 @@ def add_std_band(
 
     if label is not None:
         band_label = label
-    elif window == 0:
-        band_label = config.labels.std_band_full_format.format(deviations=deviations)
     else:
-        band_label = config.labels.std_band_format.format(
-            window=window, deviations=deviations, freq=freq
+        # Both templates receive the same fields. The full-series branch used
+        # to pass only ``deviations``, so a template mentioning {window} --
+        # which the rolling one accepts -- died with a KeyError.
+        template = (
+            config.labels.std_band_full_format
+            if window == 0
+            else config.labels.std_band_format
         )
+        band_label = template.format(window=window, deviations=deviations, freq=freq)
 
     patch = ax.fill_between(
         x,

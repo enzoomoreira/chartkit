@@ -121,7 +121,12 @@ def multiplier_formatter(decimals: int = 1) -> FuncFormatter:
 
 
 def points_formatter(decimals: int = 0) -> FuncFormatter:
-    """Numeric formatter with thousands separator (e.g. ``1.234.567``)."""
+    """Numeric formatter with thousands separator (e.g. ``1.234.567``).
+
+    Meant for integer-scale quantities -- counts, index points, headcount. On
+    an axis narrower than a few units the labels necessarily repeat; pass
+    ``decimals`` (via ``plot(decimals=)``) for fractional data.
+    """
     config = get_config()
     locale = config.formatters.locale
 
@@ -132,7 +137,9 @@ def points_formatter(decimals: int = 0) -> FuncFormatter:
             return "0"
 
         if decimals == 0 or x == int(x):
-            formatted = f"{int(x):,}"
+            # round(), not int(): truncating turned a 0..1 axis into six zeros
+            # and two ones, because every tick below 1 floors to the same label.
+            formatted = f"{round(x):,}"
             return formatted.replace(",", locale.thousands)
         else:
             formatted = f"{x:,.{decimals}f}"

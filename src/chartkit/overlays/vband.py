@@ -4,6 +4,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 
 from .._internal.collision import register_passive
+from ..exceptions import ValidationError
 from ..settings import get_config
 from ..styling.theme import theme
 from ..warnings import RenderingWarning, warn
@@ -31,8 +32,15 @@ def add_vband(
     """
     config = get_config()
 
-    start_ts = pd.Timestamp(start)
-    end_ts = pd.Timestamp(end)
+    # pd.Timestamp raises DateParseError, which lives outside ChartKitError and
+    # names the string without saying which metric it came from.
+    try:
+        start_ts = pd.Timestamp(start)
+        end_ts = pd.Timestamp(end)
+    except (ValueError, TypeError) as exc:
+        raise ValidationError(
+            f"vband could not read '{start}' and '{end}' as dates: {exc}"
+        ) from exc
 
     if start_ts > end_ts:
         warn(
