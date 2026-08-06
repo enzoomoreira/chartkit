@@ -16,11 +16,12 @@ from typing import get_args, overload
 import numpy as np
 import pandas as pd
 
-from .._internal.frequency import infer_freq, normalize_freq_code
+from .._internal.frequency import estimate_freq, infer_freq, normalize_freq_code
 from ..exceptions import TransformError
 from ..settings import get_config
 from ..warnings import InferenceWarning, warn
 from ._validation import (
+    FREQ_PERIODS_MAP,
     _DespikeParams,
     _DiffParams,
     _FreqResolvedParams,
@@ -171,13 +172,29 @@ def accum(
     except TransformError:
         if params.window is not None or params.freq is not None:
             raise
-        resolved = get_config().transforms.accum_window
-        warn(
-            f"Could not auto-detect frequency for accum; falling back to "
-            f"config accum_window={resolved}. Pass window= or freq= to be "
-            f"explicit.",
-            InferenceWarning,
-        )
+        # pd.infer_freq needs a perfectly regular index, which no market series
+        # has -- one public holiday is enough for it to give up on data that is
+        # plainly business-daily. Falling straight to the configured window then
+        # accumulated over 12 *days*. The median spacing still tells daily from
+        # monthly, so prefer it and keep the config value as the last resort.
+        estimated = estimate_freq(data)
+        mapping = FREQ_PERIODS_MAP.get(estimated) if estimated else None
+        if mapping is not None:
+            resolved = mapping["accum"]
+            warn(
+                f"Could not infer an exact frequency for accum; estimated "
+                f"'{estimated}' from the median spacing between observations "
+                f"(window={resolved}). Pass window= or freq= to be explicit.",
+                InferenceWarning,
+            )
+        else:
+            resolved = get_config().transforms.accum_window
+            warn(
+                f"Could not auto-detect frequency for accum; falling back to "
+                f"config accum_window={resolved}. Pass window= or freq= to be "
+                f"explicit.",
+                InferenceWarning,
+            )
 
     factor = 1 + data / 100
 
@@ -268,7 +285,18 @@ def normalize(
         if ts in data.index:
             base_value = data.loc[ts]
         else:
-            idx = data.index.get_indexer([ts], method="nearest")
+            # get_indexer compares the timestamp against the index, so a
+            # non-temporal index raises TypeError and a duplicated one raises
+            # InvalidIndexError -- neither of which is a ChartKitError.
+            try:
+                idx = data.index.get_indexer([ts], method="nearest")
+            except (TypeError, pd.errors.InvalidIndexError) as exc:
+                raise TransformError(
+                    f"base_date '{params.base_date}' cannot be matched against "
+                    f"a {type(data.index).__name__}"
+                    f"{' with duplicate entries' if not data.index.is_unique else ''}"
+                    f": {exc}"
+                ) from exc
             if idx[0] == -1:
                 raise TransformError(
                     f"base_date '{params.base_date}' could not be matched "
@@ -440,16 +468,23 @@ def zscore(
 
     result = (data - mean) / std
 
-    # Warn when std=0 (constant data) produces all-NaN
+    # An all-NaN result has two very different causes, and reporting the wrong
+    # one sends the reader looking at their data instead of their call.
+    window_too_long = params.window is not None and params.window > len(data)
+    cause = (
+        f"window={params.window} exceeds the {len(data)} available observations"
+        if window_too_long
+        else "constant data, std=0"
+    )
+
     if isinstance(data, pd.DataFrame):
         all_nan_cols = result.columns[result.isna().all()].tolist()
         if all_nan_cols:
             logger.warning(
-                "zscore produced all-NaN for columns %s (constant data, std=0)",
-                all_nan_cols,
+                "zscore produced all-NaN for columns %s (%s)", all_nan_cols, cause
             )
     elif result.isna().all():
-        logger.warning("zscore produced all-NaN (constant data, std=0)")
+        logger.warning("zscore produced all-NaN (%s)", cause)
 
     return sanitize_result(result)
 
@@ -554,8 +589,12 @@ def despike(
     if params.method == "median":
         result = result.where(~is_spike, rolling_median)
     else:
+        # interpolate() fills every gap it finds, so it used to impute the NaNs
+        # the caller supplied as well. Only the points this filter blanked out
+        # are its to fill back in.
+        was_missing = data.isna()
         result = result.where(~is_spike, np.nan)
-        result = result.interpolate(method="linear")
+        result = result.interpolate(method="linear").where(~was_missing)
 
     return sanitize_result(result)
 
@@ -617,16 +656,21 @@ def resample(
     if data.empty:
         raise TransformError("Input data is empty")
 
+    # Checked before validate_numeric: the index is what makes the call
+    # meaningful at all, and validating the values first would emit a
+    # frequency-detection warning about an index we are about to reject.
     if not isinstance(data.index, pd.DatetimeIndex):
         raise TransformError(
             f"resample requires DatetimeIndex, got {type(data.index).__name__}"
         )
 
+    data = validate_numeric(data)
+
     params = validate_params(_ResampleParams, freq=freq, method=method)
     offset = _RESAMPLE_OFFSETS[params.freq]
 
     resampler = data.resample(offset)
-    result = getattr(resampler, params.method)()
+    result = sanitize_result(getattr(resampler, params.method)())
 
     if isinstance(result, pd.Series):
         return result.dropna()

@@ -1,5 +1,19 @@
 # Project Changelog
 
+## [2026-08-05 00:41]
+### Fixed
+- **`despike(method='interpolate')` imputava NaNs do proprio input**: `interpolate()` preenche toda lacuna que encontra, entao os NaNs que o chamador forneceu voltavam como valores inventados. Agora so as posicoes que o filtro zerou sao preenchidas
+- **`resample` fora do contrato dos demais transforms**: nao passava por `validate_numeric` nem `sanitize_result`, entao colunas de texto atravessavam intactas e infinitos sobreviviam. A checagem de `DatetimeIndex` vem antes da validacao numerica, para nao avisar sobre um indice que sera rejeitado logo em seguida
+- **`normalize(base_date=)` vazava erros crus do pandas**: `get_indexer` levanta `TypeError` em indice nao-temporal e `InvalidIndexError` em indice duplicado -- nenhum dos dois e `ChartKitError`
+- **`zscore` culpava dado constante**: o log dizia `constant data, std=0` mesmo quando a causa era `window` maior que a serie, mandando o leitor investigar os dados em vez da chamada
+- **`accum` usava janela mensal em dado diario**: `pd.infer_freq` exige indice perfeitamente regular, o que nenhuma serie de mercado tem -- um feriado basta. O fallback caia na `accum_window` da config (12), acumulando 12 *dias*
+
+### Added
+- **`estimate_freq()` em `_internal/frequency.py`**: estima frequencia pelo espacamento mediano entre observacoes, para quando `pd.infer_freq` desiste. Distingue `B` de `D` pela presenca de fins de semana no indice -- 252 contra 365 periodos ao ano e diferenca grande demais para chutar. Usado apenas no fallback do `accum`; `variation` e `annualize` continuam exigindo frequencia explicita
+
+### Not fixed
+- **Falsos spikes nas bordas do `despike` (A2-22)**: a janela centrada e unilateral nas extremidades. Marcacoes nas bordas foram observadas em series com tendencia e ruido, mas nao ficou provado que sejam falsos positivos, e as duas correcoes tentadas regrediram -- exigir janela cheia cega o filtro em series curtas (um spike de 350 num bairro de 100 deixou de ser detectado), e reflexao impar marcou mais bordas ainda. Mantido como esta
+
 ## [2026-08-04 23:18]
 ### Fixed
 - **Eixos nao-temporais recebiam formatacao de data**: com `ticks.date_format` configurado -- o uso normal da lib -- `hist`, `ecdf`, `boxplot` e `violinplot` rotulavam o eixo X com `"Jan/1970"`, porque o `finalize_chart` aplicava `DateFormatter` sem olhar o que o kind poe naquele eixo. Agora so o grupo `series` do `KindCaps` recebe locator e formatter de data
