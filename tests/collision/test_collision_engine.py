@@ -332,3 +332,93 @@ class TestBestCostSelection:
             pos = lbl.get_position()
             assert abs(pos[1] - 30) < 20 or abs(pos[1] - 29) < 20
         plt.close(fig)
+
+
+class TestOutOfBoundsTrigger:
+    """A label that leaves the data area must be pulled back inside.
+
+    Before this, resolution only ran when a label overlapped another label or
+    a registered obstacle. The axes border is neither, so a label anchored past
+    the last data point stayed on top of the spine -- edge_margin_factor only
+    ranks candidates once a resolution is already under way.
+    """
+
+    @staticmethod
+    def _axes_and_renderer(fig, ax):
+        fig.draw_without_rendering()
+        renderer = fig.canvas.get_renderer()
+        return ax.get_window_extent(renderer), renderer
+
+    def test_label_past_the_right_edge_is_moved_back(self) -> None:
+        fig, ax = plt.subplots()
+        ax.plot([0, 1, 2, 3, 4], [10, 20, 15, 25, 30])
+
+        # ha='left' at the last point pushes the text out past the spine,
+        # which is how highlight labels are anchored.
+        label = ax.text(4, 30, "  30,0%", ha="left", va="center")
+        register_moveable(ax, label)
+
+        axes_bbox, renderer = self._axes_and_renderer(fig, ax)
+        before = label.get_window_extent(renderer)
+        assert before.x1 > axes_bbox.x1, "fixture must start out of bounds"
+
+        resolve_collisions(ax)
+
+        fig.draw_without_rendering()
+        after = label.get_window_extent(renderer)
+        assert after.x1 <= axes_bbox.x1
+        plt.close(fig)
+
+    def test_rescued_label_lands_clear_of_the_border(self) -> None:
+        """Landing flush against the spine is not enough.
+
+        The rescue candidate wins on distance, being the smallest move that
+        works, so without an explicit margin it parks the label exactly on the
+        border -- and a glyph's ink reaches past the extent matplotlib reports,
+        so the text still draws over the spine.
+        """
+        fig, ax = plt.subplots()
+        ax.plot([0, 1, 2, 3, 4], [10, 20, 15, 25, 30])
+
+        label = ax.text(4, 30, "  30,0%", ha="left", va="center")
+        register_moveable(ax, label)
+
+        axes_bbox, renderer = self._axes_and_renderer(fig, ax)
+        resolve_collisions(ax)
+
+        fig.draw_without_rendering()
+        after = label.get_window_extent(renderer)
+        assert axes_bbox.x1 - after.x1 > 1.0
+        plt.close(fig)
+
+    def test_label_already_inside_is_left_alone(self) -> None:
+        """No collision and no overflow means no movement."""
+        fig, ax = plt.subplots()
+        ax.plot([0, 1, 2, 3, 4], [10, 20, 15, 25, 30])
+
+        label = ax.text(2, 15, "x", ha="center", va="center")
+        register_moveable(ax, label)
+
+        original = label.get_position()
+        resolve_collisions(ax)
+
+        assert label.get_position() == original
+        plt.close(fig)
+
+    def test_overflow_at_the_top_also_triggers(self) -> None:
+        """The check is on the whole box, not only the horizontal axis."""
+        fig, ax = plt.subplots()
+        ax.plot([0, 1, 2], [10, 20, 30])
+        ax.set_ylim(10, 30)
+
+        label = ax.text(1, 30, "topo", ha="center", va="bottom")
+        register_moveable(ax, label)
+
+        axes_bbox, renderer = self._axes_and_renderer(fig, ax)
+        assert label.get_window_extent(renderer).y1 > axes_bbox.y1
+
+        resolve_collisions(ax)
+
+        fig.draw_without_rendering()
+        assert label.get_window_extent(renderer).y1 <= axes_bbox.y1
+        plt.close(fig)

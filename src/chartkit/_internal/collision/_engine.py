@@ -211,6 +211,16 @@ _DIRECTIONS: list[tuple[float, float]] = [
 _SQRT2 = sqrt(2)
 
 
+def _is_within(bbox: Bbox, axes_bbox: Bbox) -> bool:
+    """Whether *bbox* sits entirely inside the data area."""
+    return (
+        bbox.x0 >= axes_bbox.x0
+        and bbox.x1 <= axes_bbox.x1
+        and bbox.y0 >= axes_bbox.y0
+        and bbox.y1 <= axes_bbox.y1
+    )
+
+
 # -- Core resolution --
 
 
@@ -276,7 +286,17 @@ def _resolve_all(
                         obs_bbox = _pad_bbox(obs_bbox, pad)
                     colliding.append(obs_bbox)
 
-            if not colliding:
+            # Leaving the data area is a collision with the chart's own frame:
+            # a label that crosses the spine sits on top of the axis it was
+            # meant to annotate. edge_margin_factor only ranks candidates once
+            # a resolution is already running, so without this the solver never
+            # wakes up for a label that overlaps nothing but the border.
+            # No bbox is appended for it -- reactive candidates snap around an
+            # obstacle, and the border is not one; the proactive candidates are
+            # already filtered to stay inside the axes.
+            out_of_bounds = not _is_within(raw_bbox, axes_bbox)
+
+            if not colliding and not out_of_bounds:
                 continue
 
             result = _find_free_position(
@@ -351,14 +371,21 @@ def _find_free_position(
             _generate_reactive_candidates(label_bbox, obs, clearance, axes_bbox)
         )
 
-    logger.debug("Candidates: %s proactive, %s reactive", len(proactive), len(reactive))
+    bounds = _generate_bounds_candidates(label_bbox, axes_bbox, edge_margin)
+
+    logger.debug(
+        "Candidates: %s proactive, %s reactive, %s bounds",
+        len(proactive),
+        len(reactive),
+        len(bounds),
+    )
 
     best_cost = float("inf")
     best_displacement: tuple[float, float] | None = None
     valid_count = 0
 
-    total = len(proactive) + len(reactive)
-    for dx, dy, _ in chain(proactive, reactive):
+    total = len(proactive) + len(reactive) + len(bounds)
+    for dx, dy, _ in chain(proactive, reactive, bounds):
         shifted_padded = _pad_bbox(_shift_bbox(label_bbox, dx, dy), label_pad)
         if not _position_is_free(
             shifted_padded, label_bboxes, obstacles, obstacle_pad, renderer
@@ -431,6 +458,53 @@ def _generate_proactive_candidates(
             ):
                 distance = sqrt(dx**2 + dy**2)
                 candidates.append((dx, dy, distance))
+
+    return candidates
+
+
+def _generate_bounds_candidates(
+    label_bbox: Bbox,
+    axes_bbox: Bbox,
+    clearance: float,
+) -> list[tuple[float, float, float]]:
+    """Smallest displacement that brings an out-of-bounds label back inside.
+
+    The proactive candidates step in multiples of the label height, which is
+    the right scale for separating two labels but arbitrary against a border:
+    a label hanging 30px past the spine is not helped by offers of 14, 21 and
+    28px, and every one of them is discarded for still being outside. This
+    returns the exact correction instead, per violated edge and combined.
+
+    *clearance* is subtracted beyond the correction so the label lands short of
+    the border rather than flush against it. A glyph's ink can reach past the
+    extent matplotlib reports for its text, so a box measured as exactly inside
+    still draws over the spine. It is the edge margin rather than the label
+    padding: this candidate wins on distance, being the smallest move that
+    works, so landing it at the threshold would park every rescued label in
+    the band the cost function exists to penalise.
+    """
+    dx = 0.0
+    if label_bbox.x1 > axes_bbox.x1:
+        dx = axes_bbox.x1 - label_bbox.x1 - clearance
+    elif label_bbox.x0 < axes_bbox.x0:
+        dx = axes_bbox.x0 - label_bbox.x0 + clearance
+
+    dy = 0.0
+    if label_bbox.y1 > axes_bbox.y1:
+        dy = axes_bbox.y1 - label_bbox.y1 - clearance
+    elif label_bbox.y0 < axes_bbox.y0:
+        dy = axes_bbox.y0 - label_bbox.y0 + clearance
+
+    if dx == 0.0 and dy == 0.0:
+        return []
+
+    candidates: list[tuple[float, float, float]] = []
+    if dx != 0.0:
+        candidates.append((dx, 0.0, abs(dx)))
+    if dy != 0.0:
+        candidates.append((0.0, dy, abs(dy)))
+    if dx != 0.0 and dy != 0.0:
+        candidates.append((dx, dy, sqrt(dx**2 + dy**2)))
 
     return candidates
 
