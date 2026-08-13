@@ -211,6 +211,15 @@ _DIRECTIONS: list[tuple[float, float]] = [
 _SQRT2 = sqrt(2)
 
 
+def _frozen(bbox: Bbox) -> Bbox:
+    """Detach *bbox* from the artist that produced it.
+
+    ``get_window_extent`` can hand back a view that tracks the artist, which
+    would silently invalidate a cached copy the moment the label is moved.
+    """
+    return Bbox.from_extents(bbox.x0, bbox.y0, bbox.x1, bbox.y1)
+
+
 def _is_within(bbox: Bbox, axes_bbox: Bbox) -> bool:
     """Whether *bbox* sits entirely inside the data area."""
     return (
@@ -241,11 +250,21 @@ def _resolve_all(
         raw = label.get_window_extent(renderer)
         anchor_bboxes[id(label)] = Bbox.from_extents(raw.x0, raw.y0, raw.x1, raw.y1)
 
+    # One extent per label per iteration instead of one per pair. Measuring a
+    # text extent lays the string out, and the inner loop asked every label for
+    # its own on each pass over every other -- quadratic in labels, for values
+    # that only change when something actually moves. The cache is refreshed
+    # for the mover alone, so a label still sees its neighbours' current
+    # positions within the same iteration.
+    extents: list[Bbox] = [
+        _frozen(label.get_window_extent(renderer)) for label in moveables
+    ]
+
     for _ in range(collision.max_iterations):
         any_moved = False
 
         for i, label in enumerate(moveables):
-            raw_bbox = label.get_window_extent(renderer)
+            raw_bbox = extents[i]
             if raw_bbox.width < 1 and raw_bbox.height < 1:
                 continue
 
@@ -265,12 +284,11 @@ def _resolve_all(
                 active_obs.append(obs)
 
             # Bboxes from other moveable labels
-            label_bboxes: list[Bbox] = []
-            for j, other in enumerate(moveables):
-                if j != i:
-                    label_bboxes.append(
-                        _pad_bbox(other.get_window_extent(renderer), label_pad)
-                    )
+            label_bboxes: list[Bbox] = [
+                _pad_bbox(other_bbox, label_pad)
+                for j, other_bbox in enumerate(extents)
+                if j != i
+            ]
 
             # Detect collisions
             padded_label = _pad_bbox(raw_bbox, label_pad)
@@ -316,6 +334,7 @@ def _resolve_all(
             if result is not None:
                 dx, dy = result
                 _shift_label(label, dx, dy)
+                extents[i] = _shift_bbox(raw_bbox, dx, dy)
                 any_moved = True
 
         if not any_moved:
