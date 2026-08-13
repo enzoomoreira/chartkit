@@ -560,6 +560,24 @@ df = pd.DataFrame({'gdp': [100, 102, 104, 106]},
 df.chartkit.plot(title="Quarterly GDP", tick_freq='quarter', tick_format='%b/%Y')
 ```
 
+### Localized Month and Weekday Names
+
+`tick_format` takes a `strftime` string, and the directives that spell out a
+name (`%a`, `%A`, `%b`, `%B`, `%p`) follow `formatters.locale.babel_locale` --
+the same setting the currency formatters use. With the default `pt_BR`,
+`tick_format='%b/%y'` gives `mar/24`, not `Mar/24`. Every other directive
+(`%Y`, `%m`, `%d`, ...) is locale-invariant and behaves as `strftime` does.
+
+Abbreviated names drop the period CLDR puts on them: Portuguese abbreviates
+February as `fev.`, which against a separator would read `fev./24`.
+
+```python
+from chartkit import configure
+
+configure(formatters={'locale': {'babel_locale': 'en_US'}})
+df.chartkit.plot(tick_format='%b/%y')   # Mar/24
+```
+
 ---
 
 ## Highlighting Values (highlight)

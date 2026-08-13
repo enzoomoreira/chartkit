@@ -339,10 +339,11 @@ class TransformsConfig(BaseModel):
 
 
 class LocaleConfig(BaseModel):
-    """Number formatting locale.
+    """Number and date formatting locale.
 
     Attributes:
-        babel_locale: Babel locale for currency formatting (ISO 639 + ISO 3166).
+        babel_locale: Babel locale (ISO 639 + ISO 3166) for currency amounts and
+            for the month and weekday names an X-axis ``tick_format`` asks for.
     """
 
     decimal: str = ","

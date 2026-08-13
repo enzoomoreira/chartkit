@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 import matplotlib.dates as mdates
 import pandas as pd
+from babel.dates import get_day_names, get_month_names, get_period_names
 from matplotlib.axes import Axes
-from matplotlib.ticker import FixedLocator
+from matplotlib.ticker import FixedLocator, FuncFormatter
 
 from ..exceptions import ValidationError
 from ..settings import get_config
@@ -25,6 +27,10 @@ _FREQ_LOCATORS: dict[TickFreq, type[mdates.DateLocator] | tuple] = {
 }
 
 _ALIGNABLE_FREQS: set[TickFreq] = {"month", "quarter", "semester", "year"}
+
+# strftime directives whose output depends on the locale rather than on the
+# date alone. Everything else ('%Y', '%m', '%d', ...) is locale-invariant.
+_LOCALIZED_DIRECTIVES = frozenset("aAbBp")
 
 __all__ = ["apply_tick_formatting"]
 
@@ -184,6 +190,71 @@ def _clip_ticks_to_data(ax: Axes, x_data: pd.Index | pd.Series) -> None:
         ax.xaxis.set_major_locator(FixedLocator(filtered))
 
 
+def _drop_abbreviation_dot(name: str) -> str:
+    """Remove the period CLDR puts on an abbreviated name.
+
+    Portuguese abbreviates February as ``"fev."``, so a ``"%b/%y"`` axis would
+    read ``"fev./24"`` -- the period sits right against the separator and buys
+    nothing at tick-label size. Locales that abbreviate without a period (``es``,
+    ``en``) are unaffected.
+    """
+    return name[:-1] if name.endswith(".") else name
+
+
+def _localized_date_formatter(fmt: str, locale: str) -> FuncFormatter:
+    """Render *fmt* with month and weekday names taken from *locale*.
+
+    ``mdates.DateFormatter`` delegates to ``datetime.strftime``, whose names
+    come from the process C locale -- which left the same figure reading
+    ``R$ 5,60`` on one axis and ``Sep/24`` on the other. The locale-dependent
+    directives (``%a %A %b %B %p``) are resolved through Babel here; every
+    other directive is handed to ``strftime`` untouched.
+    """
+    months_abbr = get_month_names("abbreviated", locale=locale)
+    months_wide = get_month_names("wide", locale=locale)
+    days_abbr = get_day_names("abbreviated", locale=locale)
+    days_wide = get_day_names("wide", locale=locale)
+    periods = get_period_names(width="abbreviated", context="format", locale=locale)
+
+    def _name(directive: str, dt: datetime) -> str:
+        if directive == "b":
+            return _drop_abbreviation_dot(months_abbr[dt.month])
+        if directive == "B":
+            return months_wide[dt.month]
+        if directive == "a":
+            return _drop_abbreviation_dot(days_abbr[dt.weekday()])
+        if directive == "A":
+            return days_wide[dt.weekday()]
+        return periods["am" if dt.hour < 12 else "pm"]
+
+    def _expand(dt: datetime) -> str:
+        """Substitute the localized directives, leaving the rest for strftime."""
+        parts: list[str] = []
+        i = 0
+        while i < len(fmt):
+            char = fmt[i]
+            if char != "%" or i + 1 >= len(fmt):
+                parts.append(char)
+                i += 1
+                continue
+            directive = fmt[i + 1]
+            if directive in _LOCALIZED_DIRECTIVES:
+                # A name carrying a '%' would otherwise be read back as a
+                # directive by the strftime call below.
+                parts.append(_name(directive, dt).replace("%", "%%"))
+            else:
+                # '%%' lands here too, and stays the escape strftime expects.
+                parts.append(char + directive)
+            i += 2
+        return "".join(parts)
+
+    def _format(x: float, pos: int | None) -> str:
+        dt = mdates.num2date(x)
+        return dt.strftime(_expand(dt))
+
+    return FuncFormatter(_format)
+
+
 def apply_tick_formatting(
     ax: Axes,
     *,
@@ -253,5 +324,8 @@ def apply_tick_formatting(
         _clip_ticks_to_data(ax, x_data)
 
     if effective_format is not None:
-        ax.xaxis.set_major_formatter(mdates.DateFormatter(effective_format))
-        logger.debug("Tick format: '%s'", effective_format)
+        locale = config.formatters.locale.babel_locale
+        ax.xaxis.set_major_formatter(
+            _localized_date_formatter(effective_format, locale)
+        )
+        logger.debug("Tick format: '%s' (locale '%s')", effective_format, locale)

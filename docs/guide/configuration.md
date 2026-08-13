@@ -125,7 +125,7 @@ label_offset_fraction = 0.015  # Vertical breathing room between label and data 
 [formatters.locale]
 decimal = ","
 thousands = "."
-babel_locale = "pt_BR"
+babel_locale = "pt_BR"  # Currency amounts and month/weekday names on the X axis
 
 [labels]
 ath = "ATH"

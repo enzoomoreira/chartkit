@@ -844,6 +844,9 @@ Opacity of filled chart bodies. Both are constrained to `0.0 <= alpha <= 1.0`.
 | `thousands` | `str` | `"."` |
 | `babel_locale` | `str` | `"pt_BR"` |
 
+`babel_locale` drives currency amounts and the name-spelling directives of an
+X-axis `tick_format` (`%a`, `%A`, `%b`, `%B`, `%p`).
+
 #### MagnitudeConfig
 
 | Field | Type | Default |

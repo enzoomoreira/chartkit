@@ -18,10 +18,13 @@ import pandas as pd
 import pytest
 from matplotlib.ticker import FixedLocator
 
+from chartkit import configure
 from chartkit._internal.tick_formatting import (
     _clip_ticks_to_data,
+    _drop_abbreviation_dot,
     _infer_locator,
     _is_sparse,
+    _localized_date_formatter,
     _period_key,
     _strip_multiplier,
     _ticks_from_data,
@@ -518,7 +521,7 @@ class TestApplyTickFormatting:
         apply_tick_formatting(ax, tick_format="%b/%Y", x_data=monthly_index)
 
         formatter = ax.xaxis.get_major_formatter()
-        assert isinstance(formatter, mdates.DateFormatter)
+        assert formatter(mdates.date2num(pd.Timestamp("2023-03-31"))) == "mar/2023"
 
     def test_invalid_tick_freq_raises(self, ax: plt.Axes) -> None:
         from chartkit.exceptions import ValidationError
@@ -637,3 +640,60 @@ class TestApplyTickFormatting:
 
         tick_months = {mdates.num2date(t).month for t in locator.locs}
         assert tick_months == {6, 12}
+
+
+# ---------------------------------------------------------------------------
+# Localized date names
+# ---------------------------------------------------------------------------
+
+
+def _label(fmt: str, locale: str, when: str) -> str:
+    """Render *when* through the localized formatter built for *locale*."""
+    formatter = _localized_date_formatter(fmt, locale)
+    return formatter(mdates.date2num(pd.Timestamp(when)))
+
+
+class TestLocalizedDateNames:
+    def test_abbreviated_month_follows_locale(self) -> None:
+        """The same directive reads differently in each locale."""
+        assert _label("%b/%y", "pt_BR", "2024-09-30") == "set/24"
+        assert _label("%b/%y", "en_US", "2024-09-30") == "Sep/24"
+
+    def test_wide_month_follows_locale(self) -> None:
+        assert _label("%B/%Y", "pt_BR", "2024-09-30") == "setembro/2024"
+
+    def test_weekday_follows_locale(self) -> None:
+        # 2024-09-30 is a Monday.
+        assert _label("%a", "pt_BR", "2024-09-30") == "seg"
+        assert _label("%A", "pt_BR", "2024-09-30") == "segunda-feira"
+
+    def test_abbreviation_period_is_dropped(self) -> None:
+        """CLDR writes 'fev.'; against a separator the period is only noise."""
+        assert _label("%b", "pt_BR", "2024-02-29") == "fev"
+        assert _drop_abbreviation_dot("jan.") == "jan"
+        assert _drop_abbreviation_dot("Jan") == "Jan"
+
+    def test_numeric_directives_are_untouched(self) -> None:
+        assert _label("%Y-%m-%d", "pt_BR", "2024-09-30") == "2024-09-30"
+
+    def test_percent_escape_survives(self) -> None:
+        """A literal '%%' must not be read back as a directive."""
+        assert _label("%b 100%%", "pt_BR", "2024-09-30") == "set 100%"
+
+    def test_meridiem_follows_locale(self) -> None:
+        assert _label("%p", "pt_BR", "2024-09-30 14:00") == "PM"
+
+    def test_axis_uses_configured_locale(
+        self, ax: plt.Axes, quarterly_end_index: pd.DatetimeIndex
+    ) -> None:
+        """The X axis picks up the same locale the currency formatters use."""
+        configure(formatters={"locale": {"babel_locale": "pt_BR"}})
+        rng = np.random.default_rng(42)
+        ax.plot(quarterly_end_index, rng.normal(0, 1, len(quarterly_end_index)))
+
+        apply_tick_formatting(
+            ax, tick_format="%b/%y", tick_freq="year", x_data=quarterly_end_index
+        )
+        formatter = ax.xaxis.get_major_formatter()
+
+        assert formatter(mdates.date2num(pd.Timestamp("2024-12-31"))) == "dez/24"

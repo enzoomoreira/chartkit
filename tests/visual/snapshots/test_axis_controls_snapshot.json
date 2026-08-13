@@ -59,14 +59,14 @@
         0.0
       ],
       "xticklabels": [
-        "Mar/23",
-        "Jun/23",
-        "Sep/23",
-        "Dec/23",
-        "Mar/24",
-        "Jun/24",
-        "Sep/24",
-        "Dec/24"
+        "mar/23",
+        "jun/23",
+        "set/23",
+        "dez/23",
+        "mar/24",
+        "jun/24",
+        "set/24",
+        "dez/24"
       ],
       "y_formatter": "ScalarFormatter",
       "y_offset": "",
