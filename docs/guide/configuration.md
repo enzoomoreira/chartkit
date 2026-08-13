@@ -101,7 +101,10 @@ main_width = 2.0
 overlay_width = 1.5
 reference_style = "--"
 target_style = "-."
-moving_avg_min_periods = 1
+# Observations required before a rolling overlay produces a value.
+# Omit it (the default) to demand the full window, so an `ma:12` starts on
+# its twelfth point. Set a number to draw earlier from a partial sample.
+# moving_avg_min_periods = 1
 
 [bars]
 width_default = 0.8

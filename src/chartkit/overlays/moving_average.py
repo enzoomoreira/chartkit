@@ -34,7 +34,10 @@ def add_moving_average(
     config = get_config()
     y_data = resolve_series(y_data, series)
 
-    min_periods = config.lines.moving_avg_min_periods
+    # Defaults to the full window: with a smaller min_periods the opening
+    # points are averages of fewer samples than the label claims -- an "MM12"
+    # whose first value is a single observation.
+    min_periods = config.lines.moving_avg_min_periods or window
     ma = y_data.rolling(window=window, min_periods=min_periods).mean()
 
     line_color = color if color is not None else config.colors.moving_average

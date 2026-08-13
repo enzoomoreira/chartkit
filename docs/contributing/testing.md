@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 801 tests covering all modules with business logic.
+Test suite for chartkit with 809 tests covering all modules with business logic.
 
 ---
 
@@ -46,7 +46,8 @@ tests/
 ├── integration/                   # End-to-end tests (23 tests)
 │   ├── test_accessor_pipeline.py  # Accessor .plot() and .layer() integration
 │   └── test_end_to_end.py        # Full pipeline validation
-├── metrics/                       # Metric registry (43 tests)
+├── metrics/                       # Metric registry (51 tests)
+│   ├── test_moving_average.py     # Moving average overlay + min_periods contract
 │   ├── test_registry.py          # Registration, lifecycle, available(), apply()
 │   ├── test_spec_parsing.py       # MetricRegistry.parse() spec parsing
 │   └── test_std_band.py           # Rolling and full-series standard deviation bands

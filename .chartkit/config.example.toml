@@ -140,7 +140,10 @@ axis = "both"         # "x", "y", ou "both"
 # overlay_width = 1.5           # Espessura de overlays (MM, ATH, etc)
 # reference_style = "--"        # Estilo de linhas de referencia
 # target_style = "-."            # Estilo de linhas de meta (target)
-# moving_avg_min_periods = 1
+# moving_avg_min_periods = 1     # Amostras minimas de um overlay rolante.
+                                 # Omitido = janela cheia (uma MM12 comeca no
+                                 # 12o ponto). Defina para desenhar antes,
+                                 # a partir de amostra parcial.
 
 # --- Legenda -----------------------------------------------------------------
 

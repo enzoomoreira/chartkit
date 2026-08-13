@@ -755,7 +755,7 @@ class ChartingConfig(BaseSettings):
 | `overlay_width` | `float` | `1.5` |
 | `reference_style` | `str` | `"--"` |
 | `target_style` | `str` | `"-."` |
-| `moving_avg_min_periods` | `int` | `1` |
+| `moving_avg_min_periods` | `int \| None` | `None` (full window) |
 
 #### BarsConfig
 

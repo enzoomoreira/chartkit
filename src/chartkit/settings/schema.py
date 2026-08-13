@@ -228,13 +228,17 @@ class LinesConfig(BaseModel):
         overlay_width: Width for overlay lines (moving average, reference).
         reference_style: Linestyle for reference lines (ATH, ATL).
         target_style: Linestyle for target lines.
+        moving_avg_min_periods: Observations required before a rolling overlay
+            produces a value. ``None`` demands the full window, so an ``ma:12``
+            starts on its twelfth point and the line means what its label says.
+            Set an explicit value to draw earlier from a partial sample.
     """
 
     main_width: float = 2.0
     overlay_width: float = 1.5
     reference_style: str = "--"
     target_style: str = "-."
-    moving_avg_min_periods: int = 1
+    moving_avg_min_periods: int | None = Field(default=None, ge=1)
 
 
 class FrequencyDetectionConfig(BaseModel):

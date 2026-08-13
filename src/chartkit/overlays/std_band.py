@@ -51,7 +51,9 @@ def add_std_band(
         ma = pd.Series(y_data.mean(), index=y_data.index)
         std = pd.Series(y_data.std(), index=y_data.index)
     else:
-        min_periods = config.lines.moving_avg_min_periods
+        # Full window by default, for the same reason as the moving average:
+        # a band computed from two samples is not the band its label describes.
+        min_periods = config.lines.moving_avg_min_periods or window
         rolling = y_data.rolling(window=window, min_periods=min_periods)
         ma = rolling.mean()
         std = rolling.std()
