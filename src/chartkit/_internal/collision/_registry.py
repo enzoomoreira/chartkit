@@ -1,6 +1,12 @@
 """Collision state and registration API.
 
 Per-Axes state stored in WeakKeyDictionaries, automatically released by GC.
+
+Not thread-safe, and deliberately so. The state is keyed by Axes and lives
+only between the first artist registration and ``clear_axes_state()`` at the
+end of the same ``plot()`` call, so two threads sharing it would already be
+drawing on the same Axes -- which matplotlib does not support either. Build
+charts on separate figures per thread; nothing here is shared between them.
 """
 
 from __future__ import annotations

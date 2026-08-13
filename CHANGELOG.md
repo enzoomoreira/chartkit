@@ -1,5 +1,20 @@
 # Project Changelog
 
+## [2026-08-05 02:14]
+### Changed
+- **BREAKING -- registrar nome ja existente levanta `RegistryError`**: `MetricRegistry.register` e `ChartRenderer.register_enhancer` sobrescreviam em silencio, entao duas bibliotecas registrando `'ma'` se anulavam sem aviso. Passe `replace=True` para sobrescrever de proposito
+- **BREAKING -- `MetricRegistry.clear()` removido**: esvaziava o registry inteiro, deixando `'ath'` e `'ma'` indefinidos. Substituido por `reset_to_builtins()`, que descarta so o que o usuario registrou
+- **`_toml_data` deixa de ser `ClassVar`**: o TOML mesclado vivia em estado de classe compartilhado por todo loader e toda thread -- dois configs construidos ao mesmo tempo liam os arquivos um do outro. Agora viaja como init kwarg, consumido em `settings_customise_sources` antes da validacao
+- **`ConfigLoader.project_root` le e escreve sob o lock**: `reset()` limpa os dois campos, e um leitor sem sincronizacao podia ver a flag de resolvido ligada com o valor ja apagado
+- **Erro de configuracao invalida vira `ValidationError` do chartkit**: o `ValidationError` do pydantic vazava do `get_config()`, sem indicar que a causa era um setting
+
+### Added
+- **`MetricRegistry.unregister(name)` e `reset_to_builtins()`**: o conftest da suite alcancava `_metrics` diretamente por falta de API publica
+- **`CHARTKIT_NO_AUTO_CONFIG`**: desliga a descoberta automatica de TOML. Sem isso, a lib le qualquer `pyproject.toml` acima do diretorio de trabalho -- surpreendente para uma aplicacao que quer honrar apenas os proprios settings
+
+### Removed
+- **Dependencia `cachetools`**: existia para dar um lock ao cache de `find_project_root`. A justificativa registrada -- "`lru_cache` nao e thread-safe" -- era imprecisa: o CPython protege a contabilidade interna dele. O que nao e garantido e execucao unica por chave sob concorrencia, e para uma varredura de filesystem sem efeito colateral isso custa no maximo um `stat()` redundante
+
 ## [2026-08-05 01:26]
 ### Fixed
 - **`points_formatter` truncava em vez de arredondar**: `int(x)` corta em direcao ao zero, entao o label do maximo de uma serie que chega a 110,85 dizia `110`. Num grafico cuja funcao e destacar o extremo, isso subestimava a maxima em quase um ponto inteiro. A snapshot `test_highlight_modes_snapshot` registra a correcao (`"110"` -> `"111"`)

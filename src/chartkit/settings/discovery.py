@@ -5,14 +5,14 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from functools import lru_cache
 from pathlib import Path
-from threading import RLock
-
-from cachetools import LRUCache, cached
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "AUTO_CONFIG_ENV_VAR",
+    "auto_config_enabled",
     "find_project_root",
     "find_config_files",
     "get_user_config_dir",
@@ -27,26 +27,24 @@ PROJECT_ROOT_MARKERS: tuple[str, ...] = (
     ".project-root",
 )
 
-_project_root_lock = RLock()
-_project_root_cache: LRUCache = LRUCache(maxsize=32)
+# Set to disable the walk up the directory tree entirely. Discovery reads
+# whatever pyproject.toml it finds above the working directory, which is
+# surprising for an application that only wants its own explicit settings.
+AUTO_CONFIG_ENV_VAR = "CHARTKIT_NO_AUTO_CONFIG"
+
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
-def _cache_key(start_path: Path | None = None) -> Path:
-    if start_path is None:
-        return Path.cwd().resolve()
-    return start_path.resolve()
+def auto_config_enabled() -> bool:
+    """Whether TOML auto-discovery should run."""
+    return os.environ.get(AUTO_CONFIG_ENV_VAR, "").strip().lower() not in _TRUTHY
 
 
-@cached(cache=_project_root_cache, key=_cache_key, lock=_project_root_lock)
-def find_project_root(start_path: Path | None = None) -> Path | None:
-    """Walk up the directory tree looking for project markers (cached)."""
-    if start_path is None:
-        start_path = Path.cwd()
+@lru_cache(maxsize=32)
+def _find_project_root_cached(start: Path) -> Path | None:
+    logger.debug("find_project_root: starting search from %s", start)
 
-    current = start_path.resolve()
-
-    logger.debug("find_project_root: starting search from %s", current)
-
+    current = start
     while current != current.parent:
         for marker in PROJECT_ROOT_MARKERS:
             if (current / marker).exists():
@@ -58,9 +56,19 @@ def find_project_root(start_path: Path | None = None) -> Path | None:
     return None
 
 
+def find_project_root(start_path: Path | None = None) -> Path | None:
+    """Walk up the directory tree looking for project markers (cached).
+
+    Resolution happens here rather than inside the cached function so the
+    cache key is a concrete path -- ``None`` would otherwise pin the first
+    working directory the process ever used.
+    """
+    start = (start_path or Path.cwd()).resolve()
+    return _find_project_root_cached(start)
+
+
 def reset_project_root_cache() -> None:
-    with _project_root_lock:
-        _project_root_cache.clear()
+    _find_project_root_cached.cache_clear()
     logger.debug("find_project_root: cache cleared")
 
 
@@ -78,8 +86,13 @@ def find_config_files(project_root: Path | None = None) -> list[Path]:
     """Find config files in precedence order.
 
     Searches: .chartkit/config.toml in project, pyproject.toml [tool.chartkit],
-    and user config.
+    and user config. Returns an empty list when ``CHARTKIT_NO_AUTO_CONFIG`` is
+    set, leaving only ``configure()`` and environment variables in play.
     """
+    if not auto_config_enabled():
+        logger.debug("find_config_files: skipped, %s is set", AUTO_CONFIG_ENV_VAR)
+        return []
+
     config_files = []
 
     if project_root is None:

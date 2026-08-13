@@ -1,6 +1,6 @@
 """Configuration schema with pydantic models."""
 
-from typing import Any, ClassVar, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, PositiveInt
 from pydantic.fields import FieldInfo
@@ -397,6 +397,12 @@ class PathsConfig(BaseModel):
     assets_dir: str = ""
 
 
+# Init kwarg carrying the merged TOML payload from ConfigLoader to the
+# settings sources. Consumed in settings_customise_sources, so it never
+# reaches field validation.
+TOML_DATA_KWARG = "_toml_data"
+
+
 class _DictSource(PydanticBaseSettingsSource):
     """Custom source that receives a pre-merged dict from TOML files."""
 
@@ -427,8 +433,6 @@ class ChartingConfig(BaseSettings):
         env_nested_delimiter="__",
     )
 
-    _toml_data: ClassVar[dict] = {}
-
     branding: BrandingConfig = Field(default_factory=BrandingConfig)
     colors: ColorsConfig = Field(default_factory=ColorsConfig)
     fonts: FontsConfig = Field(default_factory=FontsConfig)
@@ -455,7 +459,15 @@ class ChartingConfig(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
+        # The merged TOML arrives as an init kwarg rather than class state: a
+        # ClassVar is shared by every loader and every thread, so two configs
+        # being built at once would read each other's files.
+        toml_data: dict[str, Any] = {}
+        init_kwargs = getattr(init_settings, "init_kwargs", None)
+        if isinstance(init_kwargs, dict):
+            toml_data = init_kwargs.pop(TOML_DATA_KWARG, None) or {}
+
         sources: list[PydanticBaseSettingsSource] = [init_settings, env_settings]
-        if cls._toml_data:
-            sources.append(_DictSource(settings_cls, cls._toml_data))
+        if toml_data:
+            sources.append(_DictSource(settings_cls, toml_data))
         return tuple(sources)

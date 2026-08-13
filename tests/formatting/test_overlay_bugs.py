@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-from pydantic import ValidationError as PydanticValidationError
 
 from chartkit import configure
 from chartkit.exceptions import ValidationError
@@ -60,7 +59,7 @@ class TestMagnitudeSuffixes:
         """
         configure(formatters={"magnitude": {"suffixes": []}})
 
-        with pytest.raises(PydanticValidationError, match="at least 1 item"):
+        with pytest.raises(ValidationError, match="suffixes"):
             frame.chartkit.plot(units="human")
 
     def test_a_populated_list_is_accepted(self, frame: pd.DataFrame) -> None:

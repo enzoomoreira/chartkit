@@ -11,7 +11,7 @@ from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
 
 from .._internal.collision import register_artist_obstacle
-from ..exceptions import ValidationError
+from ..exceptions import RegistryError, ValidationError
 from ..overlays import add_highlight
 from ._classification import KIND_ALIASES
 from ._helpers import prepare_render_context, resolve_color
@@ -85,10 +85,28 @@ class ChartRenderer:
     }
 
     @classmethod
-    def register_enhancer(cls, name: str) -> Callable[[Enhancer], Enhancer]:
-        """Decorator to register a specialized chart handler."""
+    def register_enhancer(
+        cls, name: str, replace: bool = False
+    ) -> Callable[[Enhancer], Enhancer]:
+        """Decorator to register a specialized chart handler.
+
+        Args:
+            replace: Allow overwriting an existing enhancer of the same name.
+                Without it a collision raises, so a third-party enhancer cannot
+                silently take over a built-in kind.
+
+        Raises:
+            RegistryError: If *name* is taken and *replace* is False.
+        """
 
         def decorator(func: Enhancer) -> Enhancer:
+            if name in cls._enhancers and not replace:
+                existing = cls._enhancers[name]
+                raise RegistryError(
+                    f"Chart kind '{name}' is already handled by "
+                    f"{getattr(existing, '__qualname__', existing)}. "
+                    f"Pass replace=True to override it deliberately."
+                )
             cls._enhancers[name] = func
             return func
 

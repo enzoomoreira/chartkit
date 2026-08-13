@@ -47,6 +47,7 @@ class MetricRegistry:
     """Central metrics registry with string spec parsing and batch application."""
 
     _metrics: ClassVar[dict[str, _MetricEntry]] = {}
+    _builtins: ClassVar[dict[str, _MetricEntry]] = {}
 
     @classmethod
     def register(
@@ -55,6 +56,7 @@ class MetricRegistry:
         param_names: list[str] | None = None,
         uses_series: bool = True,
         uses_freq: bool = False,
+        replace: bool = False,
     ) -> Callable[[Callable], Callable]:
         """Decorator to register a metric.
 
@@ -66,10 +68,23 @@ class MetricRegistry:
                 select a column in multi-series DataFrames.
             uses_freq: Whether the metric receives ``detected_freq`` from
                 automatic frequency detection.
+            replace: Allow overwriting an existing metric of the same name.
+                Without it a collision raises, so two libraries registering
+                ``'ma'`` cannot silently shadow one another.
+
+        Raises:
+            RegistryError: If *name* is taken and *replace* is False.
         """
         names = param_names or []
 
         def decorator(func: Callable) -> Callable:
+            if name in cls._metrics and not replace:
+                existing = cls._metrics[name].func
+                raise RegistryError(
+                    f"Metric '{name}' is already registered by "
+                    f"{getattr(existing, '__qualname__', existing)}. "
+                    f"Pass replace=True to override it deliberately."
+                )
             sig = inspect.signature(func)
             required = [
                 p
@@ -83,6 +98,37 @@ class MetricRegistry:
             return func
 
         return decorator
+
+    @classmethod
+    def unregister(cls, name: str) -> None:
+        """Remove a single metric.
+
+        Raises:
+            RegistryError: If *name* is not registered.
+        """
+        if name not in cls._metrics:
+            raise RegistryError(
+                f"Metric '{name}' is not registered. Available: {cls.available()}."
+            )
+        del cls._metrics[name]
+
+    @classmethod
+    def snapshot_builtins(cls) -> None:
+        """Record the current registry as the built-in set.
+
+        Called once after the built-in metrics register, so
+        ``reset_to_builtins()`` has something to restore to.
+        """
+        cls._builtins = dict(cls._metrics)
+
+    @classmethod
+    def reset_to_builtins(cls) -> None:
+        """Drop every user-registered metric, keeping the built-in set.
+
+        This is what a test or a notebook wants between runs; clearing the
+        registry outright would leave ``'ath'`` and ``'ma'`` undefined.
+        """
+        cls._metrics = dict(cls._builtins)
 
     @classmethod
     def parse(cls, spec: str | MetricSpec) -> MetricSpec:
@@ -193,8 +239,3 @@ class MetricRegistry:
     def available(cls) -> list[str]:
         """Return sorted list of registered metric names."""
         return sorted(cls._metrics.keys())
-
-    @classmethod
-    def clear(cls) -> None:
-        """Remove all registered metrics."""
-        cls._metrics.clear()

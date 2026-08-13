@@ -45,34 +45,31 @@ that concurrent calls to `get_config()` never observe partially-updated state.
 
 ### Usage Pattern
 
-We use `RLock` (reentrant lock) for `discovery.py` instead of a simple `Lock` because:
-- Allows the same thread to acquire the lock multiple times
-- Prevents deadlocks in recursive calls (e.g., `get_config()` -> `find_project_root()`)
+`find_project_root()` is memoised with `functools.lru_cache`. The path is
+resolved by the public wrapper before the cached function is called, so the
+cache key is always a concrete directory -- keying on `None` would pin the
+first working directory the process ever used.
 
 ```python
-from threading import RLock
-from cachetools import LRUCache, cached
+from functools import lru_cache
 
-_lock = RLock()
-_cache: LRUCache = LRUCache(maxsize=32)
-
-@cached(cache=_cache, lock=_lock)
-def find_project_root(start_path: Path | None = None) -> Path | None:
+@lru_cache(maxsize=32)
+def _find_project_root_cached(start: Path) -> Path | None:
     ...
+
+def find_project_root(start_path: Path | None = None) -> Path | None:
+    return _find_project_root_cached((start_path or Path.cwd()).resolve())
 ```
 
-### Thread-Safe Cache Clearing
+### Cache Clearing
 
-The `reset_project_root_cache()` function acquires the lock before clearing:
+`reset_project_root_cache()` delegates to the cache's own `cache_clear()`,
+whose bookkeeping CPython already guards:
 
 ```python
 def reset_project_root_cache() -> None:
-    with _project_root_lock:
-        _project_root_cache.clear()
+    _find_project_root_cached.cache_clear()
 ```
-
-This prevents race conditions where one thread clears the cache while
-another inserts/reads values.
 
 ### Testing Thread-Safety
 
@@ -434,17 +431,19 @@ ax.yaxis.set_major_formatter(compact_currency_formatter('BRL'))
 
 ## Design Decisions
 
-### Why cachetools instead of functools.lru_cache?
+### Why functools.lru_cache and not a third-party cache?
 
-| Aspect | functools.lru_cache | cachetools |
-|--------|---------------------|------------|
-| Thread-safety | Not built-in | Lock parameter |
-| TTL | Not supported | TTLCache |
-| Cache control | Limited | clear(), maxsize, etc |
-| Typed keys | No | Yes |
+`find_project_root()` used `cachetools` with an explicit `RLock`, on the
+grounds that `lru_cache` is not thread-safe. That is not accurate: CPython
+guards the `lru_cache` bookkeeping internally. What it does not guarantee is
+that the wrapped function runs *once* per key under concurrency -- two
+threads racing on a cold key can both execute it.
 
-For a library that can be used in multi-threaded contexts
-(Jupyter notebooks, web servers), cachetools offers stronger guarantees.
+For this function that costs nothing. It walks the directory tree looking
+for marker files, has no side effects, and returns the same answer either
+way; the only consequence of a race is one redundant `stat()` sweep. Paying
+a dependency for it was not worth it, so the cache is now a plain
+`lru_cache` and the dependency is gone.
 
 ### Why RLock instead of Lock?
 

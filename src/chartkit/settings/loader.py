@@ -9,9 +9,12 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError as PydanticValidationError
+
+from ..exceptions import ValidationError
 from ..warnings import RenderingWarning, warn
 from .discovery import find_config_files, find_project_root, reset_project_root_cache
-from .schema import ChartingConfig
+from .schema import TOML_DATA_KWARG, ChartingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -127,8 +130,21 @@ class ConfigLoader:
                 return self._config
             logger.debug("Loading settings (cache miss)")
             toml_data = self._load_merged_toml()
-            ChartingConfig._toml_data = toml_data
-            self._config = ChartingConfig(**self._overrides)
+            try:
+                self._config = ChartingConfig(
+                    **{TOML_DATA_KWARG: toml_data}, **self._overrides
+                )
+            except PydanticValidationError as exc:
+                # Raised lazily, on first use rather than at configure() time,
+                # so without this the caller sees pydantic's traceback with no
+                # indication that a chartkit setting is what went wrong.
+                details = "\n".join(
+                    f"  {'.'.join(str(p) for p in err['loc'])}: {err['msg']}"
+                    for err in exc.errors()
+                )
+                raise ValidationError(
+                    f"Invalid chartkit configuration:\n{details}"
+                ) from exc
         return self._config
 
     @property
@@ -158,16 +174,19 @@ class ConfigLoader:
 
     @property
     def project_root(self) -> Path | None:
-        if not self._project_root_resolved:
-            self._project_root = find_project_root()
-            self._project_root_resolved = True
-        return self._project_root
+        # Read and write under the lock: reset() clears both fields, and an
+        # unsynchronised reader could otherwise see the resolved flag set
+        # while the value it guards has already been cleared.
+        with self._lock:
+            if not self._project_root_resolved:
+                self._project_root = find_project_root()
+                self._project_root_resolved = True
+            return self._project_root
 
     def _invalidate(self) -> None:
         self._config = None
         self._project_root = None
         self._project_root_resolved = False
-        ChartingConfig._toml_data = {}
 
     def _load_merged_toml(self) -> dict[str, Any]:
         """Discover and merge all TOML files in precedence order."""

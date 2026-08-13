@@ -10,5 +10,6 @@ from .builtin import register_builtin_metrics
 from .registry import MetricRegistry, MetricSpec
 
 register_builtin_metrics()
+MetricRegistry.snapshot_builtins()
 
 __all__ = ["MetricRegistry", "MetricSpec"]

@@ -124,9 +124,24 @@ print(spec.params)  # {'window': 12}
 MetricRegistry.apply(ax, x_data, y_data, 'ath')
 MetricRegistry.apply(ax, x_data, y_data, ['ath', 'ma:12'])
 
-# Clear registry (useful for tests)
-MetricRegistry.clear()
+# Remove a single metric
+MetricRegistry.unregister('my_metric')
+
+# Drop every user-registered metric, keeping the built-ins (useful for tests)
+MetricRegistry.reset_to_builtins()
 ```
+
+Registering a name that already exists raises `RegistryError`. Pass
+`replace=True` to override a built-in on purpose:
+
+```python
+@MetricRegistry.register('ath', replace=True)
+def my_ath(ax, x_data, y_data, **kwargs) -> None:
+    ...
+```
+
+`ChartRenderer.register_enhancer` takes the same `replace` flag and raises
+the same way.
 
 ---
 

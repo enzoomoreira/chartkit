@@ -19,6 +19,20 @@ chartkit loads configuration from multiple sources, merging them in order of pre
 
 Higher-priority configurations override lower-priority ones. The merge is deep, allowing you to override only specific fields without losing the rest.
 
+### Disabling Auto-Discovery
+
+Steps 4 to 6 walk up the directory tree, so chartkit will read whatever
+`pyproject.toml` happens to sit above the working directory. For an
+application that should only honour its own settings, set:
+
+```bash
+CHARTKIT_NO_AUTO_CONFIG=1
+```
+
+Discovery is then skipped entirely and only `configure()` and the
+`CHARTKIT_*` environment variables apply. Accepted truthy values are `1`,
+`true`, `yes` and `on` (case-insensitive).
+
 ## TOML File
 
 Create a `.chartkit/config.toml` file at your project root:
