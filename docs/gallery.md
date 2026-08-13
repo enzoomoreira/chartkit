@@ -111,11 +111,9 @@ df.chartkit.plot(
     highlight=["last", "min"],
     metrics=["hline:0"],
     y_origin="auto",
-    tick_rotation=45,
 )
 ```
 
-The index becomes `1T24`-style labels first. That is how quarterly GDP is
-read in a Brazilian deck, and it is also what bar charts want: on a
-categorical axis each bar is one slot wide, while a datetime axis needs a
-width measured in days.
+The index becomes `1T24`-style labels first, which is how quarterly GDP is
+read in a Brazilian deck. Twenty of them leave about a pixel between
+neighbours, so auto-rotation tips them to 45 degrees on its own.

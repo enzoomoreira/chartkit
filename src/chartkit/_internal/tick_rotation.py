@@ -15,8 +15,13 @@ from .rendering import get_renderer
 __all__ = ["apply_tick_rotation"]
 
 
-def _has_overlap(fig: Figure, ax: Axes) -> bool:
-    """Check if adjacent X tick labels overlap."""
+def _is_crowded(fig: Figure, ax: Axes, min_gap_px: float) -> bool:
+    """Whether adjacent X tick labels come closer than *min_gap_px*.
+
+    Strict intersection is not the bar to clear. Twenty quarterly labels came
+    out with 0.96px between them -- none of them touching, all of them reading
+    as one long word.
+    """
     renderer = get_renderer(fig)
     labels = [t for t in ax.get_xticklabels() if t.get_text()]
 
@@ -26,7 +31,7 @@ def _has_overlap(fig: Figure, ax: Axes) -> bool:
     for i in range(len(labels) - 1):
         bbox_curr = labels[i].get_window_extent(renderer)
         bbox_next = labels[i + 1].get_window_extent(renderer)
-        if bbox_curr.x1 > bbox_next.x0:
+        if bbox_curr.x1 + min_gap_px > bbox_next.x0:
             return True
 
     return False
@@ -87,17 +92,18 @@ def apply_tick_rotation(
     """Apply rotation to X-axis tick labels.
 
     Resolution order: ``tick_rotation`` parameter > ``config.ticks.rotation``.
-    When ``"auto"``, rotation is applied only if adjacent labels overlap.
-    If the configured angle is insufficient, escalates to 90 degrees.
-    After rotation, the bottom margin is adjusted so labels do not overlap
-    the footer.
+    When ``"auto"``, rotation is applied once adjacent labels come within
+    ``config.ticks.min_gap_px`` of each other. If the configured angle is
+    insufficient, escalates to 90 degrees. After rotation, the bottom margin
+    is adjusted so labels do not overlap the footer.
     """
     config = get_config()
     effective = tick_rotation if tick_rotation is not None else config.ticks.rotation
 
     if effective == "auto":
+        min_gap = config.ticks.min_gap_px
         fig.canvas.draw()
-        if not _has_overlap(fig, ax):
+        if not _is_crowded(fig, ax, min_gap):
             return
         angle = config.ticks.auto_rotation_angle
 
@@ -105,7 +111,12 @@ def apply_tick_rotation(
 
         if angle != 90:
             fig.canvas.draw()
-            if _has_overlap(fig, ax):
+            # Strict intersection here, not min_gap: the bounding box of a
+            # rotated label is its diagonal envelope, so two 45-degree labels
+            # measure ~1px apart horizontally while reading perfectly clear of
+            # each other. Demanding a gap of that number escalates everything
+            # to 90 degrees.
+            if _is_crowded(fig, ax, 0.0):
                 angle = 90
                 _apply_angle(ax, angle)
     else:

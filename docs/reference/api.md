@@ -61,7 +61,7 @@ than accepted and dropped.
 | `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `ylim` | `AxisLimits \| None` | `None` | Y-axis limits as `(min, max)`. Accepts strings (`"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
-| `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
+| `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` fires once neighbours come within `ticks.min_gap_px` and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
 | `tick_freq` | `TickFreq \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
@@ -302,7 +302,7 @@ companion `decimals` -- live on the `Layer`, because each axis is formatted inde
 | `xlim` | `AxisLimits \| None` | `None` | X-axis limits as `(min, max)`. Accepts strings (`"2024-01-01"`, `"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `ylim` | `AxisLimits \| None` | `None` | Y-axis limits as `(min, max)` (applied to left axis). Accepts strings (`"100"`), datetime, pd.Timestamp, numeric, or `None` per element |
 | `grid` | `bool \| None` | `None` | Grid override. `None` uses config, `True`/`False` enables/disables |
-| `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` detects overlap and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
+| `tick_rotation` | `int \| Literal["auto"] \| None` | `None` | X-axis tick label rotation. `"auto"` fires once neighbours come within `ticks.min_gap_px` and escalates to 90 degrees if the configured angle is insufficient; `int` forces angle. `None` uses config |
 | `tick_format` | `str \| None` | `None` | Date format for X-axis ticks (e.g., `"%b/%Y"`). `None` uses config |
 | `tick_freq` | `TickFreq \| None` | `None` | Tick frequency: `"day"`, `"week"`, `"month"`, `"quarter"`, `"semester"`, `"year"`. `None` uses config |
 | `collision` | `bool` | `True` | Enable collision resolution engine. `False` skips all label collision processing |
@@ -813,8 +813,13 @@ Opacity of filled chart bodies. Both are constrained to `0.0 <= alpha <= 1.0`.
 |-------|------|---------|
 | `rotation` | `int \| Literal["auto"]` | `"auto"` |
 | `auto_rotation_angle` | `int` | `45` |
+| `min_gap_px` | `float` | `4.0` |
 | `date_format` | `str \| None` | `None` |
 | `date_freq` | `str \| None` | `None` |
+
+`min_gap_px` is the separation `"auto"` demands between neighbouring labels
+before leaving them horizontal -- one space width at the default label size.
+Set `0` for strict-intersection detection.
 
 #### TransformsConfig
 

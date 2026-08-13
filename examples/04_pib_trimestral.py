@@ -30,10 +30,6 @@ def main() -> None:
         highlight=["last", "min"],
         metrics=["hline:0"],
         y_origin="auto",
-        # Twenty quarter labels sit flush against each other, and auto-rotation
-        # tests for strict overlap, so it does not fire on labels that merely
-        # touch. Ask for the angle instead of hoping it is detected.
-        tick_rotation=45,
     ).save(str(OUTPUT / "pib_trimestral.png")).close()
 
 

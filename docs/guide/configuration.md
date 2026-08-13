@@ -163,6 +163,7 @@ frameon = true
 [ticks]
 rotation = "auto"          # "auto" or angle in degrees (0, 45, 90)
 auto_rotation_angle = 45   # Angle when auto-detect triggers rotation
+min_gap_px = 4.0           # Separation "auto" demands before leaving labels flat
 # date_format = "%b/%Y"   # Date format for temporal ticks (strftime)
 # date_freq = "month"     # Frequency: "day", "week", "month", "quarter", "semester", "year"
 

@@ -1,6 +1,6 @@
 # Testing
 
-Test suite for chartkit with 809 tests covering all modules with business logic.
+Test suite for chartkit with 838 tests covering all modules with business logic.
 
 ---
 
@@ -23,7 +23,7 @@ tests/
 ├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases, Agg backend)
 ├── test_api_parity.py             # Signature parity across the plot()/layer() facades
 ├── test_lifecycle.py              # Library-citizenship guarantees (rcParams, figures, backends)
-├── charts/                        # Chart rendering (202 tests) + classification
+├── charts/                        # Chart rendering (212 tests) + classification
 │   ├── test_area_enhancer.py      # Area chart enhancer (fill_between semantics)
 │   ├── test_bar_enhancer.py       # Bar chart enhancer (grouped, sort, color='cycle', barh)
 │   ├── test_bar_width.py          # detect_bar_width, categorical helpers, y_origin
@@ -31,18 +31,19 @@ tests/
 │   ├── test_renderer.py          # ChartRenderer generic rendering + unsupported kinds
 │   ├── test_rendering_bugs.py     # Regressions: non-temporal axes, sort, stairs edges, highlight anchoring
 │   └── test_stacked_bar_enhancer.py # Stacked bar chart enhancer
-├── collision/                     # Collision engine (23 tests)
+├── collision/                     # Collision engine (27 tests)
 │   ├── test_collision_engine.py   # Obstacle collection, path detection, resolution, proactive candidates, cost function
 │   └── test_collision_perf.py     # Runtime ceiling as a multiple of the same chart with the engine off
 ├── composing/                     # Composition system (64 tests)
 │   ├── test_compose_colors.py     # One palette advancing across layers and axes
 │   ├── test_compose_pipeline.py   # compose() orchestration, legend, extract_data, formatters
 │   └── test_layer_validation.py   # Layer creation and validation
-├── formatting/                    # Formatters and highlight (139 tests)
+├── formatting/                    # Formatters and highlight (154 tests)
 │   ├── test_axis_formatters.py    # Currency, percent, human, points, multiplier formatters
 │   ├── test_highlight.py         # Highlight mode normalization
 │   ├── test_overlay_bugs.py       # Regressions: config mistakes surfacing as ValidationError
-│   └── test_tick_formatting.py    # Date locator/formatter, smart alignment, phantom clipping
+│   ├── test_tick_formatting.py    # Date locator/formatter, smart alignment, localized names
+│   └── test_tick_rotation.py      # Auto-rotation crowding trigger and escalation to 90
 ├── integration/                   # End-to-end tests (23 tests)
 │   ├── test_accessor_pipeline.py  # Accessor .plot() and .layer() integration
 │   └── test_end_to_end.py        # Full pipeline validation
@@ -323,6 +324,8 @@ Transforms and collision tests don't need isolation -- they operate on fixture d
 | MetricRegistry behavior | `tests/metrics/test_registry.py` or `test_spec_parsing.py` |
 | A new formatter | `tests/formatting/test_axis_formatters.py` |
 | Highlight normalization | `tests/formatting/test_highlight.py` |
+| Date locators / localized tick labels | `tests/formatting/test_tick_formatting.py` |
+| Tick rotation and crowding | `tests/formatting/test_tick_rotation.py` |
 | Config loading / schema / merge | `tests/settings/test_config_precedence.py` |
 | Project root / config discovery | `tests/settings/test_discovery.py` |
 | Collision engine | `tests/collision/test_collision_engine.py` |

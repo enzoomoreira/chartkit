@@ -207,12 +207,17 @@ class TicksConfig(BaseModel):
     Attributes:
         rotation: Default tick rotation. ``"auto"`` detects overlap.
         auto_rotation_angle: Angle used when ``"auto"`` detects overlap.
+        min_gap_px: Separation ``"auto"`` demands between neighbouring labels
+            before it leaves them horizontal. The default is the width of a
+            space at the default label size: any closer and two labels read as
+            one word. ``0`` restores strict-intersection detection.
         date_format: Default date format (e.g. ``"%b/%Y"``). ``None`` auto-selects.
         date_freq: Default tick frequency. ``None`` auto-infers from data.
     """
 
     rotation: int | Literal["auto"] = "auto"
     auto_rotation_angle: int = Field(default=45, gt=0, le=90)
+    min_gap_px: float = Field(default=4.0, ge=0.0)
     date_format: str | None = None
     date_freq: Literal["day", "week", "month", "quarter", "semester", "year"] | None = (
         None
