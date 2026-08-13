@@ -1,17 +1,50 @@
 [project]
 name = "chartkit"
 version = "0.1.0"
-description = "Biblioteca de charting padronizado para DataFrames pandas"
+description = "Standardised financial charting for pandas DataFrames"
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Enzo Moreira", email = "enzomoreira@protonmail.com" }]
+keywords = [
+    "charts",
+    "finance",
+    "matplotlib",
+    "pandas",
+    "plotting",
+    "visualization",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Matplotlib",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Typing :: Typed",
+]
 dependencies = [
     "babel>=2.17.0",
     "matplotlib>=3.10.0",
     "numpy>=2.0.0",
+    # Lower bound is exercised by the CI matrix, which runs the suite against
+    # 2.2 and 3.0 on both Linux and Windows. No upper cap: capping a library's
+    # core dependency forces every downstream project to wait on a release.
     "pandas>=2.2.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.12.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/enzomoreira/chartkit"
+Documentation = "https://github.com/enzomoreira/chartkit/tree/master/docs"
+Repository = "https://github.com/enzomoreira/chartkit"
+Changelog = "https://github.com/enzomoreira/chartkit/blob/master/CHANGELOG.md"
+Issues = "https://github.com/enzomoreira/chartkit/issues"
 
 [project.optional-dependencies]
 jupyter = [
@@ -36,6 +69,10 @@ packages = ["src/chartkit"]
 [tool.hatch.build.targets.sdist]
 include = [
     "src/chartkit",
+    "tests",
+    "docs",
+    "CHANGELOG.md",
+    "LICENSE",
 ]
 
 [tool.ruff]

@@ -1,5 +1,27 @@
 # Project Changelog
 
+## [2026-08-05 04:22]
+### Added
+- **`LICENSE` (MIT)**: bloqueador absoluto para publicar. Sem arquivo de licenca o pacote e legalmente inutilizavel por qualquer empresa
+- **`src/chartkit/py.typed`**: sem o marcador PEP 561 os type hints sao invisiveis para quem instala o pacote -- todo o trabalho de anotacao nao chegava ao usuario
+- **Metadados do `pyproject`**: `license`, `authors`, `keywords`, `classifiers` e `project.urls`
+- **`.github/workflows/release.yml`**: publica no PyPI via trusted publishing quando uma tag `v*` e empurrada. Sem token para guardar ou rotacionar. O job falha antes de publicar se a tag nao bater com a versao do `pyproject`, e roda a suite -- num release, teste vermelho precisa impedir a publicacao, nao ser notado depois
+- **sdist inclui `tests`, `docs`, `CHANGELOG.md` e `LICENSE`**
+
+### Changed
+- **`description` traduzida para ingles**: conforme a decisao D6 do plano
+- **`pandas>=2.2.0` mantido sem teto**: a matriz de CI ja exercita 2.2 e 3.0 em Linux e Windows. Limitar a dependencia central de uma biblioteca obriga todo projeto downstream a esperar por um release
+
+### Verified
+- Nome `chartkit` disponivel no PyPI (404 em `pypi.org/pypi/chartkit/json`)
+- `twine check` aprova wheel e sdist; `py.typed` e `LICENSE` presentes no wheel
+- `pydantic` ja estava declarado explicitamente (F7.5)
+- CI ja instala o wheel em venv limpo e valida import, accessor e plot (F7.10)
+
+### Pending
+- **CHANGELOG em portugues**: D6 pede ingles. Traducao mecanica do arquivo inteiro, deixada para uma passada propria -- meio traduzido seria pior que consistente
+- **F7.8 galeria de exemplos**: `examples/` mais galeria visual nos docs. Para uma lib de tema corporativo e o principal argumento de venda, e depende de quais graficos voce quer mostrar
+
 ## [2026-08-05 03:48]
 ### Changed
 - **Erros de pyright: 174 -> 51**: duas anotacoes que estavam de fato erradas respondiam por 123 deles. As factories de colisao declaravam `Artist` mas chamavam metodos de `Line2D`, `Patch` e `Collection`; e `Path.vertices` era indexado sem `np.asarray`, entao os stubs viam `ArrayLike`. O que resta e atrito com os stubs de matplotlib e pandas (`Figure | SubFigure`, `Timestamp | NaTType`), que pede `cast()` e nao tipo melhor

@@ -1,0 +1,58 @@
+name: Release
+
+# Publishes to PyPI when a version tag is pushed. Uses trusted publishing, so
+# there is no API token to store or rotate: PyPI verifies the workflow identity
+# against a publisher configured for this repository. That publisher has to be
+# registered on PyPI before the first run, under
+# https://pypi.org/manage/project/chartkit/settings/publishing/
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  MPLBACKEND: Agg
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Fail if the tag does not match the project version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match project version $VERSION" >&2
+            exit 1
+          fi
+
+      # The tests also run on every push, but a release is the one build where
+      # a red suite must stop the publish rather than be noticed afterwards.
+      - run: uv sync --all-extras
+      - run: uv run pytest
+
+      - run: uv build
+      - run: uvx twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # Required for trusted publishing; no password or token is used.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
