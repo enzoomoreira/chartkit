@@ -71,6 +71,7 @@ include = [
     "src/chartkit",
     "tests",
     "docs",
+    "examples",
     "CHANGELOG.md",
     "LICENSE",
 ]

@@ -94,6 +94,7 @@ configuration files or create figures -- that happens on the first plot.
 
 ### Getting Started
 
+- [Gallery](docs/gallery.md) - Brazilian macro series, rendered with the default theme
 - [Getting Started](docs/getting-started.md) - Your first chart in 2 minutes
 - [Cookbook](docs/cookbook.md) - Practical recipes for financial data
 
