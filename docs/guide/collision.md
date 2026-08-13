@@ -143,10 +143,11 @@ selection:
 1. **Snapshot anchors**: before any movement, capture the original bounding box of each moveable label as its anchor point
 2. **For each label**, collect all `_PathObstacle` instances (lines, patches, collections, labels from other axes)
 3. **Co-location skip**: if a label starts ON a `colocate=True` obstacle on the same axes, that obstacle is excluded
-4. **Identify collisions**: `Path.intersects_bbox()` for path obstacles, bbox overlap for other moveable labels
-5. **Generate candidates** from two sources:
+4. **Identify collisions**: `Path.intersects_bbox()` for path obstacles, bbox overlap for other moveable labels, plus any part of the label that falls outside the data area -- leaving the axes counts as colliding with the chart's own frame
+5. **Generate candidates** from three sources:
    - **Proactive**: 8 cardinal directions (N, NE, E, SE, S, SW, W, NW) at multiple distances (`candidate_distances`), positioned relative to the anchor point. Diagonal distances are normalized for uniformity
    - **Reactive**: snap-to-edge displacements per colliding obstacle (up, down, left, right)
+   - **Bounds**: for an out-of-bounds label, the exact correction that brings it back inside, landing at the edge margin rather than flush against the border. The proactive steps are multiples of the label height, which is the right scale for separating two labels but arbitrary against a border -- a label hanging 30px past the spine is not helped by offers of 14, 21 and 28px
 6. **Validate** each candidate against ALL obstacles (bbox + path) via `_position_is_free()`
 7. **Score valid candidates** with a continuous cost function combining three weighted components:
    - **Distance from anchor** (w=1.0): displacement normalized by label height
@@ -170,11 +171,54 @@ Example with movement="y" (default):
 
 Constraints respected:
 - **Movement axis**: configurable (`"y"`, `"x"`, or `"xy"`) -- off-axis penalized, not blocked
-- **Axes limits**: label never leaves the visible chart area
+- **Axes limits**: candidates that would fall outside the data area are discarded when generated, and a label that starts outside it -- as a highlight label on the last point does -- triggers a resolution that brings it back
 - **Edge proximity**: labels near axes borders receive increasing penalty
 - **Global validation**: each candidate is tested against every obstacle
 
-The outer loop repeats until no label moves or `max_iterations` is reached.
+The outer loop repeats until no label moves or `max_iterations` is reached. In
+practice it converges almost immediately -- roughly 1.25 placements per label
+on a chart with 36 of them -- so `max_iterations` is a backstop, not a budget.
+
+### Why this algorithm
+
+Label placement is
+[NP-hard](https://idl.cs.washington.edu/files/2021-FastLabels-VIS.pdf) in the
+number of labels, so every practical implementation trades optimality for
+time. The [canonical
+survey](https://www.eecs.harvard.edu/~shieber/Biblio/Papers/tog-final.pdf)
+(Christensen, Marks & Shieber, 1995) ranks the families by quality against
+runtime: random, then greedy, then gradient descent, then simulated
+annealing.
+
+This engine is **candidate-based greedy**, the same family as the labeler
+behind Vega-Lite and as `textalloc`. That baseline generates candidate
+positions from the standard 8-position model and takes the first one that is
+unoccupied. Two things here differ:
+
+- Candidates are 8 directions at several distances, a superset of the fixed
+  8-position model.
+- Every valid candidate is scored and the cheapest wins, rather than taking
+  the first that fits.
+
+The second point is why an early exit from the candidate loop was rejected:
+stopping at the first free position is precisely the first-fit behaviour that
+cost-based selection replaced.
+
+Moving up the staircase to simulated annealing is not planned. It pays off
+when many labels compete for scarce space; these charts place a handful, where
+greedy and annealing reach the same answer and only the runtime differs.
+
+`adjustText` and `ggrepel` take the other route -- force-directed repulsion,
+iterating toward equilibrium. That suits scatter plots with dozens of
+free-floating labels better than it suits a chart whose labels are anchored to
+specific points and mostly need to avoid one line.
+
+> **On the occupancy grid.** An occupancy grid was implemented, benchmarked and
+> removed after it lost even at 10,000 points. That benchmark varied the number
+> of *obstacles*; the cost that actually scales here is the number of *labels*
+> times candidates. The two are different axes, and the grid was never measured
+> on the one where it would compete. Treat the removal as "not justified for
+> the case tested" rather than as a settled result.
 
 ### Connectors
 
@@ -340,7 +384,7 @@ configure(collision={
 | `label_padding_px` | `2.0` | Minimum space between two labels in pixels |
 | `max_iterations` | `50` | Maximum number of push-apart iterations between labels |
 | `candidate_distances` | `(1.0, 1.5, 2.0)` | Distance multipliers (in label heights) for proactive candidate generation in 8 cardinal directions |
-| `edge_margin_factor` | `1.0` | Edge margin as fraction of label height. Labels closer than this to the axes border receive an increasing cost penalty |
+| `edge_margin_factor` | `1.0` | Edge margin as fraction of label height. Labels closer than this to the axes border receive an increasing cost penalty, and it is also the clearance a label rescued from outside the axes is placed at |
 | `connector_threshold_px` | `30.0` | Minimum displacement distance (px) to draw guide line |
 | `connector_alpha` | `0.6` | Guide line transparency (0.0 = invisible, 1.0 = opaque) |
 | `connector_style` | `"-"` | Matplotlib style for guide line |
