@@ -126,7 +126,6 @@ configuration files or create figures -- that happens on the first plot.
 - pandas >= 2.2.0
 - matplotlib >= 3.10.0
 - numpy >= 2.0.0
+- pydantic >= 2.0
 - pydantic-settings >= 2.12.0
 - Babel >= 2.17.0
-- loguru >= 0.7.3
-- cachetools >= 6.2.6

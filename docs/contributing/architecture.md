@@ -114,7 +114,7 @@ flowchart TD
 ```
 src/chartkit/
 ├── __init__.py           # Entry point, public exports, __getattr__ lazy paths
-├── _logging.py           # Logging setup (loguru disable + configure_logging)
+├── _logging.py           # Logging setup (stdlib NullHandler + configure_logging)
 ├── accessor.py           # Pandas DataFrame/Series accessor (.chartkit)
 ├── engine.py             # ChartingPlotter - main orchestrator
 ├── result.py             # PlotResult - chainable result
@@ -219,7 +219,7 @@ tests/                    # Test suite (603 tests)
 
 | Module | Responsibility |
 |--------|---------------|
-| `_logging.py` | loguru setup (`logger.disable`) + `configure_logging()` |
+| `_logging.py` | stdlib logging setup (`NullHandler` on the package root) + `configure_logging()` |
 | `accessor.py` | Registers `.chartkit` on DataFrames and Series; delegates to TransformAccessor, ChartingPlotter, or create_layer |
 | `engine.py` | Orchestrates single-chart creation; delegates to `_internal` (pipeline, rendering, collision) |
 | `result.py` | Encapsulates the Figure/Axes pair; enables chaining with `.save()` and `.show()` |
