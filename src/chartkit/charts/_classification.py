@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from ..metrics import MetricSpec
 
 __all__ = [
     "KIND_ALIASES",
@@ -115,7 +118,7 @@ def validate_highlight_for_kind(kind: str, resolved: str | None = None) -> None:
         raise ValidationError(f"Chart kind '{kind}' does not support highlight.")
 
 
-def _extract_metric_name(spec: str | object) -> str:
+def _extract_metric_name(spec: str | MetricSpec) -> str:
     """Extract the metric name from a spec without importing MetricRegistry.
 
     Handles string syntax ``name:param1:param2@column|label`` and
@@ -133,7 +136,7 @@ def _extract_metric_name(spec: str | object) -> str:
 
 def validate_metrics_for_kind(
     kind: str,
-    specs: str | Sequence[str | object],
+    specs: str | Sequence[str | MetricSpec],
     resolved: str | None = None,
 ) -> None:
     """Raise ``ValidationError`` if any metric is incompatible with *kind*.

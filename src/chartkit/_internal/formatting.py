@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import get_args
+from matplotlib.ticker import FuncFormatter
 
 from ..styling import (
     compact_currency_formatter,
@@ -27,12 +27,8 @@ FORMATTERS = {
     "x": multiplier_formatter,
 }
 
-assert set(FORMATTERS.keys()) == set(get_args(UnitFormat)), (
-    f"FORMATTERS keys {set(FORMATTERS.keys())} != UnitFormat {set(get_args(UnitFormat))}"
-)
 
-
-def get_formatter(units: UnitFormat, decimals: int | None = None):
+def get_formatter(units: UnitFormat, decimals: int | None = None) -> FuncFormatter:
     """Return the formatter for *units*, optionally overriding decimal places.
 
     For ``units`` that support a ``decimals`` argument (``"%"``, ``"human"``,

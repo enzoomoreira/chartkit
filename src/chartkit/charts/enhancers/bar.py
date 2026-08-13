@@ -1,6 +1,8 @@
+"""Vertical and horizontal bar charts, grouped or single-series."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -36,7 +38,7 @@ def plot_bar(
     y_data: pd.Series | pd.DataFrame,
     highlight: list[HighlightMode],
     y_origin: Literal["zero", "auto"] = "zero",
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Plot bar chart with automatic width based on frequency.
 
@@ -161,7 +163,7 @@ def plot_barh(
     y_data: pd.Series | pd.DataFrame,
     highlight: list[HighlightMode],
     y_origin: Literal["zero", "auto"] = "zero",
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Plot horizontal bar chart with automatic height based on frequency.
 
@@ -191,6 +193,13 @@ def plot_barh(
     if ctx.user_color == "cycle" and multi_col:
         raise ValidationError(
             "color='cycle' is not supported for multi-column barh charts"
+        )
+
+    if len(ctx.y_data) > bars.warning_threshold:
+        warn(
+            f"Horizontal bar chart with {len(ctx.y_data)} bars may be hard to "
+            f"read. Consider kind='line'.",
+            RenderingWarning,
         )
 
     if multi_col:

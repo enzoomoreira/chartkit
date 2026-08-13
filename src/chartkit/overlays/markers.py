@@ -1,3 +1,5 @@
+"""Highlight markers: the scatter point and value label on a chosen datum."""
+
 from __future__ import annotations
 
 import logging

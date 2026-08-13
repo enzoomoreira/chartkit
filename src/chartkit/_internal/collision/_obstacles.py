@@ -6,6 +6,9 @@ import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import RendererBase
+from matplotlib.collections import Collection
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 from matplotlib.transforms import Affine2D, Bbox
 
@@ -108,7 +111,7 @@ class _PathObstacle:
         x_maxes: list[float] = []
         y_maxes: list[float] = []
         for path in self._display_paths:
-            verts = path.vertices
+            verts = np.asarray(path.vertices)
             mask = (verts[:, 0] >= x_lo) & (verts[:, 0] <= x_hi)
             local = verts[mask]
             if len(local) > 0:
@@ -134,7 +137,7 @@ def _vertex_extents(path: MplPath) -> Bbox:
     read a pixel or two larger than it draws, which pushes labels away rather
     than letting them overlap.
     """
-    verts = path.vertices
+    verts = np.asarray(path.vertices)
     if len(verts) == 0:
         return Bbox.from_extents(0.0, 0.0, 0.0, 0.0)
     return Bbox.from_extents(
@@ -176,7 +179,7 @@ def _bbox_to_path(bbox: Bbox) -> MplPath:
     )
 
 
-def _path_from_line(ax: Axes, line: Artist) -> _PathObstacle:
+def _path_from_line(ax: Axes, line: Line2D) -> _PathObstacle:
     """Extract display-space path from a Line2D."""
     data_path = line.get_path()
     transform = line.get_transform()
@@ -185,7 +188,7 @@ def _path_from_line(ax: Axes, line: Artist) -> _PathObstacle:
     return _PathObstacle(ax, line, [display_path], filled=False, debug_color="orange")
 
 
-def _path_from_patch(ax: Axes, patch: Artist) -> _PathObstacle:
+def _path_from_patch(ax: Axes, patch: Patch) -> _PathObstacle:
     """Extract display-space path from a Patch (Rectangle, Wedge, etc.).
 
     ``Patch.get_transform()`` already includes ``get_patch_transform()``,
@@ -197,7 +200,7 @@ def _path_from_patch(ax: Axes, patch: Artist) -> _PathObstacle:
 
 
 def _path_from_collection(
-    ax: Axes, collection: Artist, renderer: RendererBase
+    ax: Axes, collection: Collection, renderer: RendererBase
 ) -> _PathObstacle:
     """Extract display-space paths from a Collection (scatter, etc.)."""
     offsets = collection.get_offsets()

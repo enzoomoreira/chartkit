@@ -147,6 +147,19 @@ class TestFormatterDispatchTable:
     def test_all_keys_present(self) -> None:
         assert set(FORMATTERS.keys()) == self.EXPECTED_KEYS
 
+    def test_dispatch_table_covers_the_unit_format_type(self) -> None:
+        """A UnitFormat with no formatter is a KeyError at plot time.
+
+        This used to be a module-level assert, which ``python -O`` strips --
+        so the one guard against the two drifting apart disappeared in exactly
+        the runs where a crash costs most.
+        """
+        from typing import get_args
+
+        from chartkit._internal.plot_validation import UnitFormat
+
+        assert set(FORMATTERS) == set(get_args(UnitFormat))
+
     @pytest.mark.parametrize("key", sorted(EXPECTED_KEYS))
     def test_factory_returns_callable(self, key: str) -> None:
         assert callable(FORMATTERS[key]())

@@ -1,5 +1,20 @@
 # Project Changelog
 
+## [2026-08-05 03:48]
+### Changed
+- **Erros de pyright: 174 -> 51**: duas anotacoes que estavam de fato erradas respondiam por 123 deles. As factories de colisao declaravam `Artist` mas chamavam metodos de `Line2D`, `Patch` e `Collection`; e `Path.vertices` era indexado sem `np.asarray`, entao os stubs viam `ArrayLike`. O que resta e atrito com os stubs de matplotlib e pandas (`Figure | SubFigure`, `Timestamp | NaTType`), que pede `cast()` e nao tipo melhor
+- **`barh` avisa sobre legibilidade**: `bar` avisa desde sempre acima de `bars.warning_threshold`; a versao horizontal nunca avisou
+- **`_infer_highlight_style` sai do laco**: era recalculado por coluna, revarrendo os patches que as colunas anteriores tinham adicionado. A resposta -- se o kind desenha patches -- ja fica decidida na primeira
+- **`**kwargs: Any` nos enhancers de barra**: sem a anotacao eles nao satisfaziam o Protocol `Enhancer`
+- **`_extract_metric_name(spec: str | MetricSpec)`**: era `str | object`, e o `hasattr(spec, "name")` la dentro casaria com um `pd.Series`
+
+### Added
+- **Docstrings de modulo em 13 arquivos**: os 11 enhancers, `accessor.py` e `markers.py`
+- **Teste de cobertura do dispatch de formatters**: era um `assert` de modulo, que `python -O` remove -- justamente nas execucoes onde a falha custa mais
+
+### Removed
+- **`kwargs.get("patch_artist", True)` no boxplot**: o `setdefault` logo acima torna o default inalcancavel
+
 ## [2026-08-05 03:02]
 ### Performance
 - **Colisao em scatter: 45s -> 0,6s com 100 pontos**: `_PathObstacle` chamava `Path.get_extents()` a cada teste de intersecao -- por path, por candidato, por label, por iteracao. Em scatter cada marcador e um circulo de Beziers, e `get_extents()` resolve os extremos exatos com um root-find polinomial por segmento. O profile mostrou 9,8s de 9,8s ali. Os bounding boxes agora saem dos pontos de controle e sao calculados uma vez na construcao

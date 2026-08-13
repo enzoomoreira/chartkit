@@ -1,3 +1,9 @@
+"""Boxplot and violinplot.
+
+Both summarise each column as a distribution, so the X axis carries one
+position per column and the ``x`` argument is ignored.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -36,7 +42,7 @@ def plot_boxplot(
     kwargs.setdefault("patch_artist", True)
     bp = ax.boxplot(arrays, tick_labels=labels, zorder=ctx.zorder, **kwargs)
 
-    if kwargs.get("patch_artist", True):
+    if kwargs["patch_artist"]:
         for i, box in enumerate(bp["boxes"]):
             c = resolve_color(ctx, i)
             box.set_facecolor(c)

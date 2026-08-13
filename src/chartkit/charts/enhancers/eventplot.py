@@ -1,3 +1,5 @@
+"""Event plot: one row of vertical markers per column."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

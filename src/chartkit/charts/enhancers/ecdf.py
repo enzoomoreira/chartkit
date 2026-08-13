@@ -1,3 +1,5 @@
+"""Empirical cumulative distribution: values on X, cumulative share on Y."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

@@ -1,3 +1,10 @@
+"""Pandas accessor registration: the ``.chartkit`` entry point.
+
+Registered on both DataFrame and Series, delegating to ChartingPlotter for
+plots, TransformAccessor for transform chains, and create_layer for
+composition.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal

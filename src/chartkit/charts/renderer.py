@@ -176,6 +176,10 @@ class ChartRenderer:
         plot_method = getattr(ax, kind)
 
         patches_before = set(id(p) for p in ax.patches)
+        # Inferred once: the answer is whether this kind draws patches at all,
+        # which the first column already settles. Recomputing it per column
+        # rescanned every patch the previous columns had added.
+        style: str | None = None
 
         for i, col in enumerate(ctx.y_data.columns):
             c = resolve_color(ctx, i)
@@ -190,7 +194,8 @@ class ChartRenderer:
             )
 
             if highlight:
-                style = cls._infer_highlight_style(ax, patches_before)
+                if style is None:
+                    style = cls._infer_highlight_style(ax, patches_before)
                 add_highlight(
                     ax,
                     cast(pd.Series, ctx.y_data[col]),

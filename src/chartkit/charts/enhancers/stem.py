@@ -1,3 +1,5 @@
+"""Stem plot: vertical lines from a baseline to each data point."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

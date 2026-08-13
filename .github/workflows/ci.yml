@@ -26,9 +26,12 @@ jobs:
 
   typecheck:
     runs-on: ubuntu-latest
-    # Advisory until the type-hint cleanup lands: the baseline is 133 errors,
-    # most of them public signatures typed looser than the runtime validation
-    # actually enforces. Flip to blocking once that reaches zero.
+    # Advisory until the count reaches zero. The cleanup took it from 174 to
+    # 51 by narrowing two genuinely wrong annotations -- the collision factory
+    # functions declared Artist while calling Line2D, Patch and Collection
+    # methods, and Path.vertices was indexed without asarray. What is left is
+    # friction with the matplotlib and pandas stubs (Figure | SubFigure,
+    # Timestamp | NaTType), which needs casts rather than better types.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4

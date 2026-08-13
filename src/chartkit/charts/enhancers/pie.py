@@ -1,3 +1,5 @@
+"""Pie chart. Single column only; the index labels the slices."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

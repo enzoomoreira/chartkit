@@ -1,7 +1,9 @@
+"""Stacked bar chart, for showing the composition of a total over time."""
+
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -36,7 +38,7 @@ def plot_stacked_bar(
     y_data: pd.Series | pd.DataFrame,
     highlight: list[HighlightMode],
     y_origin: Literal["zero", "auto"] = "zero",
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Plot stacked bar chart for composition.
 

@@ -1,3 +1,5 @@
+"""Histogram. Data is binned, so the X axis holds values rather than the index."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
