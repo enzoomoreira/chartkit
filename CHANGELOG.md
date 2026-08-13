@@ -1,5 +1,19 @@
 # Project Changelog
 
+## [2026-08-05 03:02]
+### Performance
+- **Colisao em scatter: 45s -> 0,6s com 100 pontos**: `_PathObstacle` chamava `Path.get_extents()` a cada teste de intersecao -- por path, por candidato, por label, por iteracao. Em scatter cada marcador e um circulo de Beziers, e `get_extents()` resolve os extremos exatos com um root-find polinomial por segmento. O profile mostrou 9,8s de 9,8s ali. Os bounding boxes agora saem dos pontos de controle e sao calculados uma vez na construcao
+- **Hull agregado por obstaculo**: uma comparacao descarta o obstaculo inteiro quando o label esta longe dele; so os paths que realmente se sobrepoem chegam ao `intersects_bbox()`
+- Medido: 1.000 pontos de 12,9s para 0,38s; 10.000 pontos de 75s para 2,0s. `plot` (linha) permanece inalterado
+
+### Added
+- **`tests/collision/test_collision_perf.py`**: expressa o teto como multiplo do mesmo grafico com a engine desligada, para continuar valendo em maquina mais lenta
+
+### Not done
+- **Grade de ocupacao para Collections grandes (F5.2)**: implementada e medida contra a alternativa. Depois da correcao dos extents ela perde de forma consistente ate em 10.000 pontos (3,96s contra 3,58s) -- a primeira medicao favoravel era ruido. Removida
+- **Early-exit no laco de candidatos (F5.3)**: contradiz a selecao por custo que entrou depois do plano ser escrito. O solver precisa avaliar todos os candidatos validos para escolher o de menor custo; parar no primeiro livre volta ao comportamento greedy
+- **Auto-desabilitar acima de um limiar (F5.4)**: era valvula de seguranca para o caso patologico, que deixou de existir
+
 ## [2026-08-05 02:14]
 ### Changed
 - **BREAKING -- registrar nome ja existente levanta `RegistryError`**: `MetricRegistry.register` e `ChartRenderer.register_enhancer` sobrescreviam em silencio, entao duas bibliotecas registrando `'ma'` se anulavam sem aviso. Passe `replace=True` para sobrescrever de proposito

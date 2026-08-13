@@ -196,6 +196,21 @@ All obstacles are converted to `_PathObstacle` instances with display-space `Pat
 Collision detection uses matplotlib's Cython-based `Path.intersects_bbox()` for precise
 intersection against all geometries (lines, patches, collections).
 
+Each obstacle precomputes its geometry once, at construction:
+
+- Per-path bounding boxes, taken from the control points rather than from
+  `Path.get_extents()`. The exact version solves for the Bezier extrema with a
+  polynomial root-find per segment, and a scatter marker is all curves. The
+  control-point hull always contains the curve, so the approximation is
+  conservative -- an obstacle may read a pixel or two larger than it draws,
+  which pushes labels away rather than letting them overlap.
+- A single hull over all of them, so one comparison rejects an entire obstacle
+  when the label is nowhere near it.
+
+Only the paths whose boxes actually overlap the label reach `intersects_bbox()`.
+A 100-point scatter used to take 45 seconds to resolve against 0.37 without the
+engine; `tests/collision/test_collision_perf.py` keeps that from coming back.
+
 Auto-detection traverses all sibling axes (via `get_shared_x_axes().get_siblings(ax)`),
 enabling cross-axis collision avoidance in composed charts with `twinx()`.
 

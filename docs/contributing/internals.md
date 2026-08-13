@@ -574,10 +574,11 @@ leaks config state to another.
 ### Applied Optimizations
 
 1. **Lazy init**: Nothing is loaded until first use
-2. **LRUCache**: `find_project_root()` cached with 32 entries
+2. **Cached project root**: `find_project_root()` memoised with `functools.lru_cache`, 32 entries
 3. **Simple flag**: `_config = None` avoids unnecessary pydantic object reconstruction
 4. **Lazy project_root**: Property in ConfigLoader with `_project_root_resolved` flag
 5. **Path-based collision**: `_PathObstacle` creates 1 object per Artist with display-space paths extracted from lines, patches, and collections, using Cython-based `Path.intersects_bbox()` for O(segments) intersection checks
+6. **Precomputed obstacle extents**: bounding boxes are derived from control points once at construction, and a hull over them rejects a whole obstacle in one comparison. Using `Path.get_extents()` instead -- which root-finds the exact Bezier extrema -- made a 100-point scatter take 45 seconds
 
 ### Tips for Contributors
 

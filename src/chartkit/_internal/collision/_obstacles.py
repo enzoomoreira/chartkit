@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import RendererBase
@@ -18,6 +19,9 @@ class _PathObstacle:
         "_ax",
         "_artist",
         "_display_paths",
+        "_path_extents",
+        "_extent_array",
+        "_hull",
         "_filled",
         "_colocate",
         "_debug_color",
@@ -42,14 +46,51 @@ class _PathObstacle:
         self._debug_color = debug_color
         self._source_id = id(artist)
 
+        # The paths are already in display space and never move, so their
+        # extents are computed once here. They used to be recomputed on every
+        # intersects() call -- once per path, per candidate position, per
+        # label, per iteration, which is what made a scatter unusable.
+        self._path_extents = [_vertex_extents(p) for p in display_paths]
+        if self._path_extents:
+            self._extent_array = np.array(
+                [[e.x0, e.y0, e.x1, e.y1] for e in self._path_extents], dtype=float
+            )
+            self._hull: Bbox | None = Bbox.from_extents(
+                float(self._extent_array[:, 0].min()),
+                float(self._extent_array[:, 1].min()),
+                float(self._extent_array[:, 2].max()),
+                float(self._extent_array[:, 3].max()),
+            )
+        else:
+            self._extent_array = np.empty((0, 4), dtype=float)
+            self._hull = None
+
     def intersects(
         self, bbox: Bbox, renderer: RendererBase, padding: float = 0.0
     ) -> bool:
+        if self._hull is None:
+            return False
+
         test_bbox = _pad_bbox(bbox, padding) if padding > 0 else bbox
-        for path in self._display_paths:
-            if not path.get_extents().overlaps(test_bbox):
-                continue
-            if path.intersects_bbox(test_bbox, filled=self._filled):
+
+        # One comparison against the hull rejects the whole obstacle, which is
+        # the common case: a label sits far from most of a scatter cloud.
+        if not self._hull.overlaps(test_bbox):
+            return False
+
+        # Vectorised overlap test picks out the few candidate paths, so the
+        # exact intersects_bbox() runs on those rather than on all of them.
+        extents = self._extent_array
+        near = (
+            (extents[:, 0] < test_bbox.x1)
+            & (extents[:, 2] > test_bbox.x0)
+            & (extents[:, 1] < test_bbox.y1)
+            & (extents[:, 3] > test_bbox.y0)
+        )
+        for index in np.flatnonzero(near):
+            if self._display_paths[index].intersects_bbox(
+                test_bbox, filled=self._filled
+            ):
                 return True
         return False
 
@@ -58,15 +99,7 @@ class _PathObstacle:
     ) -> Bbox:
         """Bbox of the obstacle near the label, for displacement generation."""
         if self._filled:
-            extents = [p.get_extents() for p in self._display_paths]
-            if not extents:
-                return label_bbox
-            return Bbox.from_extents(
-                min(e.x0 for e in extents),
-                min(e.y0 for e in extents),
-                max(e.x1 for e in extents),
-                max(e.y1 for e in extents),
-            )
+            return self._hull if self._hull is not None else label_bbox
         # Unfilled: only vertices near the label (for lines)
         x_lo = label_bbox.x0 - margin
         x_hi = label_bbox.x1 + margin
@@ -89,6 +122,27 @@ class _PathObstacle:
 
 
 # -- Geometry helpers --
+
+
+def _vertex_extents(path: MplPath) -> Bbox:
+    """Bounding box of a path's control points.
+
+    ``Path.get_extents()`` solves for the exact Bezier extrema, which costs a
+    polynomial root-find per segment -- on a scatter, whose markers are curved,
+    that dominated everything else the collision engine did. The control-point
+    hull always contains the curve, so this is conservative: an obstacle may
+    read a pixel or two larger than it draws, which pushes labels away rather
+    than letting them overlap.
+    """
+    verts = path.vertices
+    if len(verts) == 0:
+        return Bbox.from_extents(0.0, 0.0, 0.0, 0.0)
+    return Bbox.from_extents(
+        float(verts[:, 0].min()),
+        float(verts[:, 1].min()),
+        float(verts[:, 0].max()),
+        float(verts[:, 1].max()),
+    )
 
 
 def _pad_bbox(bbox: Bbox, padding_px: float) -> Bbox:
