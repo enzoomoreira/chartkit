@@ -58,6 +58,13 @@ class BrandingConfig(BaseModel):
 class ColorsConfig(BaseModel):
     """Color palette. First 6 colors form the series cycle.
 
+    The cycle separates by hue, not by lightness. Six shades of one teal --
+    which is what this was -- is a sequential palette doing a categorical job:
+    neighbouring series landed 12.9 CIELAB units apart, below the ~25 at which
+    two colours stop reading as one. The dark teal anchors the set; the rest
+    are copper, steel blue, olive, wine and muted purple, no pair closer than
+    26.4.
+
     Attributes:
         positive: Color for positive values in diverging charts.
         negative: Color for negative values in diverging charts.
@@ -65,11 +72,11 @@ class ColorsConfig(BaseModel):
     """
 
     primary: str = "#00464D"
-    secondary: str = "#006B6B"
-    tertiary: str = "#008B8B"
-    quaternary: str = "#20B2AA"
-    quinary: str = "#5F9EA0"
-    senary: str = "#2E8B57"
+    secondary: str = "#B5651D"
+    tertiary: str = "#4C7FA8"
+    quaternary: str = "#7A9A3B"
+    quinary: str = "#8C4A5F"
+    senary: str = "#6B5B95"
 
     text: str = "#00464D"
     grid: str = "lightgray"

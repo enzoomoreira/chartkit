@@ -662,17 +662,21 @@ class ChartingConfig(BaseSettings):
 | Field | Type | Default |
 |-------|------|---------|
 | `primary` | `str` | `"#00464D"` |
-| `secondary` | `str` | `"#006B6B"` |
-| `tertiary` | `str` | `"#008B8B"` |
-| `quaternary` | `str` | `"#20B2AA"` |
-| `quinary` | `str` | `"#5F9EA0"` |
-| `senary` | `str` | `"#2E8B57"` |
+| `secondary` | `str` | `"#B5651D"` |
+| `tertiary` | `str` | `"#4C7FA8"` |
+| `quaternary` | `str` | `"#7A9A3B"` |
+| `quinary` | `str` | `"#8C4A5F"` |
+| `senary` | `str` | `"#6B5B95"` |
 | `text` | `str` | `"#00464D"` |
 | `grid` | `str` | `"lightgray"` |
 | `background` | `str` | `"white"` |
 | `positive` | `str` | `"#00464D"` |
 | `negative` | `str` | `"#8B0000"` |
 | `moving_average` | `str` | `"#888888"` |
+
+The first six form the series cycle and separate by hue: dark teal, copper,
+steel blue, olive, wine, muted purple. No pair is closer than 26.4 CIELAB
+units, above the ~25 at which two colours start reading as one.
 
 #### FontsConfig
 

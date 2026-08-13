@@ -1,5 +1,20 @@
 # Project Changelog
 
+## [2026-08-13 07:40]
+### Fixed
+- **Month and weekday names follow `babel_locale`**: `mdates.DateFormatter` hands the format string to `datetime.strftime`, whose names come from the process C locale, so a figure read `R$ 5,60` on one axis and `Sep/24` on the other. The name-spelling directives (`%a %A %b %B %p`) are now resolved through Babel; every other directive still goes to strftime, so `%Y-%m-%d` is unaffected and `en_US` output is byte-identical. Abbreviated names drop the period CLDR gives them -- `fev./24` puts it against the separator for nothing. The `axis_controls` snapshot had been storing `Sep/23` since it was written: the suite recorded the defect without anyone asserting it was wrong
+- **Auto tick rotation fires before labels touch**: the trigger was strict intersection, which twenty quarterly labels sitting 0.96px apart never met -- none touching, all reading as one word. It is now a minimum separation, `ticks.min_gap_px`, defaulting to the width of a space at the default label size. The escalation check keeps strict intersection on purpose: the bounding box of a rotated label is its diagonal envelope, so two 45-degree labels measure ~1.2px apart while reading perfectly clear, and applying the gap to that number sent every rotated chart to 90 degrees. The GDP example carried `tick_rotation=45` as a workaround for this; removing it renders a byte-identical PNG
+- **`width=` no longer raises `TypeError`**: the bar enhancers always passed their own width to `ax.bar()`, so a caller asking for one collided with it. On a grouped chart the value is the width of the whole group
+
+### Changed
+- **BREAKING -- bar width is a share of the spacing, not a frequency tier**: measured as the fraction of the slot each bar owned, the three tiers gave weekly 11% and quarterly 22% while daily and annual sat near 80%. Width is now the median gap between points times `bars.width_fraction`, putting every frequency at 80%; daily and annual land within 3% of where the tiers had them, so only the broken frequencies move. The median, not the mean: a series with a few missing dates still has a spacing. `bars.width_default` is now `bars.width_fraction`, and `bars.width_monthly`, `bars.width_annual` and the whole `bars.frequency_detection` table are gone
+- **BREAKING -- the series palette separates by hue**: the six colours were shades of one teal, a sequential palette doing a categorical job. The closest adjacent pair was `secondary`/`tertiary` at 12.9 CIELAB units, below the ~25 at which two colours stop reading as one -- and `primary`/`secondary`, the pair that looked worst in the gallery, was not even the worst at 16.8. The dark teal `#00464D` still anchors the set; the other five are copper, steel blue, olive, wine and muted purple, with no pair closer than 26.4. A config that pinned the old hexes keeps them
+
+### Added
+- **`tests/formatting/test_tick_rotation.py`**: the crowding trigger, the configured gap, the escalation to 90 degrees, and the case that must *not* escalate
+- **Localized tick label tests**: the same directive across locales, the `%%` escape, and the axis picking up the configured locale
+- **Bar width tests**: one share of the slot per frequency, a gapped series measuring the same as a regular one, repeated dates falling back, and the three `width=`/`height=` override paths
+
 ## [2026-08-13 05:10]
 ### Fixed
 - **Labels leaving the data area are now resolved**: a highlight label is anchored `ha='left'` at the last data point, so it extends past it by construction. Resolution only ran when a label overlapped another label or a registered obstacle, and the axes border is neither, so the label sat on top of the right spine of every dual-axis chart. `edge_margin_factor` did not save it -- that only ranks candidates once a resolution is already running. Measured on the composition example: 13px of overflow before, 14px of clearance after
@@ -24,10 +39,9 @@
 - **Test counts refreshed**: `testing.md` claimed 701 against an actual 809, its per-directory numbers were stale, eleven test files were missing from the tree, and `metrics/conftest.py` was listed after being removed
 
 ### Known issues
-- **Month names render in English**: `babel_locale` reaches `styling/formatters.py` and stops there, so the Y axis reads `R$ 5,60` while a `tick_format` of `%b/%y` reads `Feb/24` in the same figure
-- **`detect_bar_width` has three tiers**: daily, monthly and annual. A quarterly index falls into the monthly branch and gets 20 days of bar inside 91 days of room -- 22% of the slot. `width=` cannot correct it: the enhancer always passes its own and the caller's collides with a `TypeError`
-- **Auto tick rotation tests for strict overlap**: labels flush against each other do not trigger it
-- **`colors.primary` (#00464D) and `colors.secondary` (#006B6B)** are two dark teals that read as one colour when adjacent, visible in `selic_e_ipca.png` on a line and its bars
+All four issues recorded here -- English month names, the bar width tiers,
+strict-overlap rotation and the palette contrast -- were fixed in the entry
+above. Each was found by looking at the gallery, not by running the suite.
 
 ## [2026-08-05 04:22]
 ### Added

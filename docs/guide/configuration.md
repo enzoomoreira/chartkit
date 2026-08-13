@@ -47,12 +47,14 @@ footer_format = "Fonte: {source}, {company_name}"
 footer_format_no_source = "{company_name}"
 
 [colors]
+# The first six are the series cycle. They separate by hue rather than by
+# lightness: shades of one colour read as one colour when adjacent.
 primary = "#00464D"
-secondary = "#006B6B"
-tertiary = "#008B8B"
-quaternary = "#20B2AA"
-quinary = "#5F9EA0"
-senary = "#2E8B57"
+secondary = "#B5651D"
+tertiary = "#4C7FA8"
+quaternary = "#7A9A3B"
+quinary = "#8C4A5F"
+senary = "#6B5B95"
 text = "#00464D"
 grid = "lightgray"
 background = "white"
