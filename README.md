@@ -4,6 +4,8 @@ Standardized charting library for financial data visualization.
 
 Generate professional charts via Pandas Accessor with a single line of code.
 
+> Leia em [português](README.pt-BR.md).
+
 ## Installation
 
 ```bash

@@ -11,6 +11,7 @@
 - **BREAKING -- the series palette separates by hue**: the six colours were shades of one teal, a sequential palette doing a categorical job. The closest adjacent pair was `secondary`/`tertiary` at 12.9 CIELAB units, below the ~25 at which two colours stop reading as one -- and `primary`/`secondary`, the pair that looked worst in the gallery, was not even the worst at 16.8. The dark teal `#00464D` still anchors the set; the other five are copper, steel blue, olive, wine and muted purple, with no pair closer than 26.4. A config that pinned the old hexes keeps them
 
 ### Added
+- **`README.pt-BR.md`**: the remaining half of decision D6. The English README is the one PyPI renders; this is the entry point for the audience the defaults were built for, cross-linked from both sides and shipped in the sdist. Every code block was executed. The documentation itself stays in English, and the file says so
 - **`tests/formatting/test_tick_rotation.py`**: the crowding trigger, the configured gap, the escalation to 90 degrees, and the case that must *not* escalate
 - **Localized tick label tests**: the same directive across locales, the `%%` escape, and the axis picking up the configured locale
 - **Bar width tests**: one share of the slot per frequency, a gapped series measuring the same as a regular one, repeated dates falling back, and the three `width=`/`height=` override paths

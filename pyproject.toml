@@ -73,6 +73,7 @@ include = [
     "docs",
     "examples",
     "CHANGELOG.md",
+    "README.pt-BR.md",
     "LICENSE",
 ]
 
