@@ -113,6 +113,20 @@ s3 = df3.chartkit.layer(units="points", kind="line")
 compose(s1, s2, s3, title="Three Series, One Axis")
 ```
 
+The three series come out in three different theme colours. One palette covers
+the whole chart and advances across every layer, including layers on the right
+axis -- the legend consolidates both axes, so two series sharing a colour would
+be ambiguous in a single legend. A layer with more than one column takes one
+palette entry per column, and the palette wraps once the layers outnumber it.
+
+Passing an explicit `color` overrides the cycle for that layer and takes no
+palette entry, so the remaining layers still start from the top of the palette:
+
+```python
+benchmark = bench_df.chartkit.layer(color="#999999")  # fixed grey
+fund = fund_df.chartkit.layer()                       # first theme colour
+```
+
 ### 2. Area + Reference Layer
 
 ```python
