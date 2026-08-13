@@ -220,14 +220,26 @@ def _coerce_datetime_index(x: pd.Index | pd.Series) -> pd.DatetimeIndex | None:
 
 
 def detect_bar_width(x: pd.Index | pd.Series, bars: BarsConfig) -> float:
-    """Automatic bar width based on data frequency."""
-    width: float = bars.width_default
+    """Bar width as a fraction of the space between neighbouring points.
+
+    A categorical axis puts its points one unit apart, so the fraction is the
+    width. A date axis is measured instead: matplotlib takes a bar width there
+    in days, and the median gap is what one bar has to itself. The median, not
+    the mean, because a series with a few holes in it still has a spacing.
+
+    Three frequency tiers used to answer this, and everything between them came
+    out wrong -- weekly bars got 0.8 of the 7 days they owned, quarterly 20 of
+    92, so the chart read as a stem plot.
+    """
     dt_index = _coerce_datetime_index(x)
-    if dt_index is not None and len(dt_index) > 1:
-        span = cast(pd.Timestamp, dt_index.max()) - cast(pd.Timestamp, dt_index.min())
-        avg_diff = span / (len(dt_index) - 1)
-        if avg_diff.days > bars.frequency_detection.annual_threshold:
-            width = float(bars.width_annual)
-        elif avg_diff.days > bars.frequency_detection.monthly_threshold:
-            width = float(bars.width_monthly)
-    return width
+    if dt_index is None or len(dt_index) < 2:
+        return bars.width_fraction
+
+    gaps = pd.Series(dt_index).diff().dropna().dt.total_seconds()
+    spacing_days = float(cast(float, gaps.median())) / 86400.0
+    if spacing_days <= 0:
+        # Every date is the same, or more than half of them are: there is no
+        # spacing to take a fraction of.
+        return bars.width_fraction
+
+    return spacing_days * bars.width_fraction

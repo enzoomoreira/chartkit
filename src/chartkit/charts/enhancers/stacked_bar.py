@@ -48,8 +48,13 @@ def plot_stacked_bar(
     Args:
         y_origin: ``'zero'`` includes zero in the Y axis (default),
             ``'auto'`` adjusts limits to focus on data with margin.
+
+    Keyword Args:
+        width: Overrides the measured width -- in days on a date axis, in
+            index units on a categorical one.
     """
     y_origin = validate_y_origin(y_origin)
+    user_width = kwargs.pop("width", None)
     ctx = prepare_render_context(y_data, kwargs)
     bars = ctx.config.bars
 
@@ -61,12 +66,8 @@ def plot_stacked_bar(
         )
 
     categorical = is_categorical_index(x)
-    if categorical:
-        x_plot = prepare_categorical_axis(ax, x)
-        width = bars.width_default
-    else:
-        x_plot = x
-        width = detect_bar_width(x, bars)
+    x_plot = prepare_categorical_axis(ax, x) if categorical else x
+    width = user_width if user_width is not None else detect_bar_width(x, bars)
 
     bottom = np.zeros(len(ctx.y_data))
     for i, col in enumerate(ctx.y_data.columns):

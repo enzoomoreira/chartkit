@@ -1,10 +1,9 @@
 """Quarterly GDP change, where the sign of each bar is the story.
 
 The index is turned into "1T24" labels first, which is how quarterly GDP is
-read in a Brazilian deck and also what bar charts want: on a categorical axis
-each bar is one slot wide, whereas a datetime axis needs a width in days.
-``hline:0`` draws the line between growth and contraction, which a reader
-looks for before anything else.
+read in a Brazilian deck -- the dates themselves say nothing a reader of this
+series wants. ``hline:0`` draws the line between growth and contraction, which
+a reader looks for before anything else.
 """
 
 from __future__ import annotations

@@ -761,19 +761,13 @@ class ChartingConfig(BaseSettings):
 
 | Field | Type | Default |
 |-------|------|---------|
-| `width_default` | `float` | `0.8` |
-| `width_monthly` | `int` | `20` |
-| `width_annual` | `int` | `300` |
+| `width_fraction` | `float` | `0.8` |
 | `auto_margin` | `float` | `0.1` |
 | `warning_threshold` | `int` | `500` |
-| `frequency_detection` | `FrequencyDetectionConfig` | (see below) |
 
-#### FrequencyDetectionConfig
-
-| Field | Type | Default |
-|-------|------|---------|
-| `monthly_threshold` | `int` | `25` |
-| `annual_threshold` | `int` | `300` |
+`width_fraction` is the share of its own slot a bar fills: one unit on a
+categorical axis, the median gap between dates on a temporal one. Pass
+`width=` (or `height=` for `barh`) to `plot()` to override a single chart.
 
 #### BandsConfig
 

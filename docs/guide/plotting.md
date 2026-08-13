@@ -132,7 +132,7 @@ df = pd.DataFrame({
 df.chartkit.plot(kind='bar', title="Sales by Region", units='human')
 ```
 
-Supported index types: string indices, `pd.CategoricalIndex`, `pd.StringDtype`, and object dtype with string values. Bar width defaults to `bars.width_default` (0.8) for categorical data.
+Supported index types: string indices, `pd.CategoricalIndex`, `pd.StringDtype`, and object dtype with string values. Bar width defaults to `bars.width_fraction` (0.8) for categorical data.
 
 ### Sorting Bars
 
@@ -161,16 +161,24 @@ df.chartkit.plot(kind='bar', title="Categories", color='cycle')
 
 ### Automatic Bar Width
 
-Bar width is detected automatically based on data frequency:
+A bar fills `bars.width_fraction` (0.8) of the space it owns. How much space
+that is depends on the axis:
 
-| Data Type | Width | Trigger |
-|-----------|-------|---------|
-| Categorical/string index | `bars.width_default` (0.8) | Non-numeric, non-datetime index |
-| Monthly datetime | `bars.width_monthly` (20 days) | Avg gap > `frequency_detection.monthly_threshold` (25 days) |
-| Annual datetime | `bars.width_annual` (300 days) | Avg gap > `frequency_detection.annual_threshold` (300 days) |
-| Other datetime | `bars.width_default` (0.8) | Fallback |
+| Axis | Slot | Resulting width |
+|------|------|-----------------|
+| Categorical/string index | 1 index unit | `0.8` |
+| Datetime index | Median gap between dates, in days | `0.8` of it -- 5.6 days weekly, 24.8 monthly, 73.6 quarterly, 292 annual |
+| `barh` (any index) | 1 index unit | `0.8` |
 
-All thresholds are configurable via [Configuration](configuration.md).
+The median, not the mean: a series with a few missing dates still has a
+spacing, and the mean would stretch every bar to cover the holes.
+
+Override a single chart with `width=` (`height=` for `barh`), in the same
+units the axis uses -- days on a date axis:
+
+```python
+df.chartkit.plot(kind='bar', title="Quarterly GDP", width=45)
+```
 
 ### Bars with Positive and Negative Values
 

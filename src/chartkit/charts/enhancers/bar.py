@@ -50,9 +50,13 @@ def plot_bar(
         sort: ``None``, ``'ascending'`` or ``'descending'``. Single-column only.
         color: Explicit color or ``'cycle'`` to cycle theme colors per bar.
             ``'cycle'`` is single-column only.
+        width: Overrides the measured width -- in days on a date axis, in
+            index units on a categorical one. On a multi-column chart it is
+            the width of the whole group, split across the columns.
     """
     y_origin = validate_y_origin(y_origin)
     sort = kwargs.pop("sort", None)
+    user_width = kwargs.pop("width", None)
     multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
     ctx = prepare_render_context(y_data, kwargs)
     bars = ctx.config.bars
@@ -77,13 +81,10 @@ def plot_bar(
             )
 
         categorical = is_categorical_index(x)
-
-        if categorical:
-            x_numeric = prepare_categorical_axis(ax, x)
-            group_width = bars.width_default
-        else:
-            x_numeric = x
-            group_width = detect_bar_width(x, bars)
+        x_numeric = prepare_categorical_axis(ax, x) if categorical else x
+        group_width = (
+            user_width if user_width is not None else detect_bar_width(x, bars)
+        )
 
         n_cols = len(ctx.y_data.columns)
         bar_width, offsets = compute_bar_offsets(n_cols, group_width)
@@ -133,7 +134,7 @@ def plot_bar(
         else:
             c = resolve_color(ctx, 0)
 
-        width = detect_bar_width(x, bars)
+        width = user_width if user_width is not None else detect_bar_width(x, bars)
         label = str(vals.name) if vals.name is not None else None
         ax.bar(
             x,
@@ -176,10 +177,15 @@ def plot_barh(
     Keyword Args:
         sort: ``None``, ``'ascending'`` or ``'descending'``. Single-column only.
         color: Explicit color or ``'cycle'`` to cycle theme colors per bar.
+        height: Overrides the bar thickness, in index units. Every barh sits on
+            an integer position regardless of the index, so the slot is 1 unit
+            wide and ``bars.width_fraction`` is the default. On a multi-column
+            chart it is the height of the whole group.
     """
     del highlight
     y_origin = validate_y_origin(y_origin)
     sort = kwargs.pop("sort", None)
+    user_height = kwargs.pop("height", None)
     multi_col = isinstance(y_data, pd.DataFrame) and y_data.shape[1] > 1
     ctx = prepare_render_context(y_data, kwargs)
     bars = ctx.config.bars
@@ -203,16 +209,14 @@ def plot_barh(
         )
 
     if multi_col:
-        categorical = is_categorical_index(x)
-
-        if categorical:
+        if is_categorical_index(x):
             y_numeric = prepare_categorical_axis(ax, x, axis="y")
-            group_height = bars.width_default
         else:
             y_numeric = np.arange(len(x))
             ax.set_yticks(y_numeric)
             ax.set_yticklabels(list(x))
-            group_height = bars.width_default
+
+        group_height = user_height if user_height is not None else bars.width_fraction
 
         n_cols = len(ctx.y_data.columns)
         bar_height, offsets = compute_bar_offsets(n_cols, group_height)
@@ -246,7 +250,7 @@ def plot_barh(
         ax.barh(
             range(len(vals)),
             vals,
-            height=bars.width_default,
+            height=user_height if user_height is not None else bars.width_fraction,
             color=c,
             label=label,
             zorder=ctx.zorder,

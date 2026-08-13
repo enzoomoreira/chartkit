@@ -23,7 +23,6 @@ __all__ = [
     "LayoutConfig",
     "LegendConfig",
     "LinesConfig",
-    "FrequencyDetectionConfig",
     "BarsConfig",
     "BandsConfig",
     "FillsConfig",
@@ -241,32 +240,20 @@ class LinesConfig(BaseModel):
     moving_avg_min_periods: int | None = Field(default=None, ge=1)
 
 
-class FrequencyDetectionConfig(BaseModel):
-    """Thresholds (in days) for bar width frequency detection."""
-
-    monthly_threshold: int = 25
-    annual_threshold: int = 300
-
-
 class BarsConfig(BaseModel):
     """Bar chart configuration.
 
     Attributes:
-        width_default: Default bar width for categorical data.
-        width_monthly: Bar width in days for monthly time series.
-        width_annual: Bar width in days for annual time series.
+        width_fraction: Bar thickness as a fraction of the space one bar owns --
+            one unit on a categorical axis, the median gap between dates on a
+            temporal one. ``1.0`` makes neighbouring bars touch.
         auto_margin: X-axis margin fraction added around bars.
         warning_threshold: Log warning if bar count exceeds this.
     """
 
-    width_default: float = 0.8
-    width_monthly: int = 20
-    width_annual: int = 300
+    width_fraction: float = Field(default=0.8, gt=0.0, le=1.0)
     auto_margin: float = 0.1
     warning_threshold: int = 500
-    frequency_detection: FrequencyDetectionConfig = Field(
-        default_factory=FrequencyDetectionConfig
-    )
 
 
 class BandsConfig(BaseModel):

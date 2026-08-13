@@ -163,15 +163,11 @@ axis = "both"         # "x", "y", ou "both"
 # --- Barras ------------------------------------------------------------------
 
 # [bars]
-# width_default = 0.8
-# width_monthly = 20
-# width_annual = 300
+# Fracao do espaco que cada barra ocupa: 1 unidade do indice num eixo
+# categorico, o intervalo mediano entre datas num eixo temporal.
+# width_fraction = 0.8
 # auto_margin = 0.1
 # warning_threshold = 500         # Aviso quando chart tem muitos pontos
-
-# [bars.frequency_detection]
-# monthly_threshold = 25   # Dias entre pontos para considerar mensal
-# annual_threshold = 300
 
 # --- Bandas, preenchimentos e marcadores -------------------------------------
 

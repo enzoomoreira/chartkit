@@ -107,15 +107,11 @@ target_style = "-."
 # moving_avg_min_periods = 1
 
 [bars]
-width_default = 0.8
-width_monthly = 20
-width_annual = 300
+# Share of its own slot each bar fills: 1 index unit on a categorical axis,
+# the median gap between dates on a temporal one.
+width_fraction = 0.8
 auto_margin = 0.1
 warning_threshold = 500
-
-[bars.frequency_detection]
-monthly_threshold = 25
-annual_threshold = 300
 
 [markers]
 scatter_size = 30
