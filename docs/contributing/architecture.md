@@ -65,7 +65,7 @@ DataFrame -> Accessor -> Plotter -> PlotResult
 5. **ChartingPlotter**: Main engine for direct plotting:
    - Creates figure via `create_figure()` (theme + plt.subplots + grid override)
    - Extracts data via `extract_plot_data()`
-   - Applies axis formatters via `FORMATTERS` dispatch table
+   - Applies axis formatters via `get_formatter(units, decimals)`
    - Dispatches via `ChartRenderer.render(ax, kind, ...)` (enhancer or generic `ax.{kind}()`)
    - Applies metrics via `MetricRegistry.apply()`
    - Applies legend via `apply_legend()`
@@ -97,7 +97,7 @@ flowchart TD
 
     D --> D1["1. create_figure() (theme + fig/ax + grid)"]
     D1 --> D3["2. extract_plot_data()"]
-    D3 --> D4["3. FORMATTERS[units]()"]
+    D3 --> D4["3. get_formatter(units, decimals)"]
     D4 --> D5["4. ChartRenderer.render(kind)"]
     D5 --> D6["5. MetricRegistry.apply()"]
     D6 --> D6b["6. apply_legend()"]
@@ -118,7 +118,8 @@ src/chartkit/
 ├── accessor.py           # Pandas DataFrame/Series accessor (.chartkit)
 ├── engine.py             # ChartingPlotter - main orchestrator
 ├── result.py             # PlotResult - chainable result
-├── exceptions.py         # ChartKitError (base) and TransformError
+├── exceptions.py         # ChartKitError (base), TransformError, ValidationError, RegistryError, StateError
+├── warnings.py           # Warning categories (ChartKitWarning base; DataMutation/Inference/RenderingWarning)
 │
 ├── settings/             # Configuration system (pydantic-settings)
 │   ├── __init__.py       # Exports: configure, get_config, ChartingConfig
@@ -182,7 +183,7 @@ src/chartkit/
 │   └── accessor.py       # TransformAccessor for chaining
 │
 └── _internal/            # Private utilities (shared between engine and compose)
-    ├── __init__.py       # Facade: collision, extraction, formatting, frequency, highlight, pipeline, saving, validation
+    ├── __init__.py       # Facade: collision, extraction, formatting (FORMATTERS, get_formatter), frequency, highlight, introspection (describe_figure/explain_figure), pipeline, saving, tick formatting/rotation, validation
     ├── collision/        # Collision engine (modularized package)
     │   ├── __init__.py   # Re-exports public API (register_*, resolve_*, draw_*_debug_overlay)
     │   ├── _registry.py  # Global state and artist registration (WeakKeyDictionary)
@@ -193,22 +194,27 @@ src/chartkit/
     ├── formatting.py     # FORMATTERS dispatch table for Y-axis
     ├── frequency.py      # Frequency detection and display (FREQ_ALIASES, infer_freq, normalize_freq_code, freq_display_label, FREQ_DISPLAY_MAP)
     ├── highlight.py      # normalize_highlight()
+    ├── introspection.py  # describe_figure() / explain_figure() - structural description of a rendered chart
     ├── pipeline.py       # Shared pipeline steps: create_figure(), apply_legend(), finalize_chart()
     ├── plot_validation.py # validate_plot_params(), PlotParamsModel, UnitFormat, TickFreq, AxisLimits
+    ├── rendering.py      # get_renderer() - backend-independent renderer access for measuring artists
     ├── saving.py         # save_figure() with path resolution
     ├── tick_formatting.py # apply_tick_formatting(x_data) - data-aware date locator/formatter for X-axis
     └── tick_rotation.py  # apply_tick_rotation() - auto/fixed X-axis label rotation
 
-tests/                    # Test suite (603 tests)
+tests/                    # Test suite (838 tests)
 ├── conftest.py           # Shared fixtures (financial DataFrames, edge cases, Agg backend)
-├── charts/               # Chart rendering tests (67)
-├── collision/            # Collision engine tests (19)
-├── composing/            # Composition system tests (29)
-├── formatting/           # Formatters and highlight tests (41)
-├── integration/          # End-to-end tests (18)
-├── metrics/              # MetricRegistry tests (28)
-├── settings/             # Configuration system tests (23)
-└── transforms/           # Transform function tests (142)
+├── test_api_parity.py    # Signature parity between the plot()/layer() facades (11)
+├── test_lifecycle.py     # Library citizenship guarantees (7)
+├── charts/               # Chart rendering tests (212)
+├── collision/            # Collision engine tests (27)
+├── composing/            # Composition system tests (64)
+├── formatting/           # Formatters and highlight tests (154)
+├── integration/          # End-to-end tests (23)
+├── metrics/              # MetricRegistry tests (51)
+├── settings/             # Configuration system tests (44)
+├── transforms/           # Transform function tests (208)
+└── visual/               # Structural render snapshots + introspection (37)
 ```
 
 ---
@@ -315,6 +321,7 @@ def my_function():
 | Reference | 1 | ATH, ATL, hlines |
 | Secondary | 2 | Moving average |
 | Data | 3+ | Lines, bars |
+| Markers | 5 | Highlight markers and labels |
 
 ### Function Returns
 

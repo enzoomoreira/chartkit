@@ -59,7 +59,7 @@ def function(ax, x_data, y_data, param1, param2, **kwargs):
 - Defined in `param_names`, extracted from the spec string
 - String format: `'name:value1:value2'`
 - Values are automatically converted to numbers when possible
-- Parameters without a default in the function are treated as required; `parse()` raises `ValueError` if absent
+- Parameters without a default in the function are treated as required; `parse()` raises `ValidationError` if absent
 
 **`uses_series`:**
 - Default `True`: the metric receives `series=col` via kwargs when the user
@@ -250,13 +250,16 @@ chartkit supports two approaches for new chart types:
 
 ### Generic Types (No Code Needed)
 
-Any valid matplotlib Axes method works automatically as `kind`. The `ChartRenderer` calls `ax.{kind}()` with automatic color cycling, highlight inference, and line obstacle registration:
+`ChartRenderer` drives a fixed allowlist of matplotlib Axes methods directly through `ax.{kind}()`, with automatic color cycling, highlight inference, and line obstacle registration. The allowlist (`ChartRenderer._GENERIC_KINDS`) contains the methods compatible with the `(x, y_series)` calling convention:
+
+`plot`, `scatter`, `step`, `errorbar`, `fill`, `fill_betweenx`, `loglog`, `semilogx`, `semilogy`
+
+Any other `kind` -- even a valid Axes method -- raises `ValidationError` listing `ChartRenderer.available()` (enhancers, generic kinds, and aliases). Kinds outside the allowlist need an enhancer; `stem`, for example, is enhancer-backed (`charts/enhancers/stem.py`), not generic.
 
 ```python
 # These work out of the box -- no registration needed
 df.chartkit.plot(kind='scatter', s=50, alpha=0.7)
 df.chartkit.plot(kind='step', where='mid')
-df.chartkit.plot(kind='stem')
 ```
 
 ### Enhancers (For Complex Types)
@@ -520,6 +523,12 @@ color = "#00FF00"
 
 ### Adding New Formatters
 
+The `units` parameter is validated against the `UnitFormat` Literal in
+`_internal/plot_validation.py` before the dispatch table is consulted, so
+adding a key to `FORMATTERS` is not enough: any value outside the Literal
+raises `ValidationError`. A new unit format is therefore a change to the
+library itself, not a user-side extension.
+
 **1. Implement in `styling/formatters.py`:**
 
 ```python
@@ -552,15 +561,33 @@ from ..styling import my_formatter
 FORMATTERS = {
     # ... existing ...
     'custom': my_formatter,
-    'prefix_R': lambda: my_formatter('R '),
 }
+```
+
+**3. Extend the `UnitFormat` Literal in `_internal/plot_validation.py`** (and
+teach `get_formatter()` about the new unit if it should honour `decimals`):
+
+```python
+UnitFormat = Literal[
+    "BRL", "USD", "BRL_compact", "USD_compact", "%", "human", "points", "x",
+    "custom",
+]
 ```
 
 Usage:
 
 ```python
 df.chartkit.plot(units='custom')
-df.chartkit.plot(units='prefix_R')
+```
+
+For a one-off custom axis, skip all of the above and apply a matplotlib
+formatter directly on the rendered axes:
+
+```python
+from matplotlib.ticker import FuncFormatter
+
+result = df.chartkit.plot()
+result.axes.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: f"R {x:,.2f}"))
 ```
 
 ---

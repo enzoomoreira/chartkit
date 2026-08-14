@@ -11,7 +11,6 @@ uv run pytest
 uv run pytest tests/transforms/          # Single module
 uv run pytest tests/transforms/test_variation.py  # Single file
 uv run pytest -k "test_month_over_month"  # By name pattern
-uv run pytest -m slow                     # Only slow-marked tests
 ```
 
 ---
@@ -20,7 +19,7 @@ uv run pytest -m slow                     # Only slow-marked tests
 
 ```
 tests/
-├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases, Agg backend)
+├── conftest.py                    # Shared fixtures (financial DataFrames, edge cases, Agg backend) + autouse _isolate_global_state
 ├── test_api_parity.py             # Signature parity across the plot()/layer() facades
 ├── test_lifecycle.py              # Library-citizenship guarantees (rcParams, figures, backends)
 ├── charts/                        # Chart rendering (212 tests) + classification
@@ -53,7 +52,7 @@ tests/
 │   ├── test_spec_parsing.py       # MetricRegistry.parse() spec parsing
 │   └── test_std_band.py           # Rolling and full-series standard deviation bands
 ├── settings/                      # Configuration system (44 tests)
-│   ├── conftest.py                # Config isolation (autouse reset)
+│   ├── conftest.py                # tmp_project fixture (pyproject.toml marker for discovery tests)
 │   ├── test_config_precedence.py  # Config loading, deep merge, schema, env vars
 │   ├── test_discovery.py         # find_project_root, find_config_files
 │   └── test_global_state.py       # Registry and loader isolation under concurrency
@@ -179,22 +178,16 @@ Other known-value fixtures: `known_normalize_data`, `known_drawdown_data`, `know
 ### settings/conftest.py
 
 ```python
-@pytest.fixture(autouse=True)
-def _isolate_config():
-    """Resets config state before AND after each test."""
+@pytest.fixture
+def tmp_project(tmp_path: Path) -> Path:
+    """Temporary directory with a pyproject.toml marker."""
     ...
 ```
 
-Also provides `tmp_project` -- a temporary directory with a `pyproject.toml` marker for discovery tests.
-
-### metrics/conftest.py
-
-```python
-@pytest.fixture(autouse=True)
-def _preserve_registry():
-    """Snapshots and restores MetricRegistry._metrics around each test."""
-    ...
-```
+Provides `tmp_project` -- a temporary directory with a `pyproject.toml`
+marker for discovery tests. Config state isolation is not handled here: the
+global `_isolate_global_state` fixture in the root `conftest.py` covers it
+(see State Isolation below).
 
 ---
 
@@ -297,14 +290,17 @@ filterwarnings = ["error", "ignore::UserWarning:matplotlib"]
 
 ## State Isolation
 
-Each module that touches shared state uses autouse fixtures to guarantee test independence:
+A single autouse fixture guarantees test independence for the whole suite:
+`_isolate_global_state` in the root `tests/conftest.py`. It wraps every test
+-- there are no module-specific isolation fixtures.
 
-| Module | Fixture | What it resets |
-|--------|---------|---------------|
-| `settings/` | `_isolate_config` | `reset_config()` before and after each test |
-| `metrics/` | `_preserve_registry` | Snapshots and restores `MetricRegistry._metrics` |
+| Step | What it does |
+|------|--------------|
+| Before each test | Snapshots matplotlib rcParams and `MetricRegistry._metrics`; runs `reset_config()` and clears collision state |
+| After each test | Closes all figures, clears collision state, restores the metric registry snapshot, runs `reset_config()`, restores rcParams |
 
-Transforms and collision tests don't need isolation -- they operate on fixture data without modifying global state.
+Settings, metrics, transforms, and collision tests all rely on this same
+global fixture.
 
 ---
 
@@ -341,4 +337,3 @@ Transforms and collision tests don't need isolation -- they operate on fixture d
 4. Type-hint all test functions (return `-> None`)
 5. Use `pytest.approx()` for float comparisons
 6. Use `pytest.raises(ExceptionType, match="pattern")` for error tests
-7. Mark slow tests with `@pytest.mark.slow`

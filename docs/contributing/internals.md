@@ -10,15 +10,18 @@ for contributing to the codebase.
 
 ## Thread-Safety
 
-The library is thread-safe for concurrent usage. All shared caches
-use locks to prevent race conditions.
+The library is thread-safe for concurrent usage. Mutable loader state is
+guarded by a lock; the discovery cache is a `functools.lru_cache`, whose
+bookkeeping CPython guards internally.
 
 ### Locks Used
 
 | Module | Lock | Protects |
 |--------|------|----------|
 | `loader.py` | `Lock` | `ConfigLoader._config` (double-checked locking in `configure()`, `reset()`, `get_config()`) |
-| `discovery.py` | `RLock` | `_project_root_cache` (LRUCache) |
+
+`discovery.py` holds no lock of its own: `find_project_root()` is memoised
+with `@functools.lru_cache(maxsize=32)` (see below).
 
 ### ConfigLoader Thread-Safety
 
@@ -112,7 +115,7 @@ The library uses simple caching with flag-based invalidation:
             |
             v
 +---------------------------+
-|  _project_root_cache      |  LRUCache (32 entries, thread-safe)
+| _find_project_root_cached |  functools.lru_cache (32 entries)
 +---------------------------+
             |
             v
@@ -123,7 +126,7 @@ The library uses simple caching with flag-based invalidation:
 
 ### Project Root Cache
 
-**Type:** `LRUCache(maxsize=32)` with `RLock`
+**Type:** `@functools.lru_cache(maxsize=32)`
 
 **Key:** Normalized absolute path (start_path or cwd)
 
@@ -164,8 +167,12 @@ def _invalidate(self) -> None:
     self._config = None
     self._project_root = None
     self._project_root_resolved = False
-    ChartingConfig._toml_data = {}
 ```
+
+The merged TOML payload is not cached anywhere: it travels into
+`ChartingConfig` as an init kwarg (`TOML_DATA_KWARG` in `settings/schema.py`)
+that `settings_customise_sources` consumes, so rebuilding the config re-reads
+and re-merges the TOML files.
 
 ### Typical Benchmarks
 
@@ -358,7 +365,7 @@ currency and numeric formatters.
 | Formatter | Usage | Example |
 |-----------|-------|---------|
 | `currency_formatter('BRL')` | Monetary values | R$ 1.234,56 |
-| `currency_formatter('USD')` | Dollars | US$ 1,234.56 |
+| `currency_formatter('USD')` | Dollars | US$ 1.234,56 |
 | `compact_currency_formatter('BRL')` | Large values | R$ 1,2 mi |
 | `percent_formatter()` | Percentages | 10,5% |
 | `human_readable_formatter()` | K/M/B notation | 1,5M |
@@ -445,19 +452,15 @@ way; the only consequence of a race is one redundant `stat()` sweep. Paying
 a dependency for it was not worth it, so the cache is now a plain
 `lru_cache` and the dependency is gone.
 
-### Why RLock instead of Lock?
+### Why a single plain Lock is enough
 
-`RLock` allows reentrancy - the same thread can acquire the lock
-multiple times. Necessary because:
-
-```python
-def get_config():
-    # May call find_project_root() internally
-    # which also uses lock pattern
-    ...
-```
-
-With a simple `Lock`, this would cause a deadlock.
+The only lock in the library is the `threading.Lock` in `ConfigLoader`. It
+covers every mutation of loader state (`configure()`, `reset()`, the slow
+path of `get_config()`), while reads take the lock-free fast path once
+`_config` is populated. `find_project_root()` needs no lock of its own:
+`lru_cache` is safe for concurrent reads, and `get_config()` calling into it
+while holding the loader lock cannot deadlock because discovery never takes
+a lock back.
 
 ### Why not the classic singleton pattern?
 
@@ -546,20 +549,30 @@ triggered by the first plot.
 
 ## Clearing Caches in Tests
 
-Tests that touch config or discovery must isolate state. The test suite uses
-autouse fixtures in module-specific `conftest.py` files:
+Tests must not leak process-wide state. A single autouse fixture,
+`_isolate_global_state` in `tests/conftest.py`, wraps every test in the
+suite: it snapshots matplotlib rcParams and the metric registry, resets the
+config singleton and collision state before the test, and restores
+everything (closing all figures) afterwards:
 
 ```python
-# tests/settings/conftest.py
+# tests/conftest.py
 @pytest.fixture(autouse=True)
-def _isolate_config():
+def _isolate_global_state():
+    rc_snapshot = {...}                            # matplotlib rcParams
+    metrics_snapshot = dict(MetricRegistry._metrics)
     reset_config()
+    clear_all_state()                              # collision registry
     yield
+    plt.close("all")
+    clear_all_state()
+    MetricRegistry._metrics = dict(metrics_snapshot)
     reset_config()
+    matplotlib.rcParams.update(rc_snapshot)
 ```
 
-This runs `reset_config()` before AND after each test, ensuring no test
-leaks config state to another.
+This runs before AND after each test, ensuring no test leaks config,
+rcParams, collision, or registry state to another.
 
 ### When to Clear Caches
 

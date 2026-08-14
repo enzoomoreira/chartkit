@@ -360,7 +360,7 @@ Same parameters as `plot()` but limited to data and rendering options. Chart-lev
 | Value | Format | Example |
 |-------|--------|---------|
 | `"BRL"` | Brazilian Real | R$ 1.234,56 |
-| `"USD"` | US Dollar | $1,234.56 |
+| `"USD"` | US Dollar | US$ 1.234,56 |
 | `"BRL_compact"` | Compact Real | R$ 1,2 mi |
 | `"USD_compact"` | Compact Dollar | $1.2M |
 | `"%"` | Percentage | 10,5% |
@@ -450,7 +450,7 @@ def plot_my_chart(ax, x, y_data, highlight, **kwargs):
 
 | Method | Return | Description |
 |--------|--------|-------------|
-| `register_enhancer(name)` | decorator | Registers specialized chart handler |
+| `register_enhancer(name, replace=False)` | decorator | Registers specialized chart handler. `replace=True` allows overwriting an existing enhancer; without it a name collision raises `RegistryError` |
 | `render(ax, kind, x, y_data, highlight, **kwargs)` | `None` | Renders chart (enhancer or generic) |
 | `validate_kind(kind)` | `None` | Validates kind against the allowlist. Raises `ValidationError` |
 | `available()` | `list[str]` | Sorted list of every accepted kind: enhancers, generic kinds and aliases |
@@ -483,8 +483,8 @@ Capability matrix for classified kinds:
 
 | Kind | Group | Highlight | Metrics | Temporal Metrics | Composable |
 |------|-------|-----------|---------|------------------|------------|
-| `plot`, `scatter`, `step`, `bar`, `barh`, `stacked_bar`, `fill_between`, `stairs`, `stem` | series | yes | yes | yes | yes |
-| `stackplot` | series | no | yes | yes | yes |
+| `plot`, `scatter`, `step`, `bar`, `stacked_bar`, `fill_between`, `stairs`, `stem` | series | yes | yes | yes | yes |
+| `barh`, `stackplot` | series | no | yes | yes | yes |
 | `boxplot`, `violinplot` | distribution | no | no | no | no |
 | `hist`, `ecdf` | aggregation | no | no | no | no |
 | `pie` | isolated | no | no | no | no |
@@ -532,10 +532,12 @@ def plot(
     kind: ChartKind = "line",
     title: str | None = None,
     units: UnitFormat | None = None,
+    decimals: int | None = None,
     source: str | None = None,
     highlight: HighlightInput = False,
     metrics: str | list[str] | None = None,
     legend: bool | None = None,
+    figsize: tuple[float, float] | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
     xlim: AxisLimits | None = None,
@@ -543,13 +545,11 @@ def plot(
     grid: bool | None = None,
     tick_rotation: int | Literal["auto"] | None = None,
     tick_format: str | None = None,
-    tick_freq: str | None = None,
+    tick_freq: TickFreq | None = None,
     collision: bool = True,
     debug: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> PlotResult
-
-def save(self, path: str, dpi: int | None = None) -> None
 ```
 
 ---
@@ -594,10 +594,10 @@ Resets settings to defaults.
 ### configure_logging()
 
 ```python
-def configure_logging(level: str = "DEBUG", sink: TextIO | None = None) -> int
+def configure_logging(level: int | str = logging.DEBUG, sink: TextIO | None = None) -> logging.Handler
 ```
 
-Enables library logging (disabled by default). Repeated calls remove the previous handler before adding a new one, avoiding log duplication. Returns the added handler ID.
+Enables library logging (disabled by default). Repeated calls remove the previous handler before adding a new one, avoiding log duplication. Returns the handler that was added, for later removal.
 
 ### disable_logging()
 
@@ -702,6 +702,7 @@ units, above the ~25 at which two colours start reading as one.
 | `figsize` | `tuple[float, float]` | `(10.0, 6.0)` |
 | `dpi` | `int` | `300` |
 | `base_style` | `str` | `"seaborn-v0_8-white"` |
+| `save_bbox` | `Literal["tight", "standard"]` | `"tight"` |
 | `grid` | `GridConfig` | (see below) |
 | `spines` | `SpinesConfig` | (see below) |
 | `footer` | `FooterConfig` | (see below) |
@@ -969,6 +970,12 @@ from chartkit import (
     ValidationError,
     RegistryError,
     StateError,
+
+    # Warnings
+    ChartKitWarning,
+    DataMutationWarning,
+    InferenceWarning,
+    RenderingWarning,
 
     # Transforms (standalone functions)
     variation,
