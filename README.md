@@ -30,7 +30,7 @@ df.chartkit.plot(title="Interest Rate", units='%', source='BCB')
 df.chartkit.variation().plot(kind='bar', title="Monthly Variation", units='%', highlight=['last'])
 
 # Chart with metrics (ATH, moving average, etc)
-df.chartkit.plot(title="Analysis", metrics=['ath|Maximum', 'atl|Minimum', 'ma:12|Moving Average'])
+df.chartkit.plot(title="Analysis", metrics=['ath|Maximum', 'atl|Minimum', 'ma:3|Moving Average'])
 
 # Full chaining
 df.chartkit.variation().plot(title="Monthly Variation").show()

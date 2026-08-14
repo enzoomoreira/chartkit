@@ -19,10 +19,17 @@ uv add chartkit
 import pandas as pd
 import chartkit  # Registers the .chartkit accessor
 
-# Sample data
+# Sample data: two years of monthly observations. The later examples on this
+# page compute year-over-year variation and a 12-month moving average, both of
+# which need at least a full year of history before they produce a value.
 df = pd.DataFrame({
-    'value': [10.5, 11.2, 10.8, 12.1, 11.9, 13.0]
-}, index=pd.date_range('2024-01', periods=6, freq='ME'))
+    'value': [
+        10.5, 11.2, 10.8, 12.1, 11.9, 13.0,
+        12.4, 12.8, 13.2, 12.9, 13.5, 13.1,
+        12.6, 12.2, 11.8, 12.3, 12.7, 12.0,
+        11.5, 11.9, 12.4, 12.8, 13.3, 13.6,
+    ]
+}, index=pd.date_range('2023-01', periods=24, freq='ME'))
 
 # Basic chart
 df.chartkit.plot(title="My First Chart")
@@ -73,8 +80,8 @@ df.chartkit.annualize().plot(metrics=['ath']).save('chart.png')
 # All-time high and moving average
 df.chartkit.plot(metrics=['ath', 'ma:12'])
 
-# Target band
-df.chartkit.plot(metrics=['band:1.5:4.5', 'hline:3.0'])
+# Target band framing the series (values span 10.5 to 13.6)
+df.chartkit.plot(metrics=['band:11.5:12.5', 'hline:12.0'])
 ```
 
 ### First Composition (Layers + Compose)

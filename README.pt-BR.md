@@ -30,7 +30,7 @@ df.chartkit.plot(title="Taxa de juros", units='%', source='BCB')
 df.chartkit.variation().plot(kind='bar', title="Variação mensal", units='%', highlight=['last'])
 
 # Gráfico com métricas (ATH, média móvel, etc)
-df.chartkit.plot(title="Análise", metrics=['ath|Máxima', 'atl|Mínima', 'ma:12|Média móvel'])
+df.chartkit.plot(title="Análise", metrics=['ath|Máxima', 'atl|Mínima', 'ma:3|Média móvel'])
 
 # Encadeamento completo
 df.chartkit.variation().plot(title="Variação mensal").show()
