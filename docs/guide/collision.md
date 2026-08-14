@@ -18,7 +18,7 @@ and three participation categories:
 | Category | Function | Meaning |
 |----------|----------|---------|
 | **Moveable** | `register_moveable(ax, artist)` | Can be repositioned to resolve collisions |
-| **Artist Obstacle** | `register_artist_obstacle(ax, artist, filled, colocate)` | Path-based obstacle that repels moveable labels |
+| **Artist Obstacle** | `register_artist_obstacle(ax, artist, *, filled=False, colocate=False)` | Path-based obstacle that repels moveable labels |
 | **Passive** | `register_passive(ax, artist)` | Exists visually but doesn't participate in collision |
 
 Each external module decides how to classify its own elements. The engine
@@ -102,8 +102,11 @@ register_artist_obstacle(ax, plot_line, filled=False, colocate=True)
 The collision state (which artists are moveable, fixed, passive) is stored
 in module-level `WeakKeyDictionary` indexed by `Axes`. This means:
 
-- **Automatic cleanup**: when an `Axes` is destroyed by the GC, its entries
-  are automatically removed. There is no risk of memory leak.
+- **Explicit teardown**: the weak keys alone do not free an `Axes` --
+  registered artists hold a strong reference back to it, so an entry keeps
+  its own key alive. `plot()` and `compose()` therefore call
+  `clear_axes_state(ax)` in a `finally` block once the chart is built,
+  dropping every registered artist for that Axes.
 - **No namespace pollution**: no private attribute is added to
   matplotlib objects (previously used `ax._charting_labels`, etc.).
 
@@ -116,7 +119,7 @@ final decorations:
 0. Theme scope     with theme.context():  (wraps steps 1-9)
 1. Figure          create_figure()
 2. Data            extract_plot_data()
-3. Y Formatter     FORMATTERS[units]()
+3. Y Formatter     get_formatter(units, decimals)
 4. Plot Core       ChartRenderer dispatch + highlights (register_moveable) + area fills (register_passive)
 5. Metrics         ATH/ATL/hline (register_artist_obstacle) + MA (register_artist_obstacle) + band (register_passive)
 6. Legend          apply_legend()
@@ -293,7 +296,7 @@ The overlay draws translucent shapes over the figure:
 
 | Color | Element |
 |-------|---------|
-| **Red** | Fixed obstacles (patches, cross-axis labels) with padding |
+| **Red** | Fixed obstacles (patches, cross-axis labels), drawn with the raw path (no padding) |
 | **Orange** | Line path obstacles (continuous curves) |
 | **Purple** | Collection obstacles (scatter, violin, fill_between) |
 | **Gray (dashed)** | Passive obstacles -- filled shapes (bands, area fills, stackplot) render with shaded area; unfilled lines render as path outlines |
@@ -308,15 +311,17 @@ and for diagnosing unexpected collision behavior.
 ## Integration with Custom Metrics
 
 When creating custom metrics via `MetricRegistry.register`, use the
-registration functions to integrate with the collision engine:
+registration functions to integrate with the collision engine. Pick a name
+that is not taken by a built-in metric (like `target`) -- registering a
+taken name raises `RegistryError` unless `replace=True` is passed:
 
 ```python
 from chartkit import register_artist_obstacle, register_moveable, register_passive
 from chartkit.metrics import MetricRegistry
 
-@MetricRegistry.register("target", param_names=["value"])
-def metric_target(ax, x_data, y_data, value: float, **kwargs):
-    """Line target with label."""
+@MetricRegistry.register("goal", param_names=["value"])
+def metric_goal(ax, x_data, y_data, value: float, **kwargs):
+    """Goal line with label."""
     # Line as path-based obstacle (unfilled for line geometry)
     line = ax.axhline(y=value, color="green", linestyle="--")
     register_artist_obstacle(ax, line, filled=False)
@@ -329,9 +334,9 @@ def metric_target(ax, x_data, y_data, value: float, **kwargs):
     register_moveable(ax, text)
 
 # Usage:
-df.chartkit.plot(metrics=["target:100", "ath"], highlight=True)
-# The engine resolves collisions between the "Target: 100" label, the
-# highlight label, the ATH line, and the target line automatically.
+df.chartkit.plot(metrics=["goal:100", "ath"], highlight=True)
+# The engine resolves collisions between the "Meta: 100" label, the
+# highlight label, the ATH line, and the goal line automatically.
 ```
 
 If your metric creates a background area that shouldn't be an obstacle:

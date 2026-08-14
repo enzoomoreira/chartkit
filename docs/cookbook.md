@@ -362,7 +362,6 @@ cpi_12m.chartkit.plot(
 ```python
 import pandas as pd
 import chartkit
-from chartkit import accum, normalize
 
 # Monthly CPI data
 monthly_cpi = pd.DataFrame({

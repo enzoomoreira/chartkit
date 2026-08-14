@@ -137,12 +137,20 @@ spread_layer = spread_df.chartkit.layer(
     kind="area",
     y=["upper", "lower"],
     units="%",
+)
+target_layer = target_df.chartkit.layer(
+    units="%",
+    metrics=["hline:3.0"],
+    axis="left",
     highlight="last",
 )
-target_layer = target_df.chartkit.layer(units="%", metrics=["hline:3.0"], axis="left")
 
 compose(spread_layer, target_layer, title="Spread vs Target")
 ```
+
+Area layers only apply `highlight` when they plot exactly one column; on a
+2-column pair (or 3+ columns) the parameter is silently ignored, so put the
+highlight on a single-column layer instead.
 
 ### 3. Collision Debug
 

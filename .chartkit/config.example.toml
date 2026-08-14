@@ -89,6 +89,7 @@ fallback = "sans-serif"
 figsize = [10.0, 6.0]  # Largura x Altura em polegadas
 dpi = 300              # Resolucao para exportacao
 # base_style = "seaborn-v0_8-white"  # Estilo base matplotlib
+# save_bbox = "tight"  # "tight" recorta ao conteudo; "standard" mantem o figsize exato
 
 [layout.grid]
 enabled = false       # Mostrar grid no grafico

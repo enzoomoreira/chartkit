@@ -59,7 +59,7 @@ Coercion is done internally. Non-numeric columns are filtered with a warning, an
 
 ## Auto-Detection of Frequency
 
-The `variation`, `accum`, and `annualize` functions automatically detect data frequency via `pd.infer_freq`, resolving the appropriate number of periods (e.g., 12 for monthly data, 252 for daily).
+The `variation`, `accum`, and `annualize` functions automatically detect data frequency via `pd.infer_freq`, resolving the appropriate number of periods (e.g., 12 for monthly data, 365 for daily, 252 for business-day data).
 
 You can use the `freq=` parameter as an alternative to `periods=`/`window=`:
 
@@ -75,7 +75,7 @@ df_var = variation(df, horizon='year', freq='Q')    # Quarterly: 4 periods
 df_var = variation(df, horizon='year', periods=4)   # Direct override
 ```
 
-Supported frequencies: `D`, `B`, `W`, `M`, `Q`, `Y`, `BME`, `BMS` (including aliases like `daily`, `business`, `weekly`, `monthly`, `quarterly`, `yearly`, `annual` and anchored pandas freq codes like `W-SUN`, `QE-DEC`, `BQE-DEC`, `BYE-DEC`).
+Supported values for `freq=`: `D`, `B`, `W`, `M`, `Q`, `Y`, `BME`, `BMS` and the aliases `daily`, `business`, `weekly`, `monthly`, `quarterly`, `yearly`, `annual`. Passing an anchored pandas freq code (e.g. `W-SUN`, `QE-DEC`) raises `TransformError`; anchored codes are only normalized when they come out of auto-detection via `pd.infer_freq` (e.g. `W-SUN` -> `W`).
 
 If the detected frequency is not supported, a `TransformError` is raised with a message listing valid frequencies and suggesting the use of explicit `periods=`.
 
@@ -134,7 +134,7 @@ df.chartkit.variation(horizon='year').plot(title="Annual Variation")
 
 ### accum() - Accumulated in Rolling Window
 
-Calculates accumulated variation via compound product in a rolling window. The window is resolved by the following precedence: explicit `window=` > explicit `freq=` > auto-detect via `pd.infer_freq` > fallback to `config.transforms.accum_window` (default: 12).
+Calculates accumulated variation via compound product in a rolling window. The window is resolved by the following precedence: explicit `window=` > explicit `freq=` > auto-detect via `pd.infer_freq` > estimate from the median spacing between observations (emits `InferenceWarning`) > fallback to `config.transforms.accum_window` (default: 12, also with `InferenceWarning`).
 
 **Formula:** `(Product(1 + x/100) - 1) * 100`
 
@@ -173,7 +173,7 @@ monthly_cpi.chartkit.accum().plot(
 
 ### diff() - Absolute Difference
 
-Calculates absolute difference between periods. `periods=0` is rejected with `ValidationError` (would return all-zeros, almost certainly a user error).
+Calculates absolute difference between periods. `periods=0` is rejected with `TransformError` (would return all-zeros, almost certainly a user error).
 
 ```python
 def diff(df, periods: int = 1) -> DataFrame | Series
@@ -206,13 +206,13 @@ selic.chartkit.diff().plot(title="Selic Variation (p.p.)")
 Normalizes series to a base value at a specific date. Useful for comparing series with different scales. Uses the first non-NaN value as reference; `base_date` finds the nearest date if the exact date doesn't exist in the index.
 
 ```python
-def normalize(df, base: int | None = None, base_date: str | None = None) -> DataFrame | Series
+def normalize(df, base: float | None = None, base_date: str | None = None) -> DataFrame | Series
 ```
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `df` | DataFrame \| Series | - | Data with temporal index |
-| `base` | int \| None | None | Base value for normalization (default: `config.transforms.normalize_base`) |
+| `base` | float \| None | None | Base value for normalization, must be positive (e.g. `1.0` for index/multiple charts; default: `config.transforms.normalize_base`) |
 | `base_date` | str \| None | None | Base date. If None, uses first non-NaN value. Finds nearest if exact date doesn't exist |
 
 **Example:**
@@ -280,7 +280,7 @@ ibovespa.chartkit.drawdown().plot(
 
 ### zscore() - Statistical Standardization
 
-Transforms the series into standard deviation units relative to the mean. Allows comparing series with completely different units on the same chart. `window=1` is rejected with `ValidationError` (std of 1 value is undefined, would produce all-NaN).
+Transforms the series into standard deviation units relative to the mean. Allows comparing series with completely different units on the same chart. `window=1` is rejected with `TransformError` (std of 1 value is undefined, would produce all-NaN).
 
 - **Global** (without `window`): `(data - mean) / std`
 - **Rolling** (with `window`): `(data - rolling_mean) / rolling_std`
@@ -323,7 +323,7 @@ df.chartkit.zscore().plot(title="Ibovespa vs S&P 500 (Z-Score)")
 
 ### annualize() - Annualize Periodic Rate
 
-Annualizes a periodic rate to an annual rate using compound interest. The number of periods per year is automatically resolved by data frequency (e.g., 252 for daily, 12 for monthly). Supports auto-detection of frequency.
+Annualizes a periodic rate to an annual rate using compound interest. The number of periods per year is automatically resolved by data frequency (e.g., 365 for daily, 252 for business days, 12 for monthly). Supports auto-detection of frequency.
 
 **Formula:** `((1 + r/100) ^ periods_per_year - 1) * 100`
 
@@ -342,7 +342,7 @@ def annualize(df, periods: int | None = None, freq: str | None = None) -> DataFr
 ```python
 from chartkit import annualize
 
-# Daily CDI -> annualized CDI (auto-detect: daily -> 252 periods)
+# Daily CDI -> annualized CDI (auto-detect: business days -> 252 periods)
 annual_cdi = annualize(daily_cdi)
 
 # Explicit frequency
@@ -417,6 +417,8 @@ df.chartkit.despike().variation(horizon='year').plot(
 Downsamples data by grouping observations into time periods and applying an aggregation method. Useful for reducing data density before plotting (e.g., daily -> monthly) or aligning series at a common frequency.
 
 Raises `TransformError` if the index is not a `DatetimeIndex` or parameters are invalid.
+
+Periods where all values are NaN after aggregation are dropped from the result (`dropna()` for Series, `dropna(how="all")` for DataFrames), so the output can be shorter than the full range of resampled periods.
 
 ```python
 def resample(df, freq: str = "month", method: str = "last") -> DataFrame | Series

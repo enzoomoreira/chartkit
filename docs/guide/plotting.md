@@ -139,6 +139,10 @@ Supported index types: string indices, `pd.CategoricalIndex`, `pd.StringDtype`, 
 Single-column bar charts can be sorted via the `sort` keyword argument. Labels move with their values:
 
 ```python
+df = pd.DataFrame({
+    'sales': [15, 22, 18, 12],
+}, index=['North', 'South', 'East', 'West'])
+
 # Ascending order
 df.chartkit.plot(kind='bar', title="Ranked", sort='ascending')
 
@@ -149,7 +153,7 @@ df.chartkit.plot(kind='bar', title="Ranked", sort='descending')
 df.chartkit.plot(kind='bar', title="Ranked", sort='descending', color='cycle', highlight='max')
 ```
 
-`sort` accepts `None` (default, keeps original order), `'ascending'`, or `'descending'`. Not supported for multi-column charts.
+`sort` accepts `None` (default, keeps original order), `'ascending'`, or `'descending'`. Not supported for multi-column charts. Sorting also requires a categorical X axis: on a datetime or numeric index each bar is drawn at its own coordinate, so sorting would leave the chart unchanged, and `sort` raises `ValidationError` -- use `kind='barh'` or convert the index to labels first.
 
 ### Per-Bar Color Cycling
 
@@ -229,7 +233,7 @@ df = pd.DataFrame({
 df.chartkit.plot(kind='stacked_bar', title="Revenue by Product")
 ```
 
-Each DataFrame column becomes a layer of the bar, using colors from the configured palette. The legend is automatically generated for DataFrames with multiple columns, and bar widths are automatically adjusted by data frequency.
+Each DataFrame column becomes a layer of the bar, using colors from the configured palette. The legend is automatically generated for DataFrames with multiple columns, and bar widths are sized to `bars.width_fraction` of the median gap between data points (see [Automatic Bar Width](#automatic-bar-width)).
 
 Stacked bars also support categorical indices and the `y_origin` parameter:
 
@@ -603,7 +607,7 @@ The `highlight` parameter adds markers and labels at specific points of each ser
 
 Not all chart kinds support highlight. Passing `highlight=True` to an unsupported kind raises `ValidationError`. The following kinds do **not** support highlight:
 
-`stackplot`, `boxplot`, `violinplot`, `hist`, `ecdf`, `pie`, `eventplot`
+`barh`, `stackplot`, `boxplot`, `violinplot`, `hist`, `ecdf`, `pie`, `eventplot`
 
 ```python
 # Highlight last value (equivalent)
@@ -702,8 +706,13 @@ result.save('custom_chart.png')
 |-----------------|--------|-------------|
 | `save(path, dpi=None)` | `PlotResult` | Saves the chart and returns self |
 | `show()` | `PlotResult` | Displays the chart and returns self |
+| `close()` | `None` | Releases the figure and its artists |
+| `describe(geometry=False)` | `dict` | Structural description of the chart (series, colors, styles, labels, limits); `geometry=True` adds measured bounding boxes and overlapping label pairs |
+| `explain()` | `str` | Same information as `describe(geometry=True)`, formatted for terminal reading |
 | `axes` | `Axes` | Access to matplotlib Axes |
 | `figure` | `Figure` | Access to matplotlib Figure |
+| `with result: ...` | -- | Context manager support: calls `close()` on exit |
+| `_repr_png_()` | `bytes` | Renders the chart inline in Jupyter notebooks |
 
 ---
 

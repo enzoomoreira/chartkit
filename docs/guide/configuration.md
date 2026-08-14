@@ -21,8 +21,11 @@ Higher-priority configurations override lower-priority ones. The merge is deep, 
 
 ### Disabling Auto-Discovery
 
-Steps 4 to 6 walk up the directory tree, so chartkit will read whatever
-`pyproject.toml` happens to sit above the working directory. For an
+Steps 4 to 7 are auto-discovery: the search looks at `.chartkit/config.toml`
+in the working directory and at the project root, `pyproject.toml
+[tool.chartkit]` at the project root, and the user config directory. Only the
+project-root detection walks up the directory tree, so chartkit will read
+whatever `pyproject.toml` happens to sit above the working directory. For an
 application that should only honour its own settings, set:
 
 ```bash
@@ -76,6 +79,7 @@ axis_label = 11
 figsize = [10.0, 6.0]
 dpi = 300
 base_style = "seaborn-v0_8-white"  # Base matplotlib style
+save_bbox = "tight"  # "tight" crops to content; "standard" keeps exact figsize
 
 [layout.grid]
 enabled = false       # Show grid on chart
@@ -97,6 +101,13 @@ color = "gray"
 [layout.title]
 padding = 20
 weight = "bold"
+
+[layout.zorder]
+bands = 0            # Shaded bands (bottom layer)
+reference_lines = 1  # ATH/ATL/hline/target lines
+moving_average = 2   # Moving average overlays
+data = 3             # Main series
+markers = 5          # Highlight markers (top layer)
 
 [lines]
 main_width = 2.0
@@ -125,6 +136,9 @@ decimal = ","
 thousands = "."
 babel_locale = "pt_BR"  # Currency amounts and month/weekday names on the X axis
 
+[formatters.magnitude]
+suffixes = ["", "k", "M", "B", "T"]  # Suffixes used by the 'human' formatter
+
 [labels]
 ath = "ATH"
 atl = "ATL"
@@ -132,7 +146,7 @@ avg = "AVG"
 moving_average_format = "MM{window}"    # Supports {freq} placeholder for detected frequency
 target_format = "Meta: {value}"
 std_band_format = "BB({window}, {deviations})"  # Rolling mode label. Supports {freq} placeholder
-std_band_full_format = "DP({deviations})"         # Full-series mode label
+std_band_full_format = "DP({deviations})"         # Full-series mode label. Also accepts {window} and {freq}
 
 [bands]
 alpha = 0.15

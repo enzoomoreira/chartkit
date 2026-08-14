@@ -13,7 +13,7 @@ be cited as data.
 ## IPCA accumulated over 12 months
 
 Monthly inflation prints compounded into the headline rate, with a moving
-average and the extremes of the period marked.
+average, the latest print, and the period high marked.
 
 ![IPCA accumulated over 12 months](assets/gallery/ipca_acumulado.png)
 
@@ -47,7 +47,13 @@ from chartkit import compose
 selic = selic_df.chartkit.layer(units="%", highlight=["last"])
 ipca = ipca_df.chartkit.layer(kind="bar", units="%", axis="right")
 
-compose(selic, ipca, title="Selic e IPCA mensal", ylabel="Selic (% a.a.)")
+compose(
+    selic,
+    ipca,
+    title="Selic e IPCA mensal",
+    source="Dados ilustrativos",
+    ylabel="Selic (% a.a.)",
+)
 ```
 
 One palette advances across both layers, so the consolidated legend never
@@ -65,6 +71,7 @@ Currency formatting, reference metrics, and a rolling band.
 usd.chartkit.plot(
     title="USD/BRL com banda de desvio padrão",
     units="BRL",
+    source="Dados ilustrativos",
     ylabel="Reais por dólar",
     highlight=["last"],
     metrics=["ath|Máxima do período", "atl|Mínima do período", "std_band:12:2|Banda 2 desvios"],
@@ -87,6 +94,8 @@ hedging deck actually asks.
 usd.chartkit.drawdown().plot(
     title="USD/BRL: distância do pico",
     units="%",
+    source="Dados ilustrativos",
+    ylabel="Queda desde a máxima",
     kind="area",
     highlight=["min"],
 )
@@ -108,6 +117,8 @@ df.chartkit.plot(
     kind="bar",
     title="PIB: variação trimestral",
     units="%",
+    source="Dados ilustrativos",
+    ylabel="Variação sobre o trimestre anterior",
     highlight=["last", "min"],
     metrics=["hline:0"],
     y_origin="auto",

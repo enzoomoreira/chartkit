@@ -287,7 +287,7 @@ df.chartkit.plot(metrics=['target:1000'])
 
 # Target with currency formatting
 df.chartkit.plot(units='BRL', metrics=['target:1000'])
-# Label: "Target: R$ 1.000,00"
+# Label: "Meta: R$ 1.000,00"
 ```
 
 ### Syntax
@@ -356,9 +356,10 @@ df.chartkit.plot(metrics=['std_band:0:1'])
 | Label (rolling) | "BB({window}, {deviations})" | `labels.std_band_format` |
 | Label (full-series) | "DP({deviations})" | `labels.std_band_full_format` |
 
-The `std_band` metric is **frequency-aware** in rolling mode: the label format supports
-a `{freq}` placeholder that is replaced with the detected data frequency. To enable it,
-set `std_band_format = "BB({window}{freq}, {deviations})"` in your TOML config.
+The `std_band` metric is **frequency-aware**: both label formats receive `{window}`,
+`{deviations}` and a `{freq}` placeholder that is replaced with the detected data
+frequency. To enable it, set `std_band_format = "BB({window}{freq}, {deviations})"`
+(or add `{freq}` to `std_band_full_format`) in your TOML config.
 
 ### Example
 
@@ -534,7 +535,7 @@ df.chartkit.plot(metrics=['hline:3.0', 'ath@revenue'])
 
 ## Custom Labels (| syntax)
 
-By default, each metric uses a pre-defined label (e.g., "ATH", "MA12"). To customize
+By default, each metric uses a pre-defined label (e.g., "ATH", "MM12"). To customize
 the name displayed in the legend, use the `|` syntax at the end of the specification:
 
 ```python
